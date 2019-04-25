@@ -157,7 +157,7 @@ class Trainer(object):
 
         return np.array(losses_train), np.array(losses_val)
 
-    def make_dataloaders(self, dataset, validation_split, batch_size):
+    def make_dataloader(self, dataset, validation_split, batch_size):
         if validation_split is None or validation_split <= 0.0:
             train_loader = DataLoader(
                 dataset, batch_size=batch_size, shuffle=True, pin_memory=self.run_on_gpu
@@ -390,7 +390,8 @@ class Trainer(object):
 
 class AutoencoderTrainer(Trainer):
     def forward_pass(self, batch_data, loss_functions):
-        output = self.model(batch_data)
-        log_prob = self.model.log_prob(batch_data)
-        losses = [loss_fn(output, batch_data, log_prob) for loss_fn in loss_functions]
+        x, y = batch_data
+        x_out = self.model(x)
+        log_prob = self.model.log_prob(x)
+        losses = [loss_fn(x_out, x, log_prob) for loss_fn in loss_functions]
         return losses
