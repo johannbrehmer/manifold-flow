@@ -41,7 +41,7 @@ class Autoencoder(nn.Module):
     def latent(self, x):
         z = self.encoder(x)
         z = z.view(z.size(0), -1)
-        u = self.flow(z), _
+        u, _ = self.flow(z)
         return u
 
     def forward(self, x):
