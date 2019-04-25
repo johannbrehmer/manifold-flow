@@ -1,14 +1,11 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import six
 import logging
-from collections import OrderedDict
 import numpy as np
 import torch
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
+from torchvision.datasets import MNIST
 
 logger = logging.getLogger(__name__)
 
@@ -39,28 +36,25 @@ class Trainer(object):
         )
 
     def train(
-        self,
-        data,
-        loss_functions,
-        loss_weights=None,
-        loss_labels=None,
-        epochs=50,
-        batch_size=100,
-        optimizer=optim.Adam,
-        optimizer_kwargs=None,
-        initial_lr=0.001,
-        final_lr=0.0001,
-        validation_split=0.25,
-        early_stopping=True,
-        early_stopping_patience=None,
-        clip_gradient=100.0,
-        verbose="some",
+            self,
+            dataset,
+            loss_functions,
+            loss_weights=None,
+            loss_labels=None,
+            epochs=50,
+            batch_size=100,
+            optimizer=optim.Adam,
+            optimizer_kwargs=None,
+            initial_lr=0.001,
+            final_lr=0.0001,
+            validation_split=0.25,
+            early_stopping=True,
+            early_stopping_patience=None,
+            clip_gradient=100.0,
+            verbose="some",
     ):
         logger.debug("Initialising training data")
-        self.check_data(data)
-        self.report_data(data)
-        data_labels, dataset = self.make_dataset(data)
-        train_loader, val_loader = self.make_dataloaders(
+        train_loader, val_loader = self.make_dataloader(
             dataset, validation_split, batch_size
         )
 
@@ -69,7 +63,7 @@ class Trainer(object):
         opt = optimizer(self.model.parameters(), lr=initial_lr, **optimizer_kwargs)
 
         early_stopping = (
-            early_stopping and (validation_split is not None) and (epochs > 1)
+                early_stopping and (validation_split is not None) and (epochs > 1)
         )
         best_loss, best_model, best_epoch = None, None, None
         if early_stopping and early_stopping_patience is None:
@@ -113,7 +107,6 @@ class Trainer(object):
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
                     i_epoch,
-                    data_labels,
                     train_loader,
                     val_loader,
                     opt,
@@ -165,34 +158,6 @@ class Trainer(object):
 
         return np.array(losses_train), np.array(losses_val)
 
-    @staticmethod
-    def report_data(data):
-        logger.debug("Training data:")
-        for key, value in six.iteritems(data):
-            logger.debug(
-                "  %s: shape %s, first %s, mean %s, min %s, max %s",
-                key,
-                value.shape,
-                value[0],
-                np.mean(value, axis=0),
-                np.min(value, axis=0),
-                np.max(value, axis=0),
-            )
-
-    @staticmethod
-    def check_data(data):
-        pass
-
-    @staticmethod
-    def make_dataset(data):
-        tensor_data = []
-        data_labels = []
-        for key, value in six.iteritems(data):
-            data_labels.append(key)
-            tensor_data.append(torch.from_numpy(value))
-        dataset = TensorDataset(*tensor_data)
-        return data_labels, dataset
-
     def make_dataloaders(self, dataset, validation_split, batch_size):
         if validation_split is None or validation_split <= 0.0:
             train_loader = DataLoader(
@@ -241,15 +206,14 @@ class Trainer(object):
             param_group["lr"] = lr
 
     def epoch(
-        self,
-        i_epoch,
-        data_labels,
-        train_loader,
-        val_loader,
-        optimizer,
-        loss_functions,
-        loss_weights,
-        clip_gradient=None,
+            self,
+            i_epoch,
+            train_loader,
+            val_loader,
+            optimizer,
+            loss_functions,
+            loss_weights,
+            clip_gradient=None,
     ):
         n_losses = len(loss_functions)
 
@@ -258,7 +222,6 @@ class Trainer(object):
         loss_train = 0.0
 
         for i_batch, batch_data in enumerate(train_loader):
-            batch_data = OrderedDict(list(zip(data_labels, batch_data)))
             batch_loss, batch_loss_contributions = self.batch_train(
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient
             )
@@ -275,7 +238,6 @@ class Trainer(object):
             loss_val = 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
-                batch_data = OrderedDict(list(zip(data_labels, batch_data)))
                 batch_loss, batch_loss_contributions = self.batch_val(
                     batch_data, loss_functions, loss_weights
                 )
@@ -293,7 +255,7 @@ class Trainer(object):
         return loss_train, loss_val, loss_contributions_train, loss_contributions_val
 
     def batch_train(
-        self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
+            self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
     ):
         loss_contributions = self.forward_pass(batch_data, loss_functions)
         loss = self.sum_losses(loss_contributions, loss_weights)
@@ -347,13 +309,13 @@ class Trainer(object):
         optimizer.step()
 
     def check_early_stopping(
-        self,
-        best_loss,
-        best_model,
-        best_epoch,
-        loss,
-        i_epoch,
-        early_stopping_patience=None,
+            self,
+            best_loss,
+            best_model,
+            best_epoch,
+            loss,
+            i_epoch,
+            early_stopping_patience=None,
     ):
         if best_loss is None or loss < best_loss:
             best_loss = loss
@@ -361,8 +323,8 @@ class Trainer(object):
             best_epoch = i_epoch
 
         if (
-            early_stopping_patience is not None
-            and i_epoch - best_epoch > early_stopping_patience >= 0
+                early_stopping_patience is not None
+                and i_epoch - best_epoch > early_stopping_patience >= 0
         ):
             raise EarlyStoppingException
 
@@ -370,13 +332,13 @@ class Trainer(object):
 
     @staticmethod
     def report_epoch(
-        i_epoch,
-        loss_labels,
-        loss_train,
-        loss_val,
-        loss_contributions_train,
-        loss_contributions_val,
-        verbose=False,
+            i_epoch,
+            loss_labels,
+            loss_train,
+            loss_val,
+            loss_contributions_train,
+            loss_contributions_val,
+            verbose=False,
     ):
         logging_fn = logger.info if verbose else logger.debug
 
@@ -427,76 +389,9 @@ class Trainer(object):
                 raise NanException
 
 
-class SingleParameterizedRatioTrainer(Trainer):
-    def __init__(self, model, run_on_gpu=True, double_precision=False):
-        super(SingleParameterizedRatioTrainer, self).__init__(
-            model, run_on_gpu, double_precision
-        )
-        self.calculate_model_score = True
-
-    def check_data(self, data):
-        data_keys = list(data.keys())
-        if "x" not in data_keys or "theta" not in data_keys or "y" not in data_keys:
-            raise ValueError(
-                "Missing required information 'x', 'theta', or 'y' in training data!"
-            )
-
-        for key in data_keys:
-            if key not in ["x", "theta", "y", "r_xz", "t_xz", "aux"]:
-                logger.warning("Unknown key %s in training data! Ignoring it.", key)
-
-        self.calculate_model_score = "t_xz" in data_keys
-        if self.calculate_model_score:
-            logger.debug("Model score will be calculated")
-        else:
-            logger.debug("Model score will not be calculated")
-
-    def make_dataset(self, data):
-        tensor_data = []
-        data_labels = []
-        for key, value in six.iteritems(data):
-            data_labels.append(key)
-            if key == "theta":
-                tensor_data.append(torch.tensor(value, requires_grad=True))
-            else:
-                tensor_data.append(torch.from_numpy(value))
-        dataset = TensorDataset(*tensor_data)
-        return data_labels, dataset
-
+class AutoencoderTrainer(Trainer):
     def forward_pass(self, batch_data, loss_functions):
-        theta = batch_data["theta"].to(self.device, self.dtype)
-        x = batch_data["x"].to(self.device, self.dtype)
-        y = batch_data["y"].to(self.device, self.dtype)
-        try:
-            r_xz = batch_data["r_xz"].to(self.device, self.dtype)
-        except KeyError:
-            r_xz = None
-        try:
-            t_xz = batch_data["t_xz"].to(self.device, self.dtype)
-        except KeyError:
-            t_xz = None
-        try:
-            aux = batch_data["aux"].to(self.device, self.dtype)
-        except KeyError:
-            aux = None
-        self._check_for_nans("Training data", theta, x, y, aux)
-        self._check_for_nans("Augmented training data", r_xz, t_xz)
-
-        s_hat, log_r_hat, t_hat, _ = self.model(
-            theta,
-            x,
-            aux=aux,
-            track_score=self.calculate_model_score,
-            return_grad_x=False,
-        )
-        self._check_for_nans("Model output (log r)", log_r_hat)
-        self._check_for_nans("Model output (s)", s_hat)
-        self._check_for_nans("Model output (t)", t_hat)
-
-        losses = [
-            loss_function(s_hat, log_r_hat, t_hat, y, r_xz, t_xz)
-            for loss_function in loss_functions
-        ]
-        self._check_for_nans("Loss", *losses)
-
+        output = self.model(batch_data)
+        log_prob = self.model.log_prob(batch_data)
+        losses = [loss_fn(output, batch_data, log_prob) for loss_fn in loss_functions]
         return losses
