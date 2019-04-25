@@ -2,10 +2,9 @@ import logging
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-from torchvision.datasets import MNIST
 
 logger = logging.getLogger(__name__)
 
