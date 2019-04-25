@@ -391,6 +391,7 @@ class Trainer(object):
 class AutoencoderTrainer(Trainer):
     def forward_pass(self, batch_data, loss_functions):
         x, y = batch_data
+        x.to(self.device, self.dtype)
         x_out = self.model(x)
         log_prob = self.model.log_prob(x)
         losses = [loss_fn(x_out, x, log_prob) for loss_fn in loss_functions]
