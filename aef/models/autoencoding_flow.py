@@ -54,15 +54,27 @@ class TwoStepAutoencodingFlow(nn.Module):
         u, log_det_inner = self.inner_flow(h)
 
         # Decode
-        h = self.inner_flow(u, mode="inverse")
+        h, _ = self.inner_flow(u, mode="inverse")
         h = self.projection(h, mode="inverse")
-        x = self.outer_flow(h, mode="inverse")
+        x, _ = self.outer_flow(h, mode="inverse")
 
         # Log prob
         log_prob = (-0.5 * u.pow(2) - 0.5 * np.log(2 * np.pi)).sum(-1, keepdim=True)
         log_prob = log_prob + log_det_outer + log_det_inner
 
         return x, log_prob, u
+
+    def encode(self, x):
+        h, _ = self.outer_flow(x)
+        h = self.projection(h)
+        u, _ = self.inner_flow(h)
+        return u
+
+    def decode(self, u):
+        h, _ = self.inner_flow(u, mode="inverse")
+        h = self.projection(h, mode="inverse")
+        x, _ = self.outer_flow(h, mode="inverse")
+        return x
 
     def log_prob(self, x):
         # Encode
@@ -79,5 +91,5 @@ class TwoStepAutoencodingFlow(nn.Module):
     def sample(self, u=None, n=1):
         h = self.inner_flow.sample(noise=u, num_samples=n)
         h = self.projection(h, mode="inverse")
-        x = self.outer_flow(h, mode="inverse")
+        x, _ = self.outer_flow(h, mode="inverse")
         return x
