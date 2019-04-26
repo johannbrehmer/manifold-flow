@@ -50,8 +50,7 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def forward(self, x):
         # Encode
-        x_shape = x.size()
-        x = x.view(x.size(0), self.data_dim)
+        # x_shape = x.size()
         h, log_det_outer = self.outer_flow(x)
         h = self.projection(h)
         u, log_det_inner = self.inner_flow(h)
@@ -60,7 +59,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         h, _ = self.inner_flow(u, mode="inverse")
         h = self.projection(h, mode="inverse")
         x, _ = self.outer_flow(h, mode="inverse")
-        x = x.view(*x_shape)
+        # x = x.view(*x_shape)
 
         # Log prob
         log_prob = (-0.5 * u.pow(2) - 0.5 * np.log(2 * np.pi)).sum(-1, keepdim=True)
@@ -69,7 +68,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         return x, log_prob, u
 
     def encode(self, x):
-        x = x.view(x.size(0), self.data_dim)
+        # x = x.view(x.size(0), self.data_dim)
         h, _ = self.outer_flow(x)
         h = self.projection(h)
         u, _ = self.inner_flow(h)
@@ -83,7 +82,7 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def log_prob(self, x):
         # Encode
-        x = x.view(x.size(0), self.data_dim)
+        # x = x.view(x.size(0), self.data_dim)
         h, log_det_outer = self.outer_flow(x)
         h = self.projection(h)
         u, log_det_inner = self.inner_flow(h)
