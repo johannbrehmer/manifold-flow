@@ -499,7 +499,7 @@ class AutoencodingFlowTrainer(Trainer):
         x_out = x_out.detach().numpy().reshape(-1, 28, 28)
         u = u.detach().numpy().reshape(x_out.shape[0], -1)
         y = y.detach().numpy().astype(np.int).reshape(-1)
-        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u_vals)
+        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u)
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
@@ -511,8 +511,7 @@ class AutoencodingFlowTrainer(Trainer):
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
-            plt.scatter(tsne[y == i][:, 0], tsne[y == i][:, 1], s=15., alpha=1.,
-                        label="{}".format(i + 1))
+            plt.scatter(tsne[y == i][:, 0], tsne[y == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
