@@ -13,7 +13,7 @@ import torch
 from torchvision.datasets import MNIST
 from torchvision import transforms
 
-from aef.models.aef import ConvolutionalAutoencoder
+from aef.models.ae_latent_flow import ConvolutionalAutoencoder
 from aef.trainer import AutoencoderTrainer
 from aef.losses import nll, mse
 
