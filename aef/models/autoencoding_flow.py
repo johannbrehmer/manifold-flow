@@ -17,15 +17,16 @@ class Projection(nn.Module):
             u = inputs[:, :self.output_dim]
             return u
         else:
-            u = inputs
-            x = torch.zeros(inputs.size(0), self.input_dim)
-            x[:, self.output_dim] = inputs
+            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
             return x
 
 
 class TwoStepAutoencodingFlow(nn.Module):
     def __init__(self, data_dim, latent_dim=10, n_mades_inner=3, n_mades_outer=3, n_hidden=100):
         super(TwoStepAutoencodingFlow, self).__init__()
+
+        self.data_dim = data_dim
+        self.latent_dim = latent_dim
 
         modules = []
         for _ in range(n_mades_outer):
@@ -49,6 +50,8 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def forward(self, x):
         # Encode
+        x_shape = x.size()
+        x = x.view(x.size(0), self.data_dim)
         h, log_det_outer = self.outer_flow(x)
         h = self.projection(h)
         u, log_det_inner = self.inner_flow(h)
@@ -57,6 +60,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         h, _ = self.inner_flow(u, mode="inverse")
         h = self.projection(h, mode="inverse")
         x, _ = self.outer_flow(h, mode="inverse")
+        x = x.view(*x_shape)
 
         # Log prob
         log_prob = (-0.5 * u.pow(2) - 0.5 * np.log(2 * np.pi)).sum(-1, keepdim=True)
@@ -65,6 +69,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         return x, log_prob, u
 
     def encode(self, x):
+        x = x.view(x.size(0), self.data_dim)
         h, _ = self.outer_flow(x)
         h = self.projection(h)
         u, _ = self.inner_flow(h)
@@ -78,6 +83,7 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def log_prob(self, x):
         # Encode
+        x = x.view(x.size(0), self.data_dim)
         h, log_det_outer = self.outer_flow(x)
         h = self.projection(h)
         u, log_det_inner = self.inner_flow(h)
