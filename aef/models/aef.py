@@ -5,9 +5,101 @@ from torch import nn
 from aef.models.flows import FlowSequential, MADE, BatchNormFlow, Reverse
 
 
-class Autoencoder(nn.Module):
+class LinearAutoencoder(nn.Module):
+    def __init__(self, n_mades=3, latent_dim=10):
+        super(LinearAutoencoder, self).__init__()
+
+        self.encoder = nn.Linear(28*28, latent_dim)
+        self.decoder = nn.Linear(latent_dim, 28*28)
+        modules = []
+        for _ in range(n_mades):
+            modules += [
+                MADE(latent_dim, 100, None, act='relu'),
+                BatchNormFlow(latent_dim),
+                Reverse(latent_dim)
+            ]
+        self.flow = FlowSequential(*modules)
+
+    def latent(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        u, _ = self.flow(z)
+        return z, u
+
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        x = self.decoder(z)
+        x = x.view(x.size(0), -1, 28, 28)
+        return x
+
+    def log_prob(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        log_prob = self.flow.log_probs(z)
+        return log_prob
+
+    def sample(self, u=None, n=1):
+        z = self.flow.sample(noise=u, num_samples=n)
+        x = self.decoder(z)
+        x = x.view(x.size(0), -1, 28, 28)
+        return x
+
+
+class DenseAutoencoder(nn.Module):
+    def __init__(self, n_mades=3, n_hidden=100, latent_dim=10):
+        super(DenseAutoencoder, self).__init__()
+
+        self.encoder = nn.Sequential(
+            nn.Linear(28*28, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, latent_dim),
+        )
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, 28*28),
+        )
+
+        modules = []
+        for _ in range(n_mades):
+            modules += [
+                MADE(latent_dim, 100, None, act='relu'),
+                BatchNormFlow(latent_dim),
+                Reverse(latent_dim)
+            ]
+        self.flow = FlowSequential(*modules)
+
+    def latent(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        u, _ = self.flow(z)
+        return z, u
+
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        x = self.decoder(z)
+        x = x.view(x.size(0), -1, 28, 28)
+        return x
+
+    def log_prob(self, x):
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        log_prob = self.flow.log_probs(z)
+        return log_prob
+
+    def sample(self, u=None, n=1):
+        z = self.flow.sample(noise=u, num_samples=n)
+        x = self.decoder(z)
+        x = x.view(x.size(0), -1, 28, 28)
+        return x
+
+
+
+class ConvolutionalAutoencoder(nn.Module):
     def __init__(self, n_mades=3, latent_maps=16, avgpool_latent=False):
-        super(Autoencoder, self).__init__()
+        super(ConvolutionalAutoencoder, self).__init__()
         # self.encoder = nn.Sequential(
         #     nn.Conv2d(1, 16, 3, stride=1, padding=1),  # 28
         #     nn.ReLU(True),
@@ -80,9 +172,9 @@ class Autoencoder(nn.Module):
 
     def latent(self, x):
         z = self.encoder(x)
-        z = z.view(z.size(0), -1)
+        z = z.view(x.size(0), -1)
         u, _ = self.flow(z)
-        return u
+        return z, u
 
     def forward(self, x):
         z = self.encoder(x)
