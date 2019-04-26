@@ -5,7 +5,7 @@ import sys
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
     datefmt="%H:%M",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 sys.path.append("../")
 
@@ -24,16 +24,16 @@ img_transform = transforms.Compose([
 mnist = MNIST('./data', download=True, transform=img_transform)
 
 latent_dim = 2
-ae = Autoencoder(n_mades=3, latent_dim=latent_dim)
+ae = Autoencoder()
 ae_trainer = AutoencoderTrainer(ae)
 
 ae_trainer.train(
     dataset=mnist,
     loss_functions=[mse, nll],
-    loss_weights=[1., 0.01],
+    loss_weights=[1., 0.],
     loss_labels=["MSE", "NLL"],
-    batch_size=256,
-    epochs=1,
+    batch_size=512,
+    epochs=20,
 )
 
 x = torch.cat([mnist[i][0].unsqueeze(0) for i in range(1000)], dim=0)

@@ -5,6 +5,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
+from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +230,8 @@ class Trainer(object):
             for i, batch_loss_contribution in enumerate(batch_loss_contributions):
                 loss_contributions_train[i] += batch_loss_contribution
 
+            self.report_batch(i_epoch, i_batch, True, batch_data)
+
         loss_contributions_train /= len(train_loader)
         loss_train /= len(train_loader)
 
@@ -243,6 +247,8 @@ class Trainer(object):
                 loss_val += batch_loss
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions):
                     loss_contributions_val[i] += batch_loss_contribution
+
+                self.report_batch(i_epoch, i_batch, False, batch_data)
 
             loss_contributions_val /= len(val_loader)
             loss_val /= len(val_loader)
@@ -329,6 +335,9 @@ class Trainer(object):
 
         return best_loss, best_model, best_epoch
 
+    def report_batch(self, i_epoch, i_batch, train, batch_data):
+        pass
+
     @staticmethod
     def report_epoch(
             i_epoch,
@@ -396,3 +405,29 @@ class AutoencoderTrainer(Trainer):
         log_prob = self.model.log_prob(x)
         losses = [loss_fn(x_out, x, log_prob) for loss_fn in loss_functions]
         return losses
+
+    def report_batch(self, i_epoch, i_batch, train, batch_data):
+        if i_batch > 0 or not train:
+            return
+
+        x, y = batch_data
+        z = self.encoder(x)
+        x_out = self.decoder(z)
+
+        z_vals = z.detach().numpy()
+        z_vals = z_vals.reshape(z_vals.shape[0], -1)
+        tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+        tsne_results = tsne.fit_transform(z_vals)
+
+        plt.figure(figsize=(5, 5))
+        for i in range(10):
+            plt.scatter(tsne_results[y==i,0], tsne_results[y==i,1], s=10., alpha=0.4, label="{}".format(i+1))
+        plt.savefig("latent_epoch{}.pdf".format(i_epoch))
+
+        plt.figure(figsize=(10, 10))
+        for i in range(8):
+            plt.subplot(4, 4, i + 1)
+            plt.imshow(x.detach().numpy()[i, 0, :, :])
+            plt.subplot(4, 4, i + 2)
+            plt.imshow(x_out.detach().numpy()[i, 0, :, :])
+        plt.savefig("reconstruction_epoch{}.pdf".format(i_epoch))
