@@ -1,8 +1,7 @@
-# from https://github.com/ikostrikov/pytorch-flows
+# Originally from https://github.com/ikostrikov/pytorch-flows
+# Changed MADE inverse forward to not break computational graph
 
 import math
-import types
-
 import numpy as np
 import scipy as sp
 import torch
@@ -174,8 +173,10 @@ class MADE(nn.Module):
             for i_col in range(inputs.shape[1]):
                 h = self.joiner(x, cond_inputs)
                 m, a = self.trunk(h).chunk(2, 1)
-                x[:, i_col] = inputs[:, i_col] * torch.exp(
-                    a[:, i_col]) + m[:, i_col]
+                # x[:, i_col] = inputs[:, i_col] * torch.exp(a[:, i_col]) + m[:, i_col]  # breaks computational graph
+                mask = torch.zeros_like(x)
+                mask[:, i_col] = 1.0
+                x = (1. - mask) * x + mask * torch.unsqueeze(inputs[:, i_col] * torch.exp(a[:, i_col]) + m[:, i_col], 1)
             return x, -a.sum(-1, keepdim=True)
 
 
@@ -226,8 +227,7 @@ class BatchNormFlow(nn.Module):
         if mode == 'direct':
             if self.training:
                 self.batch_mean = inputs.mean(0)
-                self.batch_var = (
-                                         inputs - self.batch_mean).pow(2).mean(0) + self.eps
+                self.batch_var = (inputs - self.batch_mean).pow(2).mean(0) + self.eps
 
                 self.running_mean.mul_(self.momentum)
                 self.running_var.mul_(self.momentum)

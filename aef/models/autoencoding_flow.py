@@ -58,7 +58,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         # Decode
         h, _ = self.inner_flow(u, mode="inverse")
         h = self.projection(h, mode="inverse")
-        x, _ = self.outer_flow(h, mode="inverse")
+        x_, _ = self.outer_flow(h, mode="inverse")
         # x = x.view(*x_shape)
 
         # Log prob

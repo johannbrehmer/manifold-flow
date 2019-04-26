@@ -495,15 +495,15 @@ class AutoencodingFlowTrainer(Trainer):
         x.to(self.device, self.dtype)
         x_out, _, u = self.model(x)
 
-        y_vals = y.detach().numpy().astype(np.int)
-        y_vals = y_vals.reshape(-1)
-        u_vals = u.detach().numpy()
-        u_vals = u_vals.reshape(u_vals.shape[0], -1)
-        u_tsne_results = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u_vals)
+        x = x.detach().numpy().reshape(-1, 28, 28)
+        x_out = x_out.detach().numpy().reshape(-1, 28, 28)
+        u = u.detach().numpy().reshape(x_out.shape[0], -1)
+        y = y.detach().numpy().astype(np.int).reshape(-1)
+        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u_vals)
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
-            plt.scatter(u_vals[y_vals == i][:, 0], u_vals[y_vals == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
+            plt.scatter(u[y == i][:, 0], u[y == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
@@ -511,7 +511,7 @@ class AutoencodingFlowTrainer(Trainer):
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
-            plt.scatter(u_tsne_results[y_vals == i][:, 0], u_tsne_results[y_vals == i][:, 1], s=15., alpha=1.,
+            plt.scatter(tsne[y == i][:, 0], tsne[y == i][:, 1], s=15., alpha=1.,
                         label="{}".format(i + 1))
         plt.legend()
         plt.tight_layout()
@@ -521,11 +521,11 @@ class AutoencodingFlowTrainer(Trainer):
         plt.figure(figsize=(10, 10))
         for i in range(8):
             plt.subplot(4, 4, 2 * i + 1)
-            plt.imshow(x.detach().numpy()[i, 0, :, :])
+            plt.imshow(x[i, :, :])
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
             plt.subplot(4, 4, 2 * i + 2)
-            plt.imshow(x_out.detach().numpy()[i, 0, :, :])
+            plt.imshow(x_out[i, :, :])
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()

@@ -1,21 +1,21 @@
 import numpy as np
 import logging
 import sys
+import torch
+from torchvision.datasets import MNIST
+from torchvision import transforms
+
+sys.path.append("../")
+from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
+from aef.trainer import AutoencodingFlowTrainer
+from aef.losses import nll, mse
 
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
     datefmt="%H:%M",
     level=logging.INFO,
 )
-sys.path.append("../")
-
-import torch
-from torchvision.datasets import MNIST
-from torchvision import transforms
-
-from aef.models.autoencoder import ConvolutionalAutoencoder
-from aef.trainer import AutoencoderTrainer
-from aef.losses import nll, mse
+logging.info("Hi!")
 
 img_transform = transforms.Compose([
     transforms.ToTensor(),
@@ -23,19 +23,17 @@ img_transform = transforms.Compose([
 ])
 mnist = MNIST('./data', download=True, transform=img_transform)
 
-ae = ConvolutionalAutoencoder()
-ae_trainer = AutoencoderTrainer(ae)
+ae = TwoStepAutoencodingFlow(data_dim=28*28, latent_dim=16)
 
-logging.info("Hi!")
-
-ae_trainer.train(
+trainer = AutoencodingFlowTrainer(ae, output_filename="output/aef_phase1")
+trainer.train(
     dataset=mnist,
     loss_functions=[mse, nll],
-    loss_weights=[1., 0.1],
     loss_labels=["MSE", "NLL"],
+    loss_weights=[1., 1.],
     batch_size=256,
-    epochs=20,
+    epochs=10,
     verbose="all",
+    initial_lr=1.e-3,
+    final_lr=1.e-5
 )
-
-logging.info("Done")
