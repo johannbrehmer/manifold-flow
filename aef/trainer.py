@@ -74,23 +74,23 @@ class Trainer(object):
         )
 
     def train(
-            self,
-            dataset,
-            loss_functions,
-            loss_weights=None,
-            loss_labels=None,
-            epochs=50,
-            batch_size=100,
-            optimizer=optim.Adam,
-            optimizer_kwargs=None,
-            initial_lr=0.001,
-            final_lr=0.0001,
-            validation_split=0.25,
-            early_stopping=True,
-            early_stopping_patience=None,
-            clip_gradient=100.0,
-            verbose="some",
-            parameters=None,
+        self,
+        dataset,
+        loss_functions,
+        loss_weights=None,
+        loss_labels=None,
+        epochs=50,
+        batch_size=100,
+        optimizer=optim.Adam,
+        optimizer_kwargs=None,
+        initial_lr=0.001,
+        final_lr=0.0001,
+        validation_split=0.25,
+        early_stopping=True,
+        early_stopping_patience=None,
+        clip_gradient=100.0,
+        verbose="some",
+        parameters=None,
     ):
         logger.debug("Initialising training data")
         train_loader, val_loader = self.make_dataloader(
@@ -104,7 +104,7 @@ class Trainer(object):
         opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
 
         early_stopping = (
-                early_stopping and (validation_split is not None) and (epochs > 1)
+            early_stopping and (validation_split is not None) and (epochs > 1)
         )
         best_loss, best_model, best_epoch = None, None, None
         if early_stopping and early_stopping_patience is None:
@@ -247,14 +247,14 @@ class Trainer(object):
             param_group["lr"] = lr
 
     def epoch(
-            self,
-            i_epoch,
-            train_loader,
-            val_loader,
-            optimizer,
-            loss_functions,
-            loss_weights,
-            clip_gradient=None,
+        self,
+        i_epoch,
+        train_loader,
+        val_loader,
+        optimizer,
+        loss_functions,
+        loss_weights,
+        clip_gradient=None,
     ):
         n_losses = len(loss_functions)
 
@@ -300,7 +300,7 @@ class Trainer(object):
         return loss_train, loss_val, loss_contributions_train, loss_contributions_val
 
     def batch_train(
-            self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
+        self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
     ):
         loss_contributions = self.forward_pass(batch_data, loss_functions)
         loss = self.sum_losses(loss_contributions, loss_weights)
@@ -354,13 +354,13 @@ class Trainer(object):
         optimizer.step()
 
     def check_early_stopping(
-            self,
-            best_loss,
-            best_model,
-            best_epoch,
-            loss,
-            i_epoch,
-            early_stopping_patience=None,
+        self,
+        best_loss,
+        best_model,
+        best_epoch,
+        loss,
+        i_epoch,
+        early_stopping_patience=None,
     ):
         if best_loss is None or loss < best_loss:
             best_loss = loss
@@ -368,8 +368,8 @@ class Trainer(object):
             best_epoch = i_epoch
 
         if (
-                early_stopping_patience is not None
-                and i_epoch - best_epoch > early_stopping_patience >= 0
+            early_stopping_patience is not None
+            and i_epoch - best_epoch > early_stopping_patience >= 0
         ):
             raise EarlyStoppingException
 
@@ -380,13 +380,13 @@ class Trainer(object):
 
     @staticmethod
     def report_epoch(
-            i_epoch,
-            loss_labels,
-            loss_train,
-            loss_val,
-            loss_contributions_train,
-            loss_contributions_val,
-            verbose=False,
+        i_epoch,
+        loss_labels,
+        loss_train,
+        loss_val,
+        loss_contributions_train,
+        loss_contributions_val,
+        verbose=False,
     ):
         logging_fn = logger.info if verbose else logger.debug
 
@@ -438,7 +438,9 @@ class Trainer(object):
 
 
 class AutoencoderTrainer(Trainer):
-    def __init__(self, model, run_on_gpu=True, double_precision=False, output_filename=None):
+    def __init__(
+        self, model, run_on_gpu=True, double_precision=False, output_filename=None
+    ):
         super().__init__(model, run_on_gpu, double_precision)
         self.output_filename = output_filename
 
@@ -464,17 +466,33 @@ class AutoencoderTrainer(Trainer):
         z_vals = z_vals.reshape(z_vals.shape[0], -1)
         u_vals = u.detach().numpy()
         u_vals = u_vals.reshape(u_vals.shape[0], -1)
-        z_tsne_results = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(z_vals)
-        u_tsne_results = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u_vals)
+        z_tsne_results = TSNE(
+            n_components=2, verbose=0, perplexity=40, n_iter=300
+        ).fit_transform(z_vals)
+        u_tsne_results = TSNE(
+            n_components=2, verbose=0, perplexity=40, n_iter=300
+        ).fit_transform(u_vals)
 
         plt.figure(figsize=(10, 5))
         plt.subplot(1, 2, 1)
         for i in range(10):
-            plt.scatter(z_vals[y_vals == i][:, 0], z_vals[y_vals == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
+            plt.scatter(
+                z_vals[y_vals == i][:, 0],
+                z_vals[y_vals == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.subplot(1, 2, 2)
         for i in range(10):
-            plt.scatter(u_vals[y_vals == i][:, 0], u_vals[y_vals == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
+            plt.scatter(
+                u_vals[y_vals == i][:, 0],
+                u_vals[y_vals == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
@@ -483,13 +501,23 @@ class AutoencoderTrainer(Trainer):
         plt.figure(figsize=(10, 5))
         plt.subplot(1, 2, 1)
         for i in range(10):
-            plt.scatter(z_tsne_results[y_vals == i][:, 0], z_tsne_results[y_vals == i][:, 1], s=15., alpha=1.,
-                        label="{}".format(i + 1))
+            plt.scatter(
+                z_tsne_results[y_vals == i][:, 0],
+                z_tsne_results[y_vals == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.subplot(1, 2, 2)
         for i in range(10):
-            plt.scatter(u_tsne_results[y_vals == i][:, 0], u_tsne_results[y_vals == i][:, 1], s=15., alpha=1.,
-                        label="{}".format(i + 1))
+            plt.scatter(
+                u_tsne_results[y_vals == i][:, 0],
+                u_tsne_results[y_vals == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
@@ -506,12 +534,16 @@ class AutoencoderTrainer(Trainer):
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
-        plt.savefig("{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch))
+        plt.savefig(
+            "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
+        )
         plt.close()
 
 
 class AutoencodingFlowTrainer(Trainer):
-    def __init__(self, model, run_on_gpu=True, double_precision=False, output_filename=None):
+    def __init__(
+        self, model, run_on_gpu=True, double_precision=False, output_filename=None
+    ):
         super().__init__(model, run_on_gpu, double_precision)
         self.output_filename = output_filename
 
@@ -536,11 +568,19 @@ class AutoencodingFlowTrainer(Trainer):
         x_out = x_out.detach().numpy().reshape(-1, 28, 28)
         u = u.detach().numpy().reshape(x_out.shape[0], -1)
         y = y.detach().numpy().astype(np.int).reshape(-1)
-        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u)
+        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(
+            u
+        )
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
-            plt.scatter(u[y == i][:, 0], u[y == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
+            plt.scatter(
+                u[y == i][:, 0],
+                u[y == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
@@ -548,7 +588,13 @@ class AutoencodingFlowTrainer(Trainer):
 
         plt.figure(figsize=(5, 5))
         for i in range(10):
-            plt.scatter(tsne[y == i][:, 0], tsne[y == i][:, 1], s=15., alpha=1., label="{}".format(i + 1))
+            plt.scatter(
+                tsne[y == i][:, 0],
+                tsne[y == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
         plt.legend()
         plt.tight_layout()
         plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
@@ -565,5 +611,7 @@ class AutoencodingFlowTrainer(Trainer):
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
-        plt.savefig("{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch))
+        plt.savefig(
+            "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
+        )
         plt.close()

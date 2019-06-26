@@ -14,15 +14,20 @@ class Projection(nn.Module):
 
     def forward(self, inputs, mode="direct"):
         if mode == "direct":
-            u = inputs[:, :self.output_dim]
+            u = inputs[:, : self.output_dim]
             return u
         else:
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
+            x = torch.cat(
+                (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
+                dim=1,
+            )
             return x
 
 
 class TwoStepAutoencodingFlow(nn.Module):
-    def __init__(self, data_dim, latent_dim=10, n_mades_inner=3, n_mades_outer=3, n_hidden=100):
+    def __init__(
+        self, data_dim, latent_dim=10, n_mades_inner=3, n_mades_outer=3, n_hidden=100
+    ):
         super(TwoStepAutoencodingFlow, self).__init__()
 
         self.data_dim = data_dim
@@ -31,11 +36,11 @@ class TwoStepAutoencodingFlow(nn.Module):
         modules = []
         for _ in range(n_mades_outer - 1):
             modules += [
-                MADE(data_dim, n_hidden, None, act='relu'),
+                MADE(data_dim, n_hidden, None, act="relu"),
                 BatchNormFlow(data_dim),
-                Reverse(data_dim)
+                Reverse(data_dim),
             ]
-        modules += [MADE(data_dim, n_hidden, None, act='relu')]
+        modules += [MADE(data_dim, n_hidden, None, act="relu")]
         self.outer_flow = FlowSequential(*modules)
 
         self.projection = Projection(data_dim, latent_dim)
@@ -43,11 +48,11 @@ class TwoStepAutoencodingFlow(nn.Module):
         modules = []
         for _ in range(n_mades_inner - 1):
             modules += [
-                MADE(latent_dim, n_hidden, None, act='relu'),
+                MADE(latent_dim, n_hidden, None, act="relu"),
                 BatchNormFlow(latent_dim),
-                Reverse(latent_dim)
+                Reverse(latent_dim),
             ]
-        modules += [MADE(latent_dim, n_hidden, None, act='relu')]
+        modules += [MADE(latent_dim, n_hidden, None, act="relu")]
         self.inner_flow = FlowSequential(*modules)
 
     def forward(self, x):

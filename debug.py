@@ -1,11 +1,13 @@
-import numpy as np
 import logging
 import sys
 
 sys.path.append("../")
 
+from torchvision.datasets import MNIST
+from torchvision import transforms
+
 from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
-from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
+from aef.trainer import AutoencodingFlowTrainer
 from aef.losses import nll, mse
 
 logging.basicConfig(
@@ -16,20 +18,24 @@ logging.basicConfig(
 
 logging.info("Hi!")
 
-x = np.load("./data/tth/x_test.npy")
-tth_data = NumpyDataset(x, x)
+img_transform = transforms.Compose(
+    [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
+)
+mnist = MNIST("./data", download=True, transform=img_transform)
 
-ae = TwoStepAutoencodingFlow(data_dim=48, latent_dim=8, n_mades_inner=3, n_mades_outer=1)
+ae = TwoStepAutoencodingFlow(
+    data_dim=28 * 28, latent_dim=16, steps_inner=2, steps_outer=2
+)
 
-trainer = AutoencodingFlowTrainer(ae, output_filename="output/aef_phase1")
+trainer = AutoencodingFlowTrainer(ae, output_filename="figures/training/aef/aef_phase1")
 trainer.train(
-    dataset=tth_data,
+    dataset=mnist,
     loss_functions=[mse],
     loss_labels=["MSE"],
-    loss_weights=[1.],
+    loss_weights=[1.0],
     batch_size=256,
     epochs=5,
     verbose="all",
-    initial_lr=1.e-4,
-    final_lr=1.e-5,
+    initial_lr=1.0e-4,
+    final_lr=1.0e-5,
 )
