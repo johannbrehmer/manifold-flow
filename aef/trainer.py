@@ -603,11 +603,11 @@ class AutoencodingFlowTrainer(Trainer):
         plt.figure(figsize=(10, 10))
         for i in range(8):
             plt.subplot(4, 4, 2 * i + 1)
-            plt.imshow(x[i, :, :])
+            plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
             plt.subplot(4, 4, 2 * i + 2)
-            plt.imshow(x_out[i, :, :])
+            plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
