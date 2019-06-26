@@ -2,101 +2,82 @@ import torch
 from torch import nn
 import numpy as np
 
-from aef.models.flows import FlowSequential, MADE, BatchNormFlow, Reverse
+from nsf.nde import distributions, flows, transforms
+from aef.models.create_transforms import create_transform
 
 
-class Projection(nn.Module):
+class Projection(transforms.Transform):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         assert input_dim >= output_dim
         self.input_dim = input_dim
         self.output_dim = output_dim
 
-    def forward(self, inputs, mode="direct"):
-        if mode == "direct":
-            u = inputs[:, :self.output_dim]
-            return u
-        else:
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
-            return x
+    def forward(self, inputs, context=None):
+        u = inputs[:, :self.output_dim]
+        return u
+
+    def inverse(self, inputs, context=None):
+        x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
+        return x
 
 
 class TwoStepAutoencodingFlow(nn.Module):
-    def __init__(self, data_dim, latent_dim=10, n_mades_inner=3, n_mades_outer=3, n_hidden=100):
+    def __init__(self, data_dim, latent_dim=10, steps_inner=3, steps_outer=3, n_hidden=100):
         super(TwoStepAutoencodingFlow, self).__init__()
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
 
-        modules = []
-        for _ in range(n_mades_outer - 1):
-            modules += [
-                MADE(data_dim, n_hidden, None, act='relu'),
-                BatchNormFlow(data_dim),
-                Reverse(data_dim)
-            ]
-        modules += [MADE(data_dim, n_hidden, None, act='relu')]
-        self.outer_flow = FlowSequential(*modules)
-
+        self.outer_transform = create_transform(data_dim, steps_outer)
         self.projection = Projection(data_dim, latent_dim)
-
-        modules = []
-        for _ in range(n_mades_inner - 1):
-            modules += [
-                MADE(latent_dim, n_hidden, None, act='relu'),
-                BatchNormFlow(latent_dim),
-                Reverse(latent_dim)
-            ]
-        modules += [MADE(latent_dim, n_hidden, None, act='relu')]
-        self.inner_flow = FlowSequential(*modules)
+        self.inner_transform = create_transform(latent_dim, steps_inner)
+        self.latent_distribution = distributions.StandardNormal((latent_dim, ))
+        # self.inner_flow = flows.Flow(self.inner_transform, self.latent_distribution)  # Could be a convenient wrapper
 
     def forward(self, x):
         # Encode
-        # x_shape = x.size()
-        h, log_det_outer = self.outer_flow(x)
-        h = self.projection(h)
-        u, log_det_inner = self.inner_flow(h)
+        u, h, log_det_inner, log_det_outer = self._encode(x)
 
         # Decode
-        h, _ = self.inner_flow(u, mode="inverse")
-        h = self.projection(h, mode="inverse")
-        x, _ = self.outer_flow(h, mode="inverse")
-        # x = x.view(*x_shape)
+        x = self.decode(u)
 
         # Log prob
-        log_prob = (-0.5 * u.pow(2) - 0.5 * np.log(2 * np.pi)).sum(-1, keepdim=True)
+        log_prob = self.latent_distribution._log_prob(u)
         log_prob = log_prob + log_det_outer + log_det_inner
 
         return x, log_prob, u
 
     def encode(self, x):
-        # x = x.view(x.size(0), self.data_dim)
-        h, _ = self.outer_flow(x)
-        h = self.projection(h)
-        u, _ = self.inner_flow(h)
+        u, _, _, _ = self._encode(x)
         return u
 
     def decode(self, u):
-        h, _ = self.inner_flow(u, mode="inverse")
-        h = self.projection(h, mode="inverse")
-        x, _ = self.outer_flow(h, mode="inverse")
+        h, _ = self.inner_transform.inverse(u)
+        h = self.projection.inverse(h)
+        x, _ = self.outer_transform.inverse(h)
         return x
 
     def log_prob(self, x):
         # Encode
-        # x = x.view(x.size(0), self.data_dim)
-        h, log_det_outer = self.outer_flow(x)
+        h, log_det_outer = self.outer_transform(x)
         h = self.projection(h)
-        u, log_det_inner = self.inner_flow(h)
+        u, log_det_inner = self.inner_transform(h)
 
         # Log prob
-        log_prob = (-0.5 * u.pow(2) - 0.5 * np.log(2 * np.pi)).sum(-1, keepdim=True)
+        log_prob = self.latent_distribution._log_prob(u)
         log_prob = log_prob + log_det_outer + log_det_inner
 
         return log_prob
 
     def sample(self, u=None, n=1):
-        h = self.inner_flow.sample(noise=u, num_samples=n)
-        h = self.projection(h, mode="inverse")
-        x, _ = self.outer_flow(h, mode="inverse")
+        if u is None:
+            u = self.latent_distribution.sample(n)
+        x = self.decode(u)
         return x
+
+    def _encode(self, x):
+        h, log_det_outer = self.outer_transform(x)
+        h = self.projection(h)
+        u, log_det_inner = self.inner_transform(h)
+        return u, h, log_det_inner, log_det_outer

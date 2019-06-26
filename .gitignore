@@ -116,3 +116,6 @@ venv.bak/
 data/
 output/
 figures/
+
+# NSF
+nsf/
