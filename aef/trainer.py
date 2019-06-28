@@ -551,8 +551,12 @@ class AutoencodingFlowTrainer(Trainer):
         x, y = batch_data
         x = x.view(x.size(0), -1)
         x.to(self.device, self.dtype)
-        x_reco, log_prob, _ = self.model(x)
-        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        if x.size(0) > 0:
+            x_reco, log_prob, _ = self.model(x)
+            losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        else:
+            logger.warning("Batch with shape %s", x.size())
+            losses = [0. for _ in loss_functions]
         return losses
 
     def report_batch(self, i_epoch, i_batch, train, batch_data):
