@@ -15,7 +15,7 @@ from aef.losses import nll, mse
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
     datefmt="%H:%M",
-    level=logging.INFO,
+    level=logging.DEBUG,
 )
 
 
