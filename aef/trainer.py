@@ -446,7 +446,7 @@ class AutoencoderTrainer(Trainer):
 
     def forward_pass(self, batch_data, loss_functions):
         x, y = batch_data
-        x.to(self.device, self.dtype)
+        x = x.to(self.device, self.dtype)
         x_out = self.model(x)
         log_prob = self.model.log_prob(x)
         losses = [loss_fn(x_out, x, log_prob) for loss_fn in loss_functions]
@@ -550,13 +550,9 @@ class AutoencodingFlowTrainer(Trainer):
     def forward_pass(self, batch_data, loss_functions):
         x, y = batch_data
         x = x.view(x.size(0), -1)
-        x.to(self.device, self.dtype)
-        if x.size(0) > 0:
-            x_reco, log_prob, _ = self.model(x)
-            losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
-        else:
-            logger.warning("Batch with shape %s", x.size())
-            losses = [0. for _ in loss_functions]
+        x = x.to(self.device, self.dtype)
+        x_reco, log_prob, _ = self.model(x)
+        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
     def report_batch(self, i_epoch, i_batch, train, batch_data):
@@ -565,7 +561,7 @@ class AutoencodingFlowTrainer(Trainer):
 
         x, y = batch_data
         x = x.view(x.size(0), -1)
-        x.to(self.device, self.dtype)
+        x = x.to(self.device, self.dtype)
         x_out, _, u = self.model(x)
 
         x = x.detach().numpy().reshape(-1, 28, 28)
