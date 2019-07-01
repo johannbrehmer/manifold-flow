@@ -90,7 +90,7 @@ def parse_args():
         description="Strong lensing experiments: simulation"
     )
     parser.add_argument("name", type=str, help="Model name.")
-    parser.add_argument("--dataset", type=str, default="tth", options=["tth"])
+    parser.add_argument("--dataset", type=str, default="tth", choices=["tth"])
     parser.add_argument("--latent", type=int, default=10)
     parser.add_argument("--steps", type=int, default=5)
     parser.add_argument("--alpha", type=float, default=1.0e-3)

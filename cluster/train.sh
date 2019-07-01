@@ -8,7 +8,7 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 
-source activate lensing
+source activate madminer
 cd /scratch/jb6504/autoencoded-flow/
 
 python -u train.py tth_latent_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/autoencoded-flow
