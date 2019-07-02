@@ -49,10 +49,10 @@ def evaluation_loop(
     mses = np.array(mses)
     latent_dims = np.array(latent_dims)
 
-    np.save("{}/results/nll_{}.npy".format(base_dir, result_filename), nlls)
-    np.save("{}/results/mse_{}.npy".format(base_dir, result_filename), mses)
+    np.save("{}/data/results/nll_{}.npy".format(base_dir, result_filename), nlls)
+    np.save("{}/data/results/mse_{}.npy".format(base_dir, result_filename), mses)
     np.save(
-        "{}/results/latent_dims_{}.npy".format(base_dir, result_filename), latent_dims
+        "{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), latent_dims
     )
 
 

@@ -82,7 +82,7 @@ def train(
     )
 
     # Save
-    torch.save(ae.state_dict(), "{}/models/{}.pt".format(base_dir, model_filename))
+    torch.save(ae.state_dict(), "{}/data/models/{}.pt".format(base_dir, model_filename))
 
 
 def parse_args():

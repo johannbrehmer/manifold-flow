@@ -551,10 +551,7 @@ class AutoencodingFlowTrainer(Trainer):
         x, y = batch_data
         x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
-        logging.debug("x: %s", x.is_cuda)
         x_reco, log_prob, _ = self.model(x)
-        logging.debug("x reco: %s", x_reco.is_cuda)
-        logging.debug("log prob: %s", log_prob.is_cuda)
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 

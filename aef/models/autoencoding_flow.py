@@ -42,10 +42,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         self.latent_distribution = distributions.StandardNormal((latent_dim,))
         # self.inner_flow = flows.Flow(self.inner_transform, self.latent_distribution)  # Could be a convenient wrapper
 
-        logger.info(
-            "Created autoencoding flow with %s trainable parameters",
-            self._count_model_parameters(),
-        )
+        self._report_model_parameters()
 
     def forward(self, x):
         # Encode
@@ -92,5 +89,8 @@ class TwoStepAutoencodingFlow(nn.Module):
         u, log_det_inner = self.inner_transform(h)
         return u, h, log_det_inner, log_det_outer
 
-    def _count_model_parameters(self):
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+    def _report_model_parameters(self):
+        all_params = sum(p.numel() for p in self.parameters())
+        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        size = all_params * (32 / 8)  # Bytes
+        logging.info("Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.e6, size / 1.e9)
