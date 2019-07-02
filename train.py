@@ -52,7 +52,7 @@ def train(
     )
 
     # Trainer
-    trainer = AutoencodingFlowTrainer(ae)
+    trainer = AutoencodingFlowTrainer(ae, double_precision=True)
 
     # Train
     trainer.train(

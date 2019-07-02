@@ -61,9 +61,18 @@ class Trainer(object):
 
     def __init__(self, model, run_on_gpu=True, double_precision=False):
         self.model = model
+
         self.run_on_gpu = run_on_gpu and torch.cuda.is_available()
         self.device = torch.device("cuda" if self.run_on_gpu else "cpu")
         self.dtype = torch.double if double_precision else torch.float
+        if self.run_on_gpu and double_precision:
+            torch.set_default_tensor_type('torch.cuda.DoubleTensor')
+        elif self.run_on_gpu:
+            torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        elif double_precision:
+            torch.set_default_tensor_type('torch.DoubleTensor')
+        else:
+            torch.set_default_tensor_type('torch.FloatTensor')
 
         self.model = self.model.to(self.device, self.dtype)
 
