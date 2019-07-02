@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 import sys
+
 sys.path.append("../")
 
 from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
@@ -16,6 +17,7 @@ logging.basicConfig(
 logging.info("Hi!")
 
 x = np.load("data/tth/x_train.npy")
+logging.info("Data shape: %s", x.shape)
 y = np.ones(x.shape[0])
 tth_data = NumpyDataset(x, y)
 
@@ -26,10 +28,10 @@ trainer.train(
     dataset=tth_data,
     loss_functions=[mse],
     loss_labels=["MSE"],
-    loss_weights=[1.],
+    loss_weights=[1.0],
     batch_size=256,
     epochs=5,
     verbose="all",
-    initial_lr=1.e-3,
-    final_lr=1.e-4,
+    initial_lr=1.0e-3,
+    final_lr=1.0e-4,
 )

@@ -31,7 +31,7 @@ def train(
     lr=(1.0e-4, 1.0e-6),
     base_dir=".",
 ):
-    # d=Data
+    # Data
     if dataset == "tth":
         x = np.load("{}/data/tth/x_train.npy".format(base_dir))
         x_means = np.mean(x, axis=0)
