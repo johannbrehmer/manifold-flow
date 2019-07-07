@@ -94,10 +94,10 @@ def parse_args():
     parser.add_argument("--latent", type=int, default=10)
     parser.add_argument("--steps", type=int, default=5)
     parser.add_argument("--alpha", type=float, default=1.0e-3)
-    parser.add_argument("--epochs", type=int, default=40)
-    parser.add_argument("--batchsize", type=int, default=128)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--batchsize", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1.0e-4)
-    parser.add_argument("--lrdecay", type=float, default=1.0e-2)
+    parser.add_argument("--lrdecay", type=float, default=0.1)
     parser.add_argument("--dir", type=str, default=".")
     return parser.parse_args()
 
