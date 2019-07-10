@@ -135,7 +135,8 @@ def parse_args():
     parser.add_argument("model", type=str, help="Model name.")
     parser.add_argument("--dataset", type=str, default="tth", choices=["tth"])
     parser.add_argument("--latentmin", type=int, default=2)
-    parser.add_argument("--latentmax", type=int, default=20)
+    parser.add_argument("--latentmax", type=int, default=32)
+    parser.add_argument("--latentsteps", type=int, default=2)
     parser.add_argument("--steps", type=int, default=5)
     parser.add_argument("--dir", type=str, default=".")
     return parser.parse_args()
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     evaluation_loop(
         args.results,
         model_filename=args.model,
-        latent_dims=list(range(args.latentmin, args.latentmax + 1)),
+        latent_dims=list(range(args.latentmin, args.latentmax + 1, args.latentsteps)),
         dataset=args.dataset,
         flow_steps_inner=args.steps,
         flow_steps_outer=args.steps,
