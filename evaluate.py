@@ -97,7 +97,7 @@ def eval_model(
     # Load state dict
     ae.load_state_dict(
         torch.load(
-            "{}/models/{}.pt".format(base_dir, model_filename), map_location="cpu"
+            "{}/data/models/{}.pt".format(base_dir, model_filename), map_location="cpu"
         )
     )
     ae = ae.to(device, dtype)
