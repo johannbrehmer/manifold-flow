@@ -69,12 +69,8 @@ def eval_model(
     run_on_gpu = torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
     dtype = torch.float
-    if self.run_on_gpu and double_precision:
-        torch.set_default_tensor_type('torch.cuda.DoubleTensor')
-    elif self.run_on_gpu:
+    if run_on_gpu:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    elif double_precision:
-        torch.set_default_tensor_type('torch.DoubleTensor')
     else:
         torch.set_default_tensor_type('torch.FloatTensor')
 
