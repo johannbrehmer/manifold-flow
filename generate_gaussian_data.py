@@ -26,13 +26,15 @@ def generate(
 
     np.save("{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(base_dir, latent_dim, data_dim), x_train)
     np.save("{}/data/gaussian/gaussian_{}_{}_x_test.npy".format(base_dir, latent_dim, data_dim), x_test)
+    np.save("{}/data/gaussian/gaussian_{}_{}_z_train.npy".format(base_dir, latent_dim, data_dim), z_train.T)
+    np.save("{}/data/gaussian/gaussian_{}_{}_z_test.npy".format(base_dir, latent_dim, data_dim), z_test.T)
+    np.save("{}/data/gaussian/gaussian_{}_{}_transform.npy".format(base_dir, latent_dim, data_dim), transform)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("name", type=str, help="Model name.")
-    parser.add_argument("--latent", type=int, default=2)
-    parser.add_argument("--data", type=int, default=16)
+    parser.add_argument("latent", type=int)
+    parser.add_argument("data", type=int)
     parser.add_argument("--dir", type=str, default=".")
     return parser.parse_args()
 

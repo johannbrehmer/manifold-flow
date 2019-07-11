@@ -22,6 +22,7 @@ logging.basicConfig(
 def train(
     model_filename,
     dataset="tth",
+    data_dim=None,
     latent_dim=10,
     flow_steps_inner=5,
     flow_steps_outer=5,
@@ -40,8 +41,19 @@ def train(
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         data_dim = 48
+    elif dataset == "gaussian":
+        assert data_dim is not None
+        x = np.load("{}/data/gaussian/gaussian_8_{}_train.npy".format(base_dir, data_dim))
+        y = np.ones(x.shape[0])
+        data = NumpyDataset(x, y)
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
+
+    # Stop simulations where latent dim is larger than x dim
+    if latent_dim > data_dim:
+        logging.info("Latent dim is larger than data dim, skipping this")
+        return
+
 
     # Model
     ae = TwoStepAutoencodingFlow(
@@ -90,10 +102,11 @@ def parse_args():
         description="Strong lensing experiments: simulation"
     )
     parser.add_argument("name", type=str, help="Model name.")
-    parser.add_argument("--dataset", type=str, default="tth", choices=["tth"])
+    parser.add_argument("--dataset", type=str, default="tth", choices=["tth", "gaussian"])
+    parser.add_argument("-x", type=int, default=None)
     parser.add_argument("--latent", type=int, default=10)
     parser.add_argument("--steps", type=int, default=5)
-    parser.add_argument("--alpha", type=float, default=1.0e-3)
+    parser.add_argument("--alpha", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batchsize", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1.0e-4)
@@ -110,6 +123,7 @@ if __name__ == "__main__":
     train(
         model_filename=args.name,
         dataset=args.dataset,
+        data_dim=args.x,
         latent_dim=args.latent,
         flow_steps_inner=args.steps,
         flow_steps_outer=args.steps,
