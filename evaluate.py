@@ -123,8 +123,11 @@ def eval_model(
 
     # Copy back tensors to CPU
     if run_on_gpu:
-        nll = nll.cpu()
-        mse = mse.cpu()
+        try:
+            nll = nll.cpu()
+            mse = mse.cpu()
+        except AttributeError:
+            pass
     nll = nll / len(dataloader)
     mse = mse / len(dataloader)
 
