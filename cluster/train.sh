@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=aef-t-%a
+#SBATCH --job-name=aef-t
 #SBATCH --output=log_train_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
