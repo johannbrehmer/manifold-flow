@@ -63,5 +63,5 @@ def parse_args():
 if __name__ == "__main__":
     logging.info("Hi!")
     args = parse_args()
-    generate(args.epsilon, base_dir=args.dir, n_train=5, n_test=3, latent_dim=2, data_dims=[4])
+    generate(args.epsilon, base_dir=args.dir)
     logging.info("All done! Have a nice day!")

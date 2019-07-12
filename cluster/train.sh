@@ -17,3 +17,4 @@ python -u train.py gaussian_8_8_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TA
 python -u train.py gaussian_8_16_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TASK_ID} --dataset gaussian -x 16 --dir /scratch/jb6504/autoencoded-flow
 python -u train.py gaussian_8_32_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TASK_ID} --dataset gaussian -x 32 --dir /scratch/jb6504/autoencoded-flow
 python -u train.py gaussian_8_64_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TASK_ID} --dataset gaussian -x 64 --dir /scratch/jb6504/autoencoded-flow
+python -u train.py gaussian_8_128_${SLURM_ARRAY_TASK_ID} --latent ${SLURM_ARRAY_TASK_ID} --dataset gaussian -x 128 --dir /scratch/jb6504/autoencoded-flow
