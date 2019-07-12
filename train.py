@@ -43,7 +43,7 @@ def train(
         data_dim = 48
     elif dataset == "gaussian":
         assert data_dim is not None
-        x = np.load("{}/data/gaussian/gaussian_8_{}_train.npy".format(base_dir, data_dim))
+        x = np.load("{}/data/gaussian/gaussian_8_{}_x_train.npy".format(base_dir, data_dim))
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
     else:
