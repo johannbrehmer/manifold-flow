@@ -100,7 +100,7 @@ def eval_on_test_data(
             nll += losses.nll(x_reco, x, log_prob).item()
 
             if dataset == "gaussian":
-                mse_log_likelihood += MSELoss()(log_prob, log_prob_true)
+                mse_log_likelihood += MSELoss()(log_prob, log_prob_true).item()
 
     # Copy back tensors to CPU
     if run_on_gpu:
