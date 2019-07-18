@@ -5,12 +5,6 @@ import logging
 import argparse
 from scipy.stats import norm
 
-logging.basicConfig(
-    format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-    datefmt="%H:%M",
-    level=logging.INFO,
-)
-
 
 def simulator(epsilon, latent_dim, data_dim, n, transform):
     z = np.random.normal(0., 1., size=(n, latent_dim))
@@ -35,10 +29,13 @@ def true_logp(x, epsilon, latent_dim, data_dim, transform):
     this_transform = transform[:data_dim, :data_dim]
     z = np.linalg.inv(this_transform).dot(x.T).T
 
+    logging.debug("z means: %s", np.mean(z, axis=0))
+    logging.debug("z stds: %s", np.std(z, axis=0))
     # Likelihood in z space
     logp = np.log(norm(loc=0., scale=1.).pdf(z[:,:latent_dim]))
     if latent_dim < data_dim:
-        logp_eps = np.log(norm(loc=0., scale=epsilon).pdf(z[:,latent_dim:]))
+        prob_eps = norm(loc=0., scale=epsilon).pdf(z[:,latent_dim:])
+        logp_eps = np.log(np.clip(prob_eps, 1.e-3, 1.e3))
         logp = np.concatenate((logp, logp_eps), axis=1)
 
     # Add log det Jacobian
@@ -77,6 +74,12 @@ def parse_args():
 
 
 if __name__ == "__main__":
+
+    logging.basicConfig(
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
+        datefmt="%H:%M",
+        level=logging.DEBUG,
+    )
     logging.info("Hi!")
     args = parse_args()
     generate(args.epsilon, base_dir=args.dir)

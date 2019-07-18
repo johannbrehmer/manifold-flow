@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 sys.path.append("../")
 
 from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
-from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
+from aef.trainer import NumpyDataset
 from aef import losses
 from generate_gaussian_data import true_logp
 
@@ -169,7 +169,7 @@ def eval_generated_data(
     # Calculate true likelihood of generated data
     transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
     nll = - true_logp(x=x, epsilon=0.001, latent_dim=true_latent_dim, data_dim=data_dim, transform=transform)
-    nll = np.sum(nll, axis=0)
+    nll = np.mean(nll, axis=0)
 
     logging.info("Result: - log likelihood = %s", nll)
 
@@ -202,17 +202,6 @@ def eval_loop_gaussian(
 
             filename = model_filename.format(true_latent_dim, data_dim, flow_latent_dim)
 
-            nll, mse = eval_on_test_data(
-                filename,
-                dataset="gaussian",
-                data_dim=data_dim,
-                flow_latent_dim=flow_latent_dim,
-                flow_steps_inner=flow_steps_inner,
-                flow_steps_outer=flow_steps_outer,
-                batch_size=batch_size,
-                base_dir=base_dir,
-            )
-
             nll_gen = eval_generated_data(
                 filename,
                 dataset="gaussian",
@@ -222,6 +211,17 @@ def eval_loop_gaussian(
                 flow_steps_outer=flow_steps_outer,
                 base_dir=base_dir,
                 n=n_gen
+            )
+
+            nll, mse = eval_on_test_data(
+                filename,
+                dataset="gaussian",
+                data_dim=data_dim,
+                flow_latent_dim=flow_latent_dim,
+                flow_steps_inner=flow_steps_inner,
+                flow_steps_outer=flow_steps_outer,
+                batch_size=batch_size,
+                base_dir=base_dir,
             )
 
             data_dims_out.append(data_dim)
