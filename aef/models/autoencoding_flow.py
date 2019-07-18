@@ -93,4 +93,4 @@ class TwoStepAutoencodingFlow(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logging.info("Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.e6, size / 1.e9)
+        logger.debug("Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.e6, size / 1.e9)

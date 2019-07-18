@@ -105,6 +105,8 @@ def eval_on_test_data(
     nll = nll / len(dataloader)
     mse = mse / len(dataloader)
 
+    logging.info("Result: - log likelihood = %s, MSE = %s", nll, mse)
+
     return nll, mse
 
 
@@ -168,6 +170,8 @@ def eval_generated_data(
     transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
     nll = - true_logp(x=x, epsilon=0.001, latent_dim=true_latent_dim, data_dim=data_dim, transform=transform)
     nll = np.sum(nll, axis=0)
+
+    logging.info("Result: - log likelihood = %s", nll)
 
     return nll
 

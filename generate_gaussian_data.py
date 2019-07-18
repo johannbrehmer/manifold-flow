@@ -33,7 +33,7 @@ def simulator(epsilon, latent_dim, data_dim, n, transform):
 def true_logp(x, epsilon, latent_dim, data_dim, transform):
     # Transform to z space
     this_transform = transform[:data_dim, :data_dim]
-    z = np.linalg.inverse(this_transform).dot(x.T).T
+    z = np.linalg.inv(this_transform).dot(x.T).T
 
     # Likelihood in z space
     logp = np.log(norm(loc=0., scale=1.).pdf(z[:,:latent_dim]))
