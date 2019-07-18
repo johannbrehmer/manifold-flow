@@ -6,6 +6,7 @@ import sys
 import torch
 import argparse
 from torch.utils.data import DataLoader
+from torch.nn import MSELoss
 
 sys.path.append("../")
 
@@ -48,15 +49,16 @@ def eval_on_test_data(
         x_means = np.mean(x, axis=0)
         x_stds = np.std(x, axis=0)
         x = (x - x_means[np.newaxis, :]) / x_stds[np.newaxis, :]
-        y = np.ones(x.shape[0])
+        y = np.zeros(x.shape[0])
         data = NumpyDataset(x, y)
         data_dim = 48
         n_samples = x.shape[0]
     elif dataset == "gaussian":
         assert data_dim is not None
+        transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
         true_latent_dim = 8
         x = np.load("{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(base_dir, true_latent_dim, data_dim))
-        y = np.ones(x.shape[0])
+        y = true_logp(x, 0.001, 8, data_dim, transform, True)
         data = NumpyDataset(x, y)
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
@@ -83,31 +85,37 @@ def eval_on_test_data(
 
     # Metrics
     nll = 0.0
-    mse = 0.0
+    mse_reco = 0.0
+    mse_log_likelihood = 0.0
 
     # Evaluation loop
     with torch.no_grad():
-        for x, _ in dataloader:
+        for x, log_prob_true in dataloader:
             x = x.view(x.size(0), -1)
             x = x.to(device, dtype)
             x_reco, log_prob, _ = ae(x)
 
-            mse += losses.mse(x_reco, x, log_prob).item()
+            mse_reco += losses.mse(x_reco, x, log_prob).item()
             nll += losses.nll(x_reco, x, log_prob).item()
+
+            if dataset == "gaussian":
+                mse_log_likelihood += MSELoss()(log_prob, log_prob_true)
 
     # Copy back tensors to CPU
     if run_on_gpu:
         try:
             nll = nll.cpu()
-            mse = mse.cpu()
+            mse_reco = mse_reco.cpu()
+            mse_log_likelihood = mse_log_likelihood.cpu()
         except AttributeError:
             pass
     nll = nll / len(dataloader)
-    mse = mse / len(dataloader)
+    mse_reco = mse_reco / len(dataloader)
+    mse_log_likelihood = mse_log_likelihood / len(dataloader)
 
-    logging.info("Result: - log likelihood = %s, MSE = %s", nll, mse)
+    logging.info("Result: - log likelihood = %s, reco MSE = %s, log likelihood MSE = %s", nll, mse_reco, mse_log_likelihood)
 
-    return nll, mse
+    return nll, mse_reco, mse_log_likelihood
 
 
 def eval_generated_data(
@@ -193,7 +201,7 @@ def eval_loop_gaussian(
     # Output
     flow_latent_dims_out = []
     data_dims_out = []
-    nll_tests, mse_tests, nll_gens = [], [], []
+    nll_tests, mse_reco_tests, mse_log_likelihood_tests, nll_gens = [], [], [], []
 
     for data_dim in data_dims:
         for flow_latent_dim in flow_latent_dims:
@@ -213,7 +221,7 @@ def eval_loop_gaussian(
                 n=n_gen
             )
 
-            nll, mse = eval_on_test_data(
+            nll, mse_reco, mse_logp = eval_on_test_data(
                 filename,
                 dataset="gaussian",
                 data_dim=data_dim,
@@ -227,19 +235,22 @@ def eval_loop_gaussian(
             data_dims_out.append(data_dim)
             flow_latent_dims_out.append(flow_latent_dim)
             nll_tests.append(nll)
-            mse_tests.append(mse)
+            mse_reco_tests.append(mse_reco)
             nll_gens.append(nll_gen)
+            mse_log_likelihood_tests.append(mse_logp)
 
     data_dims_out = np.array(data_dims_out, dtype=np.int)
     flow_latent_dims_out = np.array(flow_latent_dims_out, dtype=np.int)
     nll_tests = np.array(nll_tests)
-    mse_tests = np.array(mse_tests)
+    mse_reco_tests = np.array(mse_reco_tests)
     nll_gens = np.array(nll_gens)
+    mse_log_likelihood_tests = np.array(mse_log_likelihood_tests)
 
     np.save("{}/data/results/data_dims_{}.npy".format(base_dir, result_filename), data_dims_out)
     np.save("{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), flow_latent_dims_out)
     np.save("{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests)
-    np.save("{}/data/results/mse_test_{}.npy".format(base_dir, result_filename), mse_tests)
+    np.save("{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename), mse_reco_tests)
+    np.save("{}/data/results/mse_log_likelihood_test_{}.npy".format(base_dir, result_filename), mse_log_likelihood_tests)
     np.save("{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens)
 
 

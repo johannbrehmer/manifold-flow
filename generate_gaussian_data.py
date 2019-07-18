@@ -24,7 +24,7 @@ def simulator(epsilon, latent_dim, data_dim, n, transform):
     return x, z, logp
 
 
-def true_logp(x, epsilon, latent_dim, data_dim, transform):
+def true_logp(x, epsilon, latent_dim, data_dim, transform, only_submanifold=False):
     # Transform to z space
     this_transform = transform[:data_dim, :data_dim]
     z = np.linalg.inv(this_transform).dot(x.T).T
@@ -33,7 +33,7 @@ def true_logp(x, epsilon, latent_dim, data_dim, transform):
     logging.debug("z stds: %s", np.std(z, axis=0))
     # Likelihood in z space
     logp = np.log(norm(loc=0., scale=1.).pdf(z[:,:latent_dim]))
-    if latent_dim < data_dim:
+    if latent_dim < data_dim and not only_submanifold:
         prob_eps = norm(loc=0., scale=epsilon).pdf(z[:,latent_dim:])
         logp_eps = np.log(np.clip(prob_eps, 1.e-3, 1.e3))
         logp = np.concatenate((logp, logp_eps), axis=1)
