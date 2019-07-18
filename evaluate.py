@@ -93,6 +93,7 @@ def eval_on_test_data(
         for x, log_prob_true in dataloader:
             x = x.view(x.size(0), -1)
             x = x.to(device, dtype)
+            log_prob_true = log_prob_true.to(device, dtype)
             x_reco, log_prob, _ = ae(x)
 
             mse_reco += losses.mse(x_reco, x, log_prob).item()
