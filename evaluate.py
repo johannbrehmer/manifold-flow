@@ -241,12 +241,16 @@ def eval_loop_gaussian(
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("result", type=str)
     parser.add_argument("--dir", type=str, default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow")
+    parser.add_argument("--data", type=int, default=(8,16,32,64,128))
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.info("Hi!")
     args = parse_args()
-    eval_loop_gaussian(base_dir=args.dir)
+    if isinstance(args.data, int):
+        args.data = (args.data,)
+    eval_loop_gaussian(base_dir=args.dir, data_dims=args.data, result_filename=args.result)
     logging.info("All done! Have a nice day!")
