@@ -12,6 +12,7 @@ sys.path.append("../")
 from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef import losses
+from generate_gaussian_data import true_logp
 
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -20,51 +21,18 @@ logging.basicConfig(
 )
 
 
-def evaluation_loop(
-    result_filename,
+def eval_on_test_data(
     model_filename,
-    latent_dims,
-    dataset="tth",
+    dataset,
+    data_dim,
+    flow_latent_dim,
     flow_steps_inner=5,
     flow_steps_outer=5,
     batch_size=1024,
     base_dir=".",
 ):
-    nlls, mses = [], []
-    for latent_dim in latent_dims:
-        filename = model_filename.format(latent_dim)
-        nll, mse = eval_model(
-            filename,
-            dataset=dataset,
-            latent_dim=latent_dim,
-            flow_steps_inner=flow_steps_inner,
-            flow_steps_outer=flow_steps_outer,
-            batch_size=batch_size,
-            base_dir=base_dir,
-        )
-        nlls.append(nll)
-        mses.append(mse)
+    logging.info("Evaluating %s on test data", model_filename)
 
-    nlls = np.array(nlls)
-    mses = np.array(mses)
-    latent_dims = np.array(latent_dims)
-
-    np.save("{}/data/results/nll_{}.npy".format(base_dir, result_filename), nlls)
-    np.save("{}/data/results/mse_{}.npy".format(base_dir, result_filename), mses)
-    np.save(
-        "{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), latent_dims
-    )
-
-
-def eval_model(
-    model_filename,
-    dataset="tth",
-    latent_dim=10,
-    flow_steps_inner=5,
-    flow_steps_outer=5,
-    batch_size=1024,
-    base_dir=".",
-):
     # Prepare evaluation
     run_on_gpu = torch.cuda.is_available()
     device = torch.device("cuda" if run_on_gpu else "cpu")
@@ -84,6 +52,12 @@ def eval_model(
         data = NumpyDataset(x, y)
         data_dim = 48
         n_samples = x.shape[0]
+    elif dataset == "gaussian":
+        assert data_dim is not None
+        true_latent_dim = 8
+        x = np.load("{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(base_dir, true_latent_dim, data_dim))
+        y = np.ones(x.shape[0])
+        data = NumpyDataset(x, y)
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
@@ -93,7 +67,7 @@ def eval_model(
     # Model
     ae = TwoStepAutoencodingFlow(
         data_dim=data_dim,
-        latent_dim=latent_dim,
+        latent_dim=flow_latent_dim,
         steps_inner=flow_steps_inner,
         steps_outer=flow_steps_outer,
     )
@@ -134,34 +108,145 @@ def eval_model(
     return nll, mse
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Strong lensing experiments: simulation"
+def eval_generated_data(
+    model_filename,
+    dataset,
+    data_dim,
+    flow_latent_dim,
+    flow_steps_inner=5,
+    flow_steps_outer=5,
+    n = 10000,
+    base_dir=".",
+):
+    logging.info("Generating and evaluating data from %s", model_filename)
+
+    # Prepare evaluation
+    run_on_gpu = torch.cuda.is_available()
+    device = torch.device("cuda" if run_on_gpu else "cpu")
+    dtype = torch.float
+    if run_on_gpu:
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    else:
+        torch.set_default_tensor_type('torch.FloatTensor')
+
+    # Dataset
+    if dataset == "tth":
+        raise RuntimeError("Cannot evaluate true likelihood for ttH dataset")
+    elif dataset == "gaussian":
+        assert data_dim is not None
+        true_latent_dim = 8
+    else:
+        raise NotImplementedError("Unknown dataset {}".format(dataset))
+
+    # Model
+    ae = TwoStepAutoencodingFlow(
+        data_dim=data_dim,
+        latent_dim=flow_latent_dim,
+        steps_inner=flow_steps_inner,
+        steps_outer=flow_steps_outer,
     )
-    parser.add_argument("results", type=str, help="Result name.")
-    parser.add_argument("model", type=str, help="Model name.")
-    parser.add_argument("--dataset", type=str, default="tth", choices=["tth"])
-    parser.add_argument("--latentmin", type=int, default=2)
-    parser.add_argument("--latentmax", type=int, default=32)
-    parser.add_argument("--latentsteps", type=int, default=2)
-    parser.add_argument("--steps", type=int, default=5)
-    parser.add_argument("--dir", type=str, default=".")
+
+    # Load state dict
+    ae.load_state_dict(
+        torch.load(
+            "{}/data/models/{}.pt".format(base_dir, model_filename), map_location="cpu"
+        )
+    )
+    ae = ae.to(device, dtype)
+    ae.eval()
+
+    # Generate data
+    x = ae.sample(n=n)
+    if run_on_gpu:
+        try:
+            x = x.cpu()
+        except AttributeError:
+            pass
+    x = x.detach().numpy()
+
+    # Calculate true likelihood of generated data
+    transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
+    nll = - true_logp(x=x, epsilon=0.001, latent_dim=true_latent_dim, data_dim=data_dim, transform=transform)
+    nll = np.sum(nll, axis=0)
+
+    return nll
+
+
+
+def eval_loop_gaussian(
+    result_filename="gaussian",
+    model_filename="gaussian_{}_{}_{}",
+    flow_latent_dims=(2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,64,128),
+    data_dims=(8,16,32,64,128),
+    flow_steps_inner=5,
+    flow_steps_outer=5,
+    batch_size=1024,
+    n_gen=10000,
+    base_dir=".",
+):
+    true_latent_dim = 8
+
+    # Output
+    flow_latent_dims_out = []
+    data_dims_out = []
+    nll_tests, mse_tests, nll_gens = [], [], []
+
+    for data_dim in data_dims:
+        for flow_latent_dim in flow_latent_dims:
+            if flow_latent_dim > data_dim:
+                break
+
+            filename = model_filename.format(true_latent_dim, data_dim, flow_latent_dim)
+
+            nll, mse = eval_on_test_data(
+                filename,
+                dataset="gaussian",
+                data_dim=data_dim,
+                flow_latent_dim=flow_latent_dim,
+                flow_steps_inner=flow_steps_inner,
+                flow_steps_outer=flow_steps_outer,
+                batch_size=batch_size,
+                base_dir=base_dir,
+            )
+
+            nll_gen = eval_generated_data(
+                filename,
+                dataset="gaussian",
+                data_dim=data_dim,
+                flow_latent_dim=flow_latent_dim,
+                flow_steps_inner=flow_steps_inner,
+                flow_steps_outer=flow_steps_outer,
+                base_dir=base_dir,
+                n=n_gen
+            )
+
+            data_dims_out.append(data_dim)
+            flow_latent_dims_out.append(flow_latent_dim)
+            nll_tests.append(nll)
+            mse_tests.append(mse)
+            nll_gens.append(nll_gen)
+
+    data_dims_out = np.array(data_dims_out, dtype=np.int)
+    flow_latent_dims_out = np.array(flow_latent_dims_out, dtype=np.int)
+    nll_tests = np.array(nll_tests)
+    mse_tests = np.array(mse_tests)
+    nll_gens = np.array(nll_gens)
+
+    np.save("{}/data/results/data_dims_{}.npy".format(base_dir, result_filename), data_dims_out)
+    np.save("{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), flow_latent_dims_out)
+    np.save("{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests)
+    np.save("{}/data/results/mse_test_{}.npy".format(base_dir, result_filename), mse_tests)
+    np.save("{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dir", type=str, default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.info("Hi!")
-
     args = parse_args()
-
-    evaluation_loop(
-        args.results,
-        model_filename=args.model,
-        latent_dims=list(range(args.latentmin, args.latentmax + 1, args.latentsteps)),
-        dataset=args.dataset,
-        flow_steps_inner=args.steps,
-        flow_steps_outer=args.steps,
-        base_dir=args.dir,
-    )
-
+    eval_loop_gaussian(base_dir=args.dir)
     logging.info("All done! Have a nice day!")

@@ -54,7 +54,6 @@ def train(
         logging.info("Latent dim is larger than data dim, skipping this")
         return
 
-
     # Model
     ae = TwoStepAutoencodingFlow(
         data_dim=data_dim,

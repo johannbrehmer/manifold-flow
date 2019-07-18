@@ -30,6 +30,22 @@ def simulator(epsilon, latent_dim, data_dim, n, transform):
     return x, z, logp
 
 
+def true_logp(x, epsilon, latent_dim, data_dim, transform):
+    # Transform to z space
+    this_transform = transform[:data_dim, :data_dim]
+    z = np.linalg.inverse(this_transform).dot(x.T).T
+
+    # Likelihood in z space
+    logp = np.log(norm(loc=0., scale=1.).pdf(z[:,:latent_dim]))
+    if latent_dim < data_dim:
+        logp_eps = np.log(norm(loc=0., scale=epsilon).pdf(z[:,latent_dim:]))
+        logp = np.concatenate((logp, logp_eps), axis=1)
+
+    # Add log det Jacobian
+    logp = np.sum(logp, axis=1) + np.log(np.abs(np.linalg.det(this_transform)))
+    return logp
+
+
 def generate(
         epsilon,
         latent_dim=8,
