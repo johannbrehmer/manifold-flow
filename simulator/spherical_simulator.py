@@ -7,7 +7,7 @@ from scipy.stats import norm
 
 
 def simulator(epsilon, latent_dim, data_dim, n, phases, widths):
-    z_phi, z_eps = _draw_z(latent_dim, data_dim, n, phases, widths)
+    z_phi, z_eps = _draw_z(epsilon, latent_dim, data_dim, n, phases, widths)
     x = _transform_z_to_x(z_phi, z_eps)
     return x
 
@@ -18,7 +18,7 @@ def true_logp(x, epsilon, latent_dim, phases, widths):
     return logp
 
 
-def _draw_z(latent_dim, data_dim, n, phases, widths):
+def _draw_z(epsilon, latent_dim, data_dim, n, phases, widths):
     # Spherical coordinates
     phases_ = np.empty((n, latent_dim))
     phases_[:] = phases
@@ -33,20 +33,21 @@ def _draw_z(latent_dim, data_dim, n, phases, widths):
 
 
 def _transform_z_to_x(z_phi, z_eps):
-    a = np.concatenate((2 * np.pi * np.ones((n, 1)), z_eps), axis=1)  # n entries, each (2 pi, z_sub)
+    r = 1. + z_eps[:,0]
+    a = np.concatenate((2 * np.pi * np.ones((z_phi.shape[0], 1)), z_phi), axis=1)  # n entries, each (2 pi, z_sub)
     sins = np.sin(a)
     sins[:,0] = 1
     sins = np.cumprod(sins, axis=1)   # n entries, each (1, sin(z0), sin(z1), ..., sin(zk))
     coss = np.cos(a)
     coss = np.roll(coss, -1)   # n entries, each (cos(z0), cos(z1), ..., cos(zk), 1)
     exact_sphere = sins * coss  # (n, k+1)
-    fuzzy_sphere = exact_sphere * r[:,0,np.newaxis]
+    fuzzy_sphere = exact_sphere * r[:,np.newaxis]
     x = np.concatenate((fuzzy_sphere, z_eps[:,1:]), axis=1)
     return x
 
 
 def _transform_x_to_z(x, latent_dim):
-    z_phi = np.zeros((n, latent_dim))
+    z_phi = np.zeros((x.shape[0], latent_dim))
     for i in range(latent_dim):
         z_phi[:,i] = np.arccos( x[:,i] / np.sum(x[:,i:latent_dim+1]**2, axis=1)**0.5)
     r = np.sum(x[:,:latent_dim+1]**2, axis=1)**0.5
@@ -56,9 +57,10 @@ def _transform_x_to_z(x, latent_dim):
 
 
 def _log_likelihood(z_phi, z_eps, latent_dim, phases, widths, epsilon):
-    phases_ = np.empty((n, latent_dim))
+    r = z_eps[:,0]
+    phases_ = np.empty((z_phi.shape[0], latent_dim))
     phases_[:] = phases
-    widths_ = np.empty((n, latent_dim))
+    widths_ = np.empty((z_phi.shape[0], latent_dim))
     widths_[:] = widths
 
     logp_sub = np.log(norm(loc=phases_, scale=widths_).pdf(z_phi))
