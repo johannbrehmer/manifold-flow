@@ -13,7 +13,7 @@ sys.path.append("../")
 from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
 from aef.trainer import NumpyDataset
 from aef import losses
-from generate_gaussian_data import true_logp
+from linear_simulator import true_logp
 
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -183,7 +183,6 @@ def eval_generated_data(
     logging.info("Result: - log likelihood = %s", nll)
 
     return nll
-
 
 
 def eval_loop_gaussian(

@@ -69,7 +69,7 @@ def generate(
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epsilon", type=float, default=0.001)
-    parser.add_argument("--dir", type=str, default=".")
+    parser.add_argument("--dir", type=str, default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow")
     return parser.parse_args()
 
 
