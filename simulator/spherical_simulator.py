@@ -3,6 +3,7 @@
 import numpy as np
 import logging
 import argparse
+import os
 from scipy.stats import norm
 
 
@@ -85,6 +86,8 @@ def generate(
         n_test=10000,
         base_dir=".",
 ):
+    if not os.path.exists("{}/data/spherical_gaussian".format(base_dir)):
+        os.mkdir("{}/data/spherical_gaussian".format(base_dir))
     phases = np.random.uniform(low=0., high=2.*np.pi, size=latent_dim)
     widths = np.random.uniform(low=0.5, high=2., size=latent_dim)
     np.save("{}/data/spherical_gaussian/spherical_gaussian_phases.npy".format(base_dir), phases)
@@ -105,11 +108,10 @@ def parse_args():
 
 
 if __name__ == "__main__":
-
     logging.basicConfig(
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
         datefmt="%H:%M",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
     logging.info("Hi!")
     args = parse_args()

@@ -46,6 +46,11 @@ def train(
         x = np.load("{}/data/gaussian/gaussian_8_{}_x_train.npy".format(base_dir, data_dim))
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
+    elif dataset == "spherical_gaussian":
+        assert data_dim is not None
+        x = np.load("{}/data/gaussian/gaussian_15_{}_x_train.npy".format(base_dir, data_dim))
+        y = np.ones(x.shape[0])
+        data = NumpyDataset(x, y)
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
@@ -101,7 +106,7 @@ def parse_args():
         description="Strong lensing experiments: simulation"
     )
     parser.add_argument("name", type=str, help="Model name.")
-    parser.add_argument("--dataset", type=str, default="tth", choices=["tth", "gaussian"])
+    parser.add_argument("--dataset", type=str, default="tth", choices=["tth", "gaussian", "spherical_gaussian"])
     parser.add_argument("-x", type=int, default=None)
     parser.add_argument("--latent", type=int, default=10)
     parser.add_argument("--steps", type=int, default=5)
