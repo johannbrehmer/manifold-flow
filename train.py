@@ -48,7 +48,7 @@ def train(
         data = NumpyDataset(x, y)
     elif dataset == "spherical_gaussian":
         assert data_dim is not None
-        x = np.load("{}/data/gaussian/gaussian_15_{}_x_train.npy".format(base_dir, data_dim))
+        x = np.load("{}/data/spherical_gaussian/spherical_gaussian_15_{}_x_train.npy".format(base_dir, data_dim))
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
     else:
@@ -109,10 +109,10 @@ def parse_args():
     parser.add_argument("--dataset", type=str, default="tth", choices=["tth", "gaussian", "spherical_gaussian"])
     parser.add_argument("-x", type=int, default=None)
     parser.add_argument("--latent", type=int, default=10)
-    parser.add_argument("--steps", type=int, default=5)
+    parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--alpha", type=float, default=0.01)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batchsize", type=int, default=256)
+    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--batchsize", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1.0e-4)
     parser.add_argument("--lrdecay", type=float, default=0.1)
     parser.add_argument("--dir", type=str, default=".")
