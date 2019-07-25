@@ -3,7 +3,7 @@ from torch import nn
 import logging
 
 from nsf.nde import distributions, transforms
-from aef.models.create_transforms import create_transform
+from aef.models.vector_transforms import create_transform
 
 logger = logging.getLogger(__name__)
 
