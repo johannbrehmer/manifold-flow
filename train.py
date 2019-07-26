@@ -244,7 +244,8 @@ def parse_args():
     )
     parser.add_argument("-x", type=int, default=None)
     parser.add_argument("--latent", type=int, default=None)
-    parser.add_argument("--steps", type=int, default=10)
+    parser.add_argument("--inner", type=int, default=10)
+    parser.add_argument("--outer", type=int, default=10)
     parser.add_argument("--alpha", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batchsize", type=int, default=128)
@@ -274,8 +275,8 @@ if __name__ == "__main__":
         dataset=args.dataset,
         data_dim=args.x,
         latent_dim=args.latent,
-        flow_steps_inner=args.steps,
-        flow_steps_outer=args.steps,
+        flow_steps_inner=args.inner,
+        flow_steps_outer=args.outer,
         batch_size=args.batchsize,
         epochs=args.epochs,
         alpha=args.alpha,
