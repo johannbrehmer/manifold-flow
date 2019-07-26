@@ -60,14 +60,14 @@ class Flow(nn.Module):
 
     def forward(self, x):
         # Encode
-        u, h, log_det_inner, log_det_outer = self._encode(x)
+        u, log_det = self._encode(x)
 
         # Decode
         x = self.decode(u)
 
         # Log prob
         log_prob = self.latent_distribution._log_prob(u, context=None)
-        log_prob = log_prob + log_det_outer + log_det_inner
+        log_prob = log_prob + log_det
 
         return x, log_prob, u
 
