@@ -11,7 +11,7 @@ sys.path.append("../")
 from aef.models.autoencoding_flow import Flow, TwoStepAutoencodingFlow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
-from nsf.experiments import image_data
+from nsf.experiments import images_data
 
 logging.basicConfig(
     format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -64,7 +64,7 @@ def train(
         logging.info("Loaded spherical Gaussian data with %s-dimensional data", data_dim)
 
     elif dataset == "imagenet":
-        dataset, _, data_dim = image_data.get_data('imagenet-64-fast', 8, train=True, valid_frac=0.)
+        dataset = aef_data.get_data('imagenet-64-fast', 8, train=True, valid_frac=0.)
         mode = "image"
         logging.info("Loaded imagenet data with %s-dimensional data", data_dim)
 
