@@ -1,4 +1,5 @@
 import os
+import logging
 
 import zipfile
 import torch
@@ -13,6 +14,8 @@ from torchvision.datasets.folder import (
 )
 
 from aef_data.download import download_file_from_google_drive
+
+logger = logging.getLogger(__name__)
 
 
 class UnlabelledImageFolder(Dataset):
@@ -89,10 +92,10 @@ class ImageNet32(UnlabelledImageFolder):
 
         zip_file = os.path.join(root, self.UNZIPPED_DIR_NAME + ".zip")
 
-        print("Downloading {}...".format(os.path.basename(zip_file)))
+        logger.info("Downloading {}...".format(os.path.basename(zip_file)))
         download_file_from_google_drive(self.GOOGLE_DRIVE_FILE_ID, zip_file)
 
-        print("Extracting {}...".format(os.path.basename(zip_file)))
+        logger.info("Extracting {}...".format(os.path.basename(zip_file)))
         with zipfile.ZipFile(zip_file, "r") as fp:
             fp.extractall(root)
         os.remove(zip_file)
@@ -152,7 +155,7 @@ class ImageNet64Fast(Dataset):
         for tag in ["train", "valid"]:
             npy = os.path.join(self.root, self.NPY_NAME[tag])
             if not os.path.isfile(npy):
-                print("Downloading {}...".format(self.NPY_NAME[tag]))
+                logger.info("Downloading {}...".format(self.NPY_NAME[tag]))
                 download_file_from_google_drive(self.GOOGLE_DRIVE_FILE_ID[tag], npy)
 
 
@@ -202,13 +205,13 @@ class RandomHorizontalFlipTensor(object):
         return self.__class__.__name__ + "(p={})".format(self.p)
 
 
-def get_data(dataset, num_bits, dataset_root, train=True, valid_frac=None):
+def get_data(dataset_name, num_bits, dataset_root, train=True, valid_frac=None):
     dataset = None
 
     if train:
         assert valid_frac is not None
 
-    if dataset == "imagenet-64-fast":
+    if dataset_name == "imagenet-64-fast":
         root = os.path.join(dataset_root, "imagenet64_fast")
         c, h, w = (3, 64, 64)
 
@@ -227,11 +230,11 @@ def get_data(dataset, num_bits, dataset_root, train=True, valid_frac=None):
                 root=root, train=False, download=True, transform=Preprocess(num_bits)
             )
 
-    elif dataset == "cifar-10-fast" or dataset == "cifar-10":
+    elif dataset_name == "cifar-10-fast" or dataset == "cifar-10":
         root = os.path.join(dataset_root, "cifar-10")
         c, h, w = (3, 32, 32)
 
-        if dataset == "cifar-10-fast":
+        if dataset_name == "cifar-10-fast":
             dataset_class = CIFAR10Fast
             train_transform = tvt.Compose(
                 [RandomHorizontalFlipTensor(), Preprocess(num_bits)]
@@ -267,8 +270,8 @@ def get_data(dataset, num_bits, dataset_root, train=True, valid_frac=None):
                 root=root, train=False, download=True, transform=test_transform
             )
 
-    elif dataset == "imagenet-32" or dataset == "imagenet-64":
-        if dataset == "imagenet-32":
+    elif dataset_name == "imagenet-32" or dataset == "imagenet-64":
+        if dataset_name == "imagenet-32":
             root = os.path.join(dataset_root, "imagenet32")
             c, h, w = (3, 32, 32)
             dataset_class = ImageNet32
@@ -297,7 +300,7 @@ def get_data(dataset, num_bits, dataset_root, train=True, valid_frac=None):
                 download=True,
                 transform=tvt.Compose([tvt.ToTensor(), Preprocess(num_bits)]),
             )
-    # elif dataset == "celeba-hq-64-fast":
+    # elif dataset_name == "celeba-hq-64-fast":
     #     root = os.path.join(dataset_root, "celeba_hq_64_fast")
     #     c, h, w = (3, 64, 64)
     #
@@ -330,6 +333,6 @@ def get_data(dataset, num_bits, dataset_root, train=True, valid_frac=None):
     #         )
 
     else:
-        raise RuntimeError("Unknown dataset")
+        raise RuntimeError("Unknown dataset {}".format(dataset_name))
 
-    dataset, (c, h, w)
+    return dataset, (c, h, w)

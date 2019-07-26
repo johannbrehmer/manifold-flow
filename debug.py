@@ -23,5 +23,5 @@ train(
     epochs=(20, 20),
     alpha=1.0e-3,
     lr=(5.0e-4, 1.0e-6),
-    base_dir="."
+    base_dir=".",
 )

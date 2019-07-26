@@ -11,13 +11,9 @@ sys.path.append("../")
 from aef.models.autoencoding_flow import Flow, TwoStepAutoencodingFlow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
-from nsf.experiments import images_data
+from aef_data.images import get_data
 
-logging.basicConfig(
-    format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-    datefmt="%H:%M",
-    level=logging.INFO,
-)
+logger = logging.getLogger(__name__)
 
 
 def train(
@@ -33,7 +29,7 @@ def train(
     lr=(1.0e-4, 1.0e-6),
     base_dir=".",
 ):
-    logging.info("Starting training of model %s on data set %s", model_filename, dataset)
+    logger.info("Starting training of model %s on data set %s", model_filename, dataset)
 
     # Data
     if dataset == "tth":
@@ -45,48 +41,52 @@ def train(
         data = NumpyDataset(x, y)
         data_dim = 48
         mode = "vector"
-        logging.info("Loaded tth data with %s-dimensional data", data_dim)
+        logger.info("Loaded tth data with %s-dimensional data", data_dim)
 
     elif dataset == "gaussian":
         assert data_dim is not None
-        x = np.load("{}/data/gaussian/gaussian_8_{}_x_train.npy".format(base_dir, data_dim))
+        x = np.load(
+            "{}/data/gaussian/gaussian_8_{}_x_train.npy".format(base_dir, data_dim)
+        )
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         mode = "vector"
-        logging.info("Loaded linear Gaussian data with %s-dimensional data", data_dim)
+        logger.info("Loaded linear Gaussian data with %s-dimensional data", data_dim)
 
     elif dataset == "spherical_gaussian":
         assert data_dim is not None
-        x = np.load("{}/data/spherical_gaussian/spherical_gaussian_15_{}_x_train.npy".format(base_dir, data_dim))
+        x = np.load(
+            "{}/data/spherical_gaussian/spherical_gaussian_15_{}_x_train.npy".format(
+                base_dir, data_dim
+            )
+        )
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         mode = "vector"
-        logging.info("Loaded spherical Gaussian data with %s-dimensional data", data_dim)
+        logger.info("Loaded spherical Gaussian data with %s-dimensional data", data_dim)
 
     elif dataset == "imagenet":
-        dataset = aef_data.get_data('imagenet-64-fast', 8, train=True, valid_frac=0.)
+        dataset, data_dim = get_data(
+            "imagenet-64-fast", 8, base_dir + "/data/", train=True, valid_frac=0.0
+        )
         mode = "image"
-        logging.info("Loaded imagenet data with %s-dimensional data", data_dim)
+        logger.info("Loaded imagenet data with %s-dimensional data", data_dim)
 
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
     # Stop simulations where latent dim is larger than x dim
     if isinstance(data_dim, int) and latent_dim > data_dim:
-        logging.info("Latent dim is larger than data dim, skipping this")
+        logger.info("Latent dim is larger than data dim, skipping this")
         return
 
     # Model
     if latent_dim is None:
-        logging.info("Creating plain flow")
-        model = Flow(
-            data_dim=data_dim,
-            steps=flow_steps_outer,
-            mode=mode,
-        )
+        logger.info("Creating plain flow")
+        model = Flow(data_dim=data_dim, steps=flow_steps_outer, mode=mode)
 
     else:
-        logging.info("Creating auto-encoding flow with %s latent dimensions")
+        logger.info("Creating auto-encoding flow with %s latent dimensions")
         model = TwoStepAutoencodingFlow(
             data_dim=data_dim,
             latent_dim=latent_dim,
@@ -100,7 +100,7 @@ def train(
 
     # Train
     if latent_dim is None:
-        logging.info("Starting training on NLL")
+        logger.info("Starting training on NLL")
         trainer.train(
             optimizer=torch.optim.Adam,
             dataset=data,
@@ -114,7 +114,7 @@ def train(
             final_lr=lr[1],
         )
     else:
-        logging.info("Starting training on MSE")
+        logger.info("Starting training on MSE")
         trainer.train(
             optimizer=torch.optim.Adam,
             dataset=data,
@@ -127,7 +127,7 @@ def train(
             initial_lr=lr[0],
             final_lr=lr[1],
         )
-        logging.info("Starting training on MSE and NLL")
+        logger.info("Starting training on MSE and NLL")
         trainer.train(
             optimizer=torch.optim.Adam,
             dataset=data,
@@ -143,8 +143,12 @@ def train(
         )
 
     # Save
-    logging.info("Saving model to %s", "{}/data/models/{}.pt".format(base_dir, model_filename))
-    torch.save(model.state_dict(), "{}/data/models/{}.pt".format(base_dir, model_filename))
+    logger.info(
+        "Saving model to %s", "{}/data/models/{}.pt".format(base_dir, model_filename)
+    )
+    torch.save(
+        model.state_dict(), "{}/data/models/{}.pt".format(base_dir, model_filename)
+    )
 
 
 def parse_args():
@@ -152,7 +156,12 @@ def parse_args():
         description="Strong lensing experiments: simulation"
     )
     parser.add_argument("name", type=str, help="Model name.")
-    parser.add_argument("--dataset", type=str, default="tth", choices=["tth", "gaussian", "spherical_gaussian"])
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="tth",
+        choices=["tth", "gaussian", "spherical_gaussian"],
+    )
     parser.add_argument("-x", type=int, default=None)
     parser.add_argument("--latent", type=int, default=10)
     parser.add_argument("--steps", type=int, default=10)
@@ -161,13 +170,21 @@ def parse_args():
     parser.add_argument("--batchsize", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1.0e-4)
     parser.add_argument("--lrdecay", type=float, default=0.1)
-    parser.add_argument("--dir", type=str, default=".")
+    parser.add_argument(
+        "--dir",
+        type=str,
+        default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    logging.info("Hi!")
-
+    logging.basicConfig(
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
+        datefmt="%H:%M",
+        level=logger.INFO,
+    )
+    logger.info("Hi!")
     args = parse_args()
 
     train(
@@ -184,4 +201,4 @@ if __name__ == "__main__":
         base_dir=args.dir,
     )
 
-    logging.info("All done! Have a nice day!")
+    logger.info("All done! Have a nice day!")

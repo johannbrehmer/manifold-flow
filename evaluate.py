@@ -39,9 +39,9 @@ def eval_on_test_data(
     device = torch.device("cuda" if run_on_gpu else "cpu")
     dtype = torch.float
     if run_on_gpu:
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        torch.set_default_tensor_type("torch.cuda.FloatTensor")
     else:
-        torch.set_default_tensor_type('torch.FloatTensor')
+        torch.set_default_tensor_type("torch.FloatTensor")
 
     # Dataset
     if dataset == "tth":
@@ -57,7 +57,11 @@ def eval_on_test_data(
         assert data_dim is not None
         transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
         true_latent_dim = 8
-        x = np.load("{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(base_dir, true_latent_dim, data_dim))
+        x = np.load(
+            "{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(
+                base_dir, true_latent_dim, data_dim
+            )
+        )
         y = true_logp(x, 0.001, 8, data_dim, transform, True)
         data = NumpyDataset(x, y)
     else:
@@ -114,7 +118,12 @@ def eval_on_test_data(
     mse_reco = mse_reco / len(dataloader)
     mse_log_likelihood = mse_log_likelihood / len(dataloader)
 
-    logging.info("Result: - log likelihood = %s, reco MSE = %s, log likelihood MSE = %s", nll, mse_reco, mse_log_likelihood)
+    logging.info(
+        "Result: - log likelihood = %s, reco MSE = %s, log likelihood MSE = %s",
+        nll,
+        mse_reco,
+        mse_log_likelihood,
+    )
 
     return nll, mse_reco, mse_log_likelihood
 
@@ -126,7 +135,7 @@ def eval_generated_data(
     flow_latent_dim,
     flow_steps_inner=5,
     flow_steps_outer=5,
-    n = 10000,
+    n=10000,
     base_dir=".",
 ):
     logging.info("Generating and evaluating data from %s", model_filename)
@@ -136,9 +145,9 @@ def eval_generated_data(
     device = torch.device("cuda" if run_on_gpu else "cpu")
     dtype = torch.float
     if run_on_gpu:
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        torch.set_default_tensor_type("torch.cuda.FloatTensor")
     else:
-        torch.set_default_tensor_type('torch.FloatTensor')
+        torch.set_default_tensor_type("torch.FloatTensor")
 
     # Dataset
     if dataset == "tth":
@@ -177,7 +186,13 @@ def eval_generated_data(
 
     # Calculate true likelihood of generated data
     transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
-    nll = - true_logp(x=x, epsilon=0.001, latent_dim=true_latent_dim, data_dim=data_dim, transform=transform)
+    nll = -true_logp(
+        x=x,
+        epsilon=0.001,
+        latent_dim=true_latent_dim,
+        data_dim=data_dim,
+        transform=transform,
+    )
     nll = np.mean(nll, axis=0)
 
     logging.info("Result: - log likelihood = %s", nll)
@@ -188,8 +203,27 @@ def eval_generated_data(
 def eval_loop_gaussian(
     result_filename="gaussian",
     model_filename="gaussian_{}_{}_{}",
-    flow_latent_dims=(2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,64,128),
-    data_dims=(8,16,32,64,128),
+    flow_latent_dims=(
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+        64,
+        128,
+    ),
+    data_dims=(8, 16, 32, 64, 128),
     flow_steps_inner=5,
     flow_steps_outer=5,
     batch_size=1024,
@@ -218,7 +252,7 @@ def eval_loop_gaussian(
                 flow_steps_inner=flow_steps_inner,
                 flow_steps_outer=flow_steps_outer,
                 base_dir=base_dir,
-                n=n_gen
+                n=n_gen,
             )
 
             nll, mse_reco, mse_logp = eval_on_test_data(
@@ -246,19 +280,41 @@ def eval_loop_gaussian(
     nll_gens = np.array(nll_gens)
     mse_log_likelihood_tests = np.array(mse_log_likelihood_tests)
 
-    np.save("{}/data/results/data_dims_{}.npy".format(base_dir, result_filename), data_dims_out)
-    np.save("{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), flow_latent_dims_out)
-    np.save("{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests)
-    np.save("{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename), mse_reco_tests)
-    np.save("{}/data/results/mse_log_likelihood_test_{}.npy".format(base_dir, result_filename), mse_log_likelihood_tests)
-    np.save("{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens)
+    np.save(
+        "{}/data/results/data_dims_{}.npy".format(base_dir, result_filename),
+        data_dims_out,
+    )
+    np.save(
+        "{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename),
+        flow_latent_dims_out,
+    )
+    np.save(
+        "{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests
+    )
+    np.save(
+        "{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename),
+        mse_reco_tests,
+    )
+    np.save(
+        "{}/data/results/mse_log_likelihood_test_{}.npy".format(
+            base_dir, result_filename
+        ),
+        mse_log_likelihood_tests,
+    )
+    np.save(
+        "{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens
+    )
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("result", type=str)
-    parser.add_argument("--dir", type=str, default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow")
-    parser.add_argument("--data", type=int, default=(8,16,32,64,128))
+    parser.add_argument(
+        "--dir",
+        type=str,
+        default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow",
+    )
+    parser.add_argument("--data", type=int, default=(8, 16, 32, 64, 128))
     return parser.parse_args()
 
 
@@ -267,5 +323,7 @@ if __name__ == "__main__":
     args = parse_args()
     if isinstance(args.data, int):
         args.data = (args.data,)
-    eval_loop_gaussian(base_dir=args.dir, data_dims=args.data, result_filename=args.result)
+    eval_loop_gaussian(
+        base_dir=args.dir, data_dims=args.data, result_filename=args.result
+    )
     logging.info("All done! Have a nice day!")
