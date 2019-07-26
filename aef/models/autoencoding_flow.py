@@ -57,7 +57,6 @@ class TwoStepAutoencodingFlow(nn.Module):
         self,
         data_dim,
         latent_dim=10,
-        mode="vector",
         inner="rq-coupling",
         outer="rq-coupling",
         steps_inner=3,
@@ -70,26 +69,16 @@ class TwoStepAutoencodingFlow(nn.Module):
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
 
-        self.mode = mode
-        self.projection = Projection(data_dim, latent_dim)
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
+        self.projection = Projection(self.total_data_dim, self.total_latent_dim)
 
-        if mode == "vector":
-            self.outer_transform = vector_transforms.create_transform(
-                data_dim, steps_outer, base_transform_type=outer
-            )
-            self.inner_transform = vector_transforms.create_transform(
-                latent_dim, steps_inner, base_transform_type=inner
-            )
-
-        elif mode == "image":
+        if isinstance(self.data_dim, int):
+            self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner)
+        else:
             c, h, w = data_dim
-            self.outer_transform = image_transforms.create_transform(
-                c, h, w, steps_outer
-            )
-            self.inner_transform = vector_transforms.create_transform(
-                latent_dim, steps_inner, base_transform_type=inner
-            )
+            self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner)
 
         self._report_model_parameters()
 

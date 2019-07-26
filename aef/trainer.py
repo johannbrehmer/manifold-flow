@@ -463,9 +463,6 @@ class AutoencodingFlowTrainer(Trainer):
         return losses
 
     def report_batch(self, i_epoch, i_batch, train, batch_data):
-        if (i_batch  + 1) % 100 == 0:
-            logger.debug("Epoch %s, batch %s: loss %s", i_epoch + 1, i_batch + 1, loss)
-
         if i_batch > 0 or (not train) or self.output_filename is None:
             return
 

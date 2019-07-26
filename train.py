@@ -12,6 +12,7 @@ from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
 from aef.models.flow import Flow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
+from aef.utils import product
 from aef_data.images import get_data
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,6 @@ def train(
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         data_dim = 48
-        mode = "vector"
         logger.info("Loaded tth data with %s dimensions", data_dim)
 
     elif dataset == "gaussian":
@@ -51,7 +51,6 @@ def train(
         )
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
-        mode = "vector"
         logger.info("Loaded linear Gaussian data with %s dimensions", data_dim)
 
     elif dataset == "spherical_gaussian":
@@ -63,35 +62,32 @@ def train(
         )
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
-        mode = "vector"
         logger.info("Loaded spherical Gaussian data with %s dimensions", data_dim)
 
     elif dataset == "cifar":
         data, data_dim = get_data(
             "cifar-10", 8, base_dir + "/data/", train=True
         )
-        mode = "image"
         logger.info("Loaded CIFAR data with dimensions %s", data_dim)
 
     elif dataset == "imagenet":
         data, data_dim = get_data(
             "imagenet-64-fast", 8, base_dir + "/data/", train=True
         )
-        mode = "image"
         logger.info("Loaded ImageNet data with dimensions %s", data_dim)
 
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
     # Stop simulations where latent dim is larger than x dim
-    if isinstance(data_dim, int) and latent_dim > data_dim:
+    if latent_dim is not None and product(latent_dim) > product(data_dim):
         logger.info("Latent dim is larger than data dim, skipping this")
         return
 
     # Model
     if latent_dim is None:
         logger.info("Creating plain flow")
-        model = Flow(data_dim=data_dim, steps=flow_steps_outer, mode=mode)
+        model = Flow(data_dim=data_dim, steps=flow_steps_outer)
 
     else:
         logger.info("Creating auto-encoding flow with %s latent dimensions")
@@ -100,7 +96,6 @@ def train(
             latent_dim=latent_dim,
             steps_inner=flow_steps_inner,
             steps_outer=flow_steps_outer,
-            mode=mode,
         )
 
     # Trainer

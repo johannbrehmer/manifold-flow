@@ -36,7 +36,7 @@ def create_transform_step(
         "min_bin_height": 0.001,
         "min_bin_width": 0.001,
         "min_derivative": 0.001,
-        "num_bins": 8,
+        "num_bins": 4,
         "tail_bound": 3.0,
     },
     use_resnet=True,
@@ -135,7 +135,7 @@ def create_transform(
     c,
     h,
     w,
-    levels=4,
+    levels=3,
     hidden_channels=96,
     steps_per_level=7,
     alpha=0.05,
@@ -143,6 +143,7 @@ def create_transform(
     preprocessing="glow",
     multi_scale=True,
 ):
+    dim = c*h*w
     if not isinstance(hidden_channels, list):
         hidden_channels = [hidden_channels] * levels
 
@@ -226,4 +227,8 @@ def create_transform(
     else:
         raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
 
-    return transforms.CompositeTransform([preprocess_transform, mct])
+    # Random permutation
+    permutation = transforms.RandomPermutation(dim)
+    logger.debug("  RandomPermutation(%s)", dim)
+
+    return transforms.CompositeTransform([preprocess_transform, mct, permutation])

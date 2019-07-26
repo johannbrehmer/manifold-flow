@@ -17,9 +17,9 @@ logging.info("Hi!")
 train(
     "debug",
     dataset="cifar",
-    latent_dim=None,
-    flow_steps_outer=4,
-    batch_size=256,
+    latent_dim=13,
+    flow_steps_outer=3,
+    batch_size=32,
     epochs=10,
     alpha=1.0e-3,
     lr=(5.0e-4, 1.0e-6),

@@ -13,7 +13,6 @@ class Flow(nn.Module):
     def __init__(
         self,
         data_dim,
-        mode="vector",
         transform="rq-coupling",
         steps=3,
     ):
@@ -23,19 +22,14 @@ class Flow(nn.Module):
         self.latent_dim = data_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(self.latent_dim)
-        self.mode = mode
+
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
 
-        if mode == "vector":
-            self.transform = vector_transforms.create_transform(
-                data_dim, steps, base_transform_type=transform
-            )
-
-        elif mode == "image":
+        if isinstance(data_dim, int):
+            self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform)
+        else:
             c, h, w = data_dim
-            self.transform = image_transforms.create_transform(
-                c, h, w, steps
-            )
+            self.transform = image_transforms.create_transform(c, h, w, steps)
 
         self._report_model_parameters()
 
