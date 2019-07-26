@@ -16,11 +16,11 @@ logging.info("Hi!")
 
 train(
     "debug",
-    dataset="imagenet",
+    dataset="cifar",
     latent_dim=None,
     flow_steps_outer=4,
     batch_size=256,
-    epochs=(20, 20),
+    epochs=10,
     alpha=1.0e-3,
     lr=(5.0e-4, 1.0e-6),
     base_dir=".",

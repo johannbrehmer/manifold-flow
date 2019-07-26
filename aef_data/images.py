@@ -225,7 +225,7 @@ def get_data(dataset_name, num_bits, dataset_root, train=True):
                 root=root, train=False, download=True, transform=Preprocess(num_bits)
             )
 
-    elif dataset_name == "cifar-10-fast" or dataset == "cifar-10":
+    elif dataset_name == "cifar-10-fast" or dataset_name == "cifar-10":
         root = os.path.join(dataset_root, "cifar-10")
         c, h, w = (3, 32, 32)
 

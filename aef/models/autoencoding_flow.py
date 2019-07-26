@@ -10,24 +10,45 @@ logger = logging.getLogger(__name__)
 
 
 class Projection(transforms.Transform):
-
-    # TODO: image case
-
     def __init__(self, input_dim, output_dim):
         super().__init__()
-        assert input_dim >= output_dim
+
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.input_dim_total = product(input_dim)
+        self.output_dim_total = product(output_dim)
+        self.mode_in = "vector" if isinstance(input_dim, int) else "image"
+        self.mode_out = "vector" if isinstance(input_dim, int) else "image"
+
+        logger.debug("Set up projection from %s with dimension %s to %s with dimension %s", self.mode_in, self.input_dim, self.mode_out, self.output_dim)
+
+        assert self.input_dim_total >= self.output_dim_total, "Input dimension has to be larger than output dimension"
 
     def forward(self, inputs, context=None):
-        u = inputs[:, : self.output_dim]
+        if self.mode_in == "vector" and self.mode_out == "vector":
+            u = inputs[:, : self.output_dim]
+        elif self.mode_in == "image" and self.mode_out == "vector":
+            u = inputs.view(inputs.size(0), -1)
+            u = u[:, : self.output_dim]
+        else:
+            raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
         return u
 
     def inverse(self, inputs, context=None):
-        x = torch.cat(
-            (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
-            dim=1,
-        )
+        if self.mode_in == "vector" and self.mode_out == "vector":
+            x = torch.cat(
+                (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
+                dim=1,
+            )
+        elif self.mode_in == "image" and self.mode_out == "vector":
+            c, h, w = self.input_dim
+            x = torch.cat(
+                (inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)),
+                dim=1,
+            )
+            x = x.view(inputs.size(0), c, h, w)
+        else:
+            raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
         return x
 
 

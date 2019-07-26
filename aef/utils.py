@@ -126,7 +126,7 @@ def create_missing_folders(folders):
 
 def product(x):
     try:
-        prod = 1.
+        prod = 1
         for factor in x:
             prod *= factor
         return prod

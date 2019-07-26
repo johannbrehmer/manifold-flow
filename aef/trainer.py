@@ -455,13 +455,17 @@ class AutoencodingFlowTrainer(Trainer):
 
     def forward_pass(self, batch_data, loss_functions):
         x, y = batch_data
-        x = x.view(x.size(0), -1)
+        if len(x.size()) < 2:
+            x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
         x_reco, log_prob, _ = self.model(x)
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
     def report_batch(self, i_epoch, i_batch, train, batch_data):
+        if (i_batch  + 1) % 100 == 0:
+            logger.debug("Epoch %s, batch %s: loss %s", i_epoch + 1, i_batch + 1, loss)
+
         if i_batch > 0 or (not train) or self.output_filename is None:
             return
 

@@ -7,6 +7,8 @@ from nsf.nde import distributions, transforms, flows
 from nsf import utils
 from nsf import nn as nn_
 
+logger = logging.getLogger(__name__)
+
 
 class ConvNet(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels):
@@ -124,7 +126,7 @@ def create_transform_step(
         [transforms.OneByOneConvolution(num_channels), coupling_layer]
     )
 
-    logging.debug("  Flow based on %s: %s", coupling_layer_type, coupling_layer)
+    logger.debug("  Flow based on %s", coupling_layer_type)
 
     return transforms.CompositeTransform(step_transforms)
 
@@ -147,12 +149,12 @@ def create_transform(
     if multi_scale:
         mct = transforms.MultiscaleCompositeTransform(num_transforms=levels)
         for level, level_hidden_channels in zip(range(levels), hidden_channels):
-            logging.debug("Level %s", level)
+            logger.debug("Level %s", level)
             squeeze_transform = transforms.SqueezeTransform()
             c, h, w = squeeze_transform.get_output_shape(c, h, w)
-            logging.debug("  c, h, w = %s, %s, %s", c, h, w)
+            logger.debug("  c, h, w = %s, %s, %s", c, h, w)
 
-            logging.debug("  SqueezeTransform()")
+            logger.debug("  SqueezeTransform()")
             transform_level = transforms.CompositeTransform(
                 [squeeze_transform]
                 + [
@@ -163,12 +165,12 @@ def create_transform(
                     transforms.OneByOneConvolution(c)
                 ]  # End each level with a linear transformation.
             )
-            logging.debug("  OneByOneConvolution(%s)", c)
+            logger.debug("  OneByOneConvolution(%s)", c)
 
             new_shape = mct.add_transform(transform_level, (c, h, w))
             if new_shape:  # If not last layer
                 c, h, w = new_shape
-                logging.debug("  new_shape = %s, %s, %s", c, h, w)
+                logger.debug("  new_shape = %s, %s, %s", c, h, w)
     else:
         all_transforms = []
 

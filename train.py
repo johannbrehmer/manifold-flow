@@ -67,14 +67,14 @@ def train(
         logger.info("Loaded spherical Gaussian data with %s dimensions", data_dim)
 
     elif dataset == "cifar":
-        dataset, data_dim = get_data(
-            "cifar-10-fast", 8, base_dir + "/data/", train=True
+        data, data_dim = get_data(
+            "cifar-10", 8, base_dir + "/data/", train=True
         )
         mode = "image"
         logger.info("Loaded CIFAR data with dimensions %s", data_dim)
 
     elif dataset == "imagenet":
-        dataset, data_dim = get_data(
+        data, data_dim = get_data(
             "imagenet-64-fast", 8, base_dir + "/data/", train=True
         )
         mode = "image"
