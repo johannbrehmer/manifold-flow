@@ -205,12 +205,7 @@ class RandomHorizontalFlipTensor(object):
         return self.__class__.__name__ + "(p={})".format(self.p)
 
 
-def get_data(dataset_name, num_bits, dataset_root, train=True, valid_frac=None):
-    dataset = None
-
-    if train:
-        assert valid_frac is not None
-
+def get_data(dataset_name, num_bits, dataset_root, train=True):
     if dataset_name == "imagenet-64-fast":
         root = os.path.join(dataset_root, "imagenet64_fast")
         c, h, w = (3, 64, 64)

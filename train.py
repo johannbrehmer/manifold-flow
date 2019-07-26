@@ -8,7 +8,8 @@ import argparse
 
 sys.path.append("../")
 
-from aef.models.autoencoding_flow import Flow, TwoStepAutoencodingFlow
+from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
+from aef.models.flow import Flow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
 from aef_data.images import get_data
@@ -41,7 +42,7 @@ def train(
         data = NumpyDataset(x, y)
         data_dim = 48
         mode = "vector"
-        logger.info("Loaded tth data with %s-dimensional data", data_dim)
+        logger.info("Loaded tth data with %s dimensions", data_dim)
 
     elif dataset == "gaussian":
         assert data_dim is not None
@@ -51,7 +52,7 @@ def train(
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         mode = "vector"
-        logger.info("Loaded linear Gaussian data with %s-dimensional data", data_dim)
+        logger.info("Loaded linear Gaussian data with %s dimensions", data_dim)
 
     elif dataset == "spherical_gaussian":
         assert data_dim is not None
@@ -63,14 +64,21 @@ def train(
         y = np.ones(x.shape[0])
         data = NumpyDataset(x, y)
         mode = "vector"
-        logger.info("Loaded spherical Gaussian data with %s-dimensional data", data_dim)
+        logger.info("Loaded spherical Gaussian data with %s dimensions", data_dim)
+
+    elif dataset == "cifar":
+        dataset, data_dim = get_data(
+            "cifar-10-fast", 8, base_dir + "/data/", train=True
+        )
+        mode = "image"
+        logger.info("Loaded CIFAR data with dimensions %s", data_dim)
 
     elif dataset == "imagenet":
         dataset, data_dim = get_data(
-            "imagenet-64-fast", 8, base_dir + "/data/", train=True, valid_frac=0.0
+            "imagenet-64-fast", 8, base_dir + "/data/", train=True
         )
         mode = "image"
-        logger.info("Loaded imagenet data with %s-dimensional data", data_dim)
+        logger.info("Loaded ImageNet data with dimensions %s", data_dim)
 
     else:
         raise NotImplementedError("Unknown dataset {}".format(dataset))
@@ -160,10 +168,10 @@ def parse_args():
         "--dataset",
         type=str,
         default="tth",
-        choices=["tth", "gaussian", "spherical_gaussian"],
+        choices=["cifar", "imagenet", "tth", "gaussian", "spherical_gaussian"],
     )
     parser.add_argument("-x", type=int, default=None)
-    parser.add_argument("--latent", type=int, default=10)
+    parser.add_argument("--latent", type=int, default=None)
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--alpha", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=20)
@@ -175,17 +183,19 @@ def parse_args():
         type=str,
         default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow",
     )
+    parser.add_argument("--debug", action="store_true")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
+
+    args = parse_args()
     logging.basicConfig(
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
         datefmt="%H:%M",
-        level=logger.INFO,
+        level=logging.DEBUG if args.debug else logging.INFO,
     )
     logger.info("Hi!")
-    args = parse_args()
 
     train(
         model_filename=args.name,
