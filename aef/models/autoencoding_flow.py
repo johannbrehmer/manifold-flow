@@ -3,12 +3,15 @@ from torch import nn
 import logging
 
 from nsf.nde import distributions, transforms
-from aef.models.vector_transforms import create_transform
+from aef.models import vector_transforms, image_transforms
 
 logger = logging.getLogger(__name__)
 
 
 class Projection(transforms.Transform):
+
+    # TODO: image case
+
     def __init__(self, input_dim, output_dim):
         super().__init__()
         assert input_dim >= output_dim
@@ -27,20 +30,122 @@ class Projection(transforms.Transform):
         return x
 
 
+class Flow(nn.Module):
+    def __init__(
+        self,
+        data_dim,
+        mode="vector",
+        transform="rq-coupling",
+        steps=3,
+    ):
+        super(Flow, self).__init__()
+
+        self.data_dim = data_dim
+        self.latent_dim = data_dim
+        self.mode = mode
+        self.latent_distribution = distributions.StandardNormal((self.latent_dim,))
+
+        if mode == "vector":
+            self.transform = vector_transforms.create_transform(
+                data_dim, steps, base_transform_type=transform
+            )
+
+        elif mode == "image":
+            c, h, w = data_dim
+            self.transform = image_transforms.create_transform(
+                c, h, w, steps
+            )
+
+        self._report_model_parameters()
+
+    def forward(self, x):
+        # Encode
+        u, h, log_det_inner, log_det_outer = self._encode(x)
+
+        # Decode
+        x = self.decode(u)
+
+        # Log prob
+        log_prob = self.latent_distribution._log_prob(u, context=None)
+        log_prob = log_prob + log_det_outer + log_det_inner
+
+        return x, log_prob, u
+
+    def encode(self, x):
+        u, _ = self._encode(x)
+        return u
+
+    def decode(self, u):
+        x, _ = self.transform.inverse(u)
+        return x
+
+    def log_prob(self, x):
+        # Encode
+        u, log_det = self._encode(x)
+
+        # Log prob
+        log_prob = self.latent_distribution._log_prob(u, context=None)
+        log_prob = log_prob + log_det
+
+        return log_prob
+
+    def sample(self, u=None, n=1):
+        if u is None:
+            u = self.latent_distribution.sample(n)
+        x = self.decode(u)
+        return x
+
+    def _encode(self, x):
+        u, log_det = self.transform(x)
+        return u, log_det
+
+    def _report_model_parameters(self):
+        all_params = sum(p.numel() for p in self.parameters())
+        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        size = all_params * (32 / 8)  # Bytes
+        logger.debug(
+            "Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
+            all_params / 1e6,
+            trainable_params / 1.0e6,
+            size / 1.0e9,
+        )
+
+
 class TwoStepAutoencodingFlow(nn.Module):
     def __init__(
-        self, data_dim, latent_dim=10, steps_inner=3, steps_outer=3, n_hidden=100
+        self,
+        data_dim,
+        latent_dim=10,
+        mode="vector",
+        inner="rq-coupling",
+        outer="rq-coupling",
+        steps_inner=3,
+        steps_outer=3,
     ):
         super(TwoStepAutoencodingFlow, self).__init__()
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
-
-        self.outer_transform = create_transform(data_dim, steps_outer)
+        self.mode = mode
         self.projection = Projection(data_dim, latent_dim)
-        self.inner_transform = create_transform(latent_dim, steps_inner)
         self.latent_distribution = distributions.StandardNormal((latent_dim,))
-        # self.inner_flow = flows.Flow(self.inner_transform, self.latent_distribution)  # Could be a convenient wrapper
+
+        if mode == "vector":
+            self.outer_transform = vector_transforms.create_transform(
+                data_dim, steps_outer, base_transform_type=outer
+            )
+            self.inner_transform = vector_transforms.create_transform(
+                latent_dim, steps_inner, base_transform_type=inner
+            )
+
+        elif mode == "image":
+            c, h, w = data_dim
+            self.outer_transform = image_transforms.create_transform(
+                c, h, w, steps_outer
+            )
+            self.inner_transform = vector_transforms.create_transform(
+                latent_dim, steps_inner, base_transform_type=inner
+            )
 
         self._report_model_parameters()
 
@@ -93,4 +198,9 @@ class TwoStepAutoencodingFlow(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logger.debug("Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.e6, size / 1.e9)
+        logger.debug(
+            "Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
+            all_params / 1e6,
+            trainable_params / 1.0e6,
+            size / 1.0e9,
+        )
