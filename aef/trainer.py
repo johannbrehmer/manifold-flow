@@ -277,8 +277,6 @@ class Trainer(object):
         loss_train = 0.0
 
         for i_batch, batch_data in enumerate(train_loader):
-            if i_batch > 0:
-                continue
             batch_loss, batch_loss_contributions = self.batch_train(
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient
             )
@@ -297,8 +295,6 @@ class Trainer(object):
             loss_val = 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
-                if i_batch > 0:
-                    continue
                 batch_loss, batch_loss_contributions = self.batch_val(
                     batch_data, loss_functions, loss_weights
                 )

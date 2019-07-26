@@ -22,6 +22,6 @@ train(
     batch_size=64,
     epochs=10,
     alpha=1.0e-3,
-    lr=(5.0e-4, 1.0e-6),
+    lr=(1.0e-3, 1.0e-5),
     base_dir=".",
 )
