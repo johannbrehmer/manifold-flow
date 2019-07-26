@@ -120,17 +120,22 @@ def train(
     def sample1(epoch, model, loss_train, loss_val):
         if dataset not in ["cifar", "imagenet"]:
             return
+
+        cols, rows = 4, 4
+
         model.eval()
         with torch.no_grad():
             preprocess = Preprocess(8)
-            samples = model.sample(16)
+            samples = model.sample(n=cols*rows)
             samples = preprocess.inverse(samples)
             samples = samples.cpu()
+        samples = samples.detach().numpy()
+        samples = np.moveaxis(samples, 1, -1)
 
-        plt.figure(figsize=(16.0, 16.0))
-        for i in range(16):
-            plt.subplot(4, 4, i + 1)
-            plt.imshow(samples[i])
+        plt.figure(figsize=(cols*4, rows*4))
+        for i, x in enumerate(samples):
+            plt.subplot(rows, cols, i + 1)
+            plt.imshow(x)
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
@@ -144,17 +149,22 @@ def train(
     def sample2(epoch, model, loss_train, loss_val):
         if dataset not in ["cifar", "imagenet"]:
             return
+
+        cols, rows = 4, 4
+
         model.eval()
-        with torch.no_grad:
+        with torch.no_grad():
             preprocess = Preprocess(8)
-            samples = model.sample(64)
+            samples = model.sample(n=cols*rows)
             samples = preprocess.inverse(samples)
             samples = samples.cpu()
+        samples = samples.detach().numpy()
+        samples = np.moveaxis(samples, 1, -1)
 
-        plt.figure(figsize=(16.0, 16.0))
-        for i in range(16):
-            plt.subplot(4, 4, i + 1)
-            plt.imshow(samples[i])
+        plt.figure(figsize=(cols*4, rows*4))
+        for i, x in enumerate(samples):
+            plt.subplot(rows, cols, i + 1)
+            plt.imshow(x)
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
