@@ -100,6 +100,7 @@ class Trainer(object):
         clip_gradient=100.0,
         verbose="some",
         parameters=None,
+        callbacks=None
     ):
         logger.debug("Initialising training data")
         train_loader, val_loader = self.make_dataloader(
@@ -199,6 +200,10 @@ class Trainer(object):
                 verbose=verbose_epoch,
             )
 
+            if callbacks is not None:
+                for callback in callbacks:
+                    callback(i_epoch, self.model, loss_train, loss_val)
+
         if early_stopping and len(losses_val) > 0:
             self.wrap_up_early_stopping(
                 best_model, losses_val[-1], best_loss, best_epoch
@@ -272,6 +277,8 @@ class Trainer(object):
         loss_train = 0.0
 
         for i_batch, batch_data in enumerate(train_loader):
+            if i_batch > 0:
+                continue
             batch_loss, batch_loss_contributions = self.batch_train(
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient
             )
@@ -290,6 +297,8 @@ class Trainer(object):
             loss_val = 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
+                if i_batch > 0:
+                    continue
                 batch_loss, batch_loss_contributions = self.batch_val(
                     batch_data, loss_functions, loss_weights
                 )
@@ -462,63 +471,63 @@ class AutoencodingFlowTrainer(Trainer):
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
-    def report_batch(self, i_epoch, i_batch, train, batch_data):
-        if i_batch > 0 or (not train) or self.output_filename is None:
-            return
-
-        x, y = batch_data
-        x = x.view(x.size(0), -1)
-        x = x.to(self.device, self.dtype)
-        x_out, _, u = self.model(x)
-
-        x = x.detach().numpy().reshape(-1, 28, 28)
-        x_out = x_out.detach().numpy().reshape(-1, 28, 28)
-        u = u.detach().numpy().reshape(x_out.shape[0], -1)
-        y = y.detach().numpy().astype(np.int).reshape(-1)
-        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(
-            u
-        )
-
-        plt.figure(figsize=(5, 5))
-        for i in range(10):
-            plt.scatter(
-                u[y == i][:, 0],
-                u[y == i][:, 1],
-                s=15.0,
-                alpha=1.0,
-                label="{}".format(i + 1),
-            )
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
-        plt.close()
-
-        plt.figure(figsize=(5, 5))
-        for i in range(10):
-            plt.scatter(
-                tsne[y == i][:, 0],
-                tsne[y == i][:, 1],
-                s=15.0,
-                alpha=1.0,
-                label="{}".format(i + 1),
-            )
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
-        plt.close()
-
-        plt.figure(figsize=(10, 10))
-        for i in range(8):
-            plt.subplot(4, 4, 2 * i + 1)
-            plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-            plt.subplot(4, 4, 2 * i + 2)
-            plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-        plt.tight_layout()
-        plt.savefig(
-            "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
-        )
-        plt.close()
+    # def report_batch(self, i_epoch, i_batch, train, batch_data):
+    #     if i_batch > 0 or (not train) or self.output_filename is None:
+    #         return
+    #
+    #     x, y = batch_data
+    #     x = x.view(x.size(0), -1)
+    #     x = x.to(self.device, self.dtype)
+    #     x_out, _, u = self.model(x)
+    #
+    #     x = x.detach().numpy().reshape(-1, 28, 28)
+    #     x_out = x_out.detach().numpy().reshape(-1, 28, 28)
+    #     u = u.detach().numpy().reshape(x_out.shape[0], -1)
+    #     y = y.detach().numpy().astype(np.int).reshape(-1)
+    #     tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(
+    #         u
+    #     )
+    #
+    #     plt.figure(figsize=(5, 5))
+    #     for i in range(10):
+    #         plt.scatter(
+    #             u[y == i][:, 0],
+    #             u[y == i][:, 1],
+    #             s=15.0,
+    #             alpha=1.0,
+    #             label="{}".format(i + 1),
+    #         )
+    #     plt.legend()
+    #     plt.tight_layout()
+    #     plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
+    #     plt.close()
+    #
+    #     plt.figure(figsize=(5, 5))
+    #     for i in range(10):
+    #         plt.scatter(
+    #             tsne[y == i][:, 0],
+    #             tsne[y == i][:, 1],
+    #             s=15.0,
+    #             alpha=1.0,
+    #             label="{}".format(i + 1),
+    #         )
+    #     plt.legend()
+    #     plt.tight_layout()
+    #     plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
+    #     plt.close()
+    #
+    #     plt.figure(figsize=(10, 10))
+    #     for i in range(8):
+    #         plt.subplot(4, 4, 2 * i + 1)
+    #         plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
+    #         plt.gca().get_xaxis().set_visible(False)
+    #         plt.gca().get_yaxis().set_visible(False)
+    #         plt.subplot(4, 4, 2 * i + 2)
+    #         plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
+    #         plt.gca().get_xaxis().set_visible(False)
+    #         plt.gca().get_yaxis().set_visible(False)
+    #     plt.tight_layout()
+    #     plt.savefig(
+    #         "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
+    #     )
+    #     plt.close()

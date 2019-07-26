@@ -5,6 +5,7 @@ import logging
 import sys
 import torch
 import argparse
+from matplotlib import pyplot as plt
 
 sys.path.append("../")
 
@@ -12,8 +13,8 @@ from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
 from aef.models.flow import Flow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
-from aef.utils import product
-from aef_data.images import get_data
+from aef.utils import product, save_image
+from aef_data.images import get_data, Preprocess
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +66,7 @@ def train(
         logger.info("Loaded spherical Gaussian data with %s dimensions", data_dim)
 
     elif dataset == "cifar":
-        data, data_dim = get_data(
-            "cifar-10", 8, base_dir + "/data/", train=True
-        )
+        data, data_dim = get_data("cifar-10", 8, base_dir + "/data/", train=True)
         logger.info("Loaded CIFAR data with dimensions %s", data_dim)
 
     elif dataset == "imagenet":
@@ -90,7 +89,7 @@ def train(
         model = Flow(data_dim=data_dim, steps=flow_steps_outer)
 
     else:
-        logger.info("Creating auto-encoding flow with %s latent dimensions")
+        logger.info("Creating auto-encoding flow with %s latent dimensions", latent_dim)
         model = TwoStepAutoencodingFlow(
             data_dim=data_dim,
             latent_dim=latent_dim,
@@ -100,6 +99,71 @@ def train(
 
     # Trainer
     trainer = AutoencodingFlowTrainer(model, double_precision=True)
+
+    # Callbacks: save model after each epoch, and maybe generate a few images
+    def save_model1(epoch, model, loss_train, loss_val):
+        torch.save(
+            model.state_dict(),
+            "{}/data/models/{}_phase1_epoch{}.pt".format(
+                base_dir, model_filename, epoch
+            ),
+        )
+
+    def save_model2(epoch, model, loss_train, loss_val):
+        torch.save(
+            model.state_dict(),
+            "{}/data/models/{}_phase2_epoch{}.pt".format(
+                base_dir, model_filename, epoch
+            ),
+        )
+
+    def sample1(epoch, model, loss_train, loss_val):
+        if dataset not in ["cifar", "imagenet"]:
+            return
+        model.eval()
+        with torch.no_grad():
+            preprocess = Preprocess(8)
+            samples = model.sample(16)
+            samples = preprocess.inverse(samples)
+            samples = samples.cpu()
+
+        plt.figure(figsize=(16.0, 16.0))
+        for i in range(16):
+            plt.subplot(4, 4, i + 1)
+            plt.imshow(samples[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+        plt.tight_layout()
+        plt.savefig(
+            "{}/figures/training/images_{}_phase1_{}.pdf".format(
+                base_dir, model_filename, epoch
+            )
+        )
+        plt.close()
+
+    def sample2(epoch, model, loss_train, loss_val):
+        if dataset not in ["cifar", "imagenet"]:
+            return
+        model.eval()
+        with torch.no_grad:
+            preprocess = Preprocess(8)
+            samples = model.sample(64)
+            samples = preprocess.inverse(samples)
+            samples = samples.cpu()
+
+        plt.figure(figsize=(16.0, 16.0))
+        for i in range(16):
+            plt.subplot(4, 4, i + 1)
+            plt.imshow(samples[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+        plt.tight_layout()
+        plt.savefig(
+            "{}/figures/training/images_{}_phase2_{}.pdf".format(
+                base_dir, model_filename, epoch
+            )
+        )
+        plt.close()
 
     # Train
     if latent_dim is None:
@@ -115,6 +179,7 @@ def train(
             verbose="all",
             initial_lr=lr[0],
             final_lr=lr[1],
+            callbacks=[save_model1, sample1],
         )
     else:
         logger.info("Starting training on MSE")
@@ -129,6 +194,7 @@ def train(
             verbose="all",
             initial_lr=lr[0],
             final_lr=lr[1],
+            callbacks=[save_model1, sample1],
         )
         logger.info("Starting training on MSE and NLL")
         trainer.train(
@@ -143,6 +209,7 @@ def train(
             initial_lr=lr[0],
             final_lr=lr[1],
             parameters=model.outer_transform.parameters(),
+            callbacks=[save_model2, sample2],
         )
 
     # Save

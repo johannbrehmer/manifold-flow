@@ -229,6 +229,6 @@ def create_transform(
 
     # Random permutation
     permutation = transforms.RandomPermutation(dim)
-    logger.debug("  RandomPermutation(%s)", dim)
+    logger.debug("RandomPermutation(%s)", dim)
 
     return transforms.CompositeTransform([preprocess_transform, mct, permutation])
