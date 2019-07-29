@@ -252,7 +252,7 @@ def parse_args():
     parser.add_argument("--outer", type=int, default=10)
     parser.add_argument("--alpha", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--batchsize", type=int, default=128)
+    parser.add_argument("--batchsize", type=int, default=256)
     parser.add_argument("--lr", type=float, default=5.0e-4)
     parser.add_argument("--lrdecay", type=float, default=1.e-3)
     parser.add_argument(
