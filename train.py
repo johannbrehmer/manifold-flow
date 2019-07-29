@@ -189,7 +189,7 @@ def train(
             epochs=epochs,
             verbose="all",
             initial_lr=lr[0],
-            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler=optim.lr_scheduler.CosineAnnealingLR,
             scheduler_kwargs={"eta_min": lr[1],},
             callbacks=[save_model1, sample1],
         )
@@ -205,7 +205,7 @@ def train(
             epochs=epochs // 2,
             verbose="all",
             initial_lr=lr[0],
-            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler=optim.lr_scheduler.CosineAnnealingLR,
             scheduler_kwargs={"eta_min": lr[1],},
             callbacks=[save_model1, sample1],
         )
@@ -220,7 +220,7 @@ def train(
             epochs=epochs - epochs // 2,
             verbose="all",
             initial_lr=lr[0],
-            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler=optim.lr_scheduler.CosineAnnealingLR,
             scheduler_kwargs={"eta_min": lr[1],},
             parameters=model.outer_transform.parameters(),
             callbacks=[save_model2, sample2],

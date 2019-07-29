@@ -93,7 +93,7 @@ class Trainer(object):
         optimizer=optim.Adam,
         optimizer_kwargs=None,
         initial_lr=1.e-3,
-        scheduler=optim.lr_scheduler.CosineAnnealingLr,
+        scheduler=optim.lr_scheduler.CosineAnnealingLR,
         scheduler_kwargs=None,
         restart_scheduler=None,
         validation_split=0.25,
@@ -162,7 +162,8 @@ class Trainer(object):
         # Loop over epochs
         for i_epoch in range(epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
-            logger.debug("Learning rate: %s", lr)
+            if sched is not None:
+                logger.debug("  Learning rate: %s", sched.get_lr())
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
