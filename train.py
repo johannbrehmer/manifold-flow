@@ -35,6 +35,12 @@ def train(
 ):
     logger.info("Starting training of model %s on data set %s", model_filename, dataset)
 
+    # Set default device
+    if torch.cuda.is_available():
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    else:
+        torch.set_default_tensor_type('torch.FloatTensor')
+
     # Data
     if dataset == "tth":
         x = np.load("{}/data/tth/x_train.npy".format(base_dir))
