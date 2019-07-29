@@ -41,6 +41,9 @@ def train(
     else:
         torch.set_default_tensor_type('torch.FloatTensor')
 
+    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
+    torch.multiprocessing.set_start_method("spawn", force=True)
+
     # Data
     if dataset == "tth":
         x = np.load("{}/data/tth/x_train.npy".format(base_dir))
