@@ -35,12 +35,6 @@ def train(
 ):
     logger.info("Starting training of model %s on data set %s", model_filename, dataset)
 
-    # Set default device
-    if torch.cuda.is_available():
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    else:
-        torch.set_default_tensor_type('torch.FloatTensor')
-
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
 

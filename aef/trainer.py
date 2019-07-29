@@ -59,10 +59,12 @@ class NumpyDataset(Dataset):
 class Trainer(object):
     """ Trainer class. Any subclass has to implement the forward_pass() function. """
 
-    def __init__(self, model, run_on_gpu=True, double_precision=False):
+    def __init__(self, model, run_on_gpu=True, multi_gpu=True, double_precision=False):
         self.model = model
 
         self.run_on_gpu = run_on_gpu and torch.cuda.is_available()
+        self.multi_gpu = self.run_on_gpu and multi_gpu and torch.cuda.device_count() > 1
+
         self.device = torch.device("cuda" if self.run_on_gpu else "cpu")
         self.dtype = torch.double if double_precision else torch.float
         if self.run_on_gpu and double_precision:
@@ -76,9 +78,9 @@ class Trainer(object):
 
         self.model = self.model.to(self.device, self.dtype)
 
-        logger.debug(
+        logger.info(
             "Training on %s with %s precision",
-            "GPU" if self.run_on_gpu else "CPU",
+            "{} GPUS".format(torch.cuda.device_count()) if self.multi_gpu else "GPU" if self.run_on_gpu else "CPU",
             "double" if double_precision else "single",
         )
 
@@ -292,6 +294,8 @@ class Trainer(object):
         loss_train = 0.0
 
         for i_batch, batch_data in enumerate(train_loader):
+            if i_batch == 0 and i_epoch == 0:
+                self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient
             )
@@ -327,6 +331,9 @@ class Trainer(object):
             loss_val = None
 
         return loss_train, loss_val, loss_contributions_train, loss_contributions_val
+
+    def first_batch(self, batch_data):
+        pass
 
     def batch_train(
         self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
@@ -473,12 +480,23 @@ class AutoencodingFlowTrainer(Trainer):
         super().__init__(model, run_on_gpu, double_precision)
         self.output_filename = output_filename
 
+    def first_batch(self, batch_data):
+        if self.multi_gpu:
+            x, y = batch_data
+            if len(x.size()) < 2:
+                x = x.view(x.size(0), -1)
+            x = x.to(self.device, self.dtype)
+            self.model(x[:x.shape[0] // torch.cuda.device_count(), ...])
+
     def forward_pass(self, batch_data, loss_functions):
         x, y = batch_data
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
-        x_reco, log_prob, _ = self.model(x)
+        if self.multi_gpu:
+            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x)
+        else:
+            x_reco, log_prob, _ = self.model(x)
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
