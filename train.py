@@ -6,6 +6,7 @@ import sys
 import torch
 import argparse
 from matplotlib import pyplot as plt
+from torch import optim
 
 sys.path.append("../")
 
@@ -188,7 +189,8 @@ def train(
             epochs=epochs,
             verbose="all",
             initial_lr=lr[0],
-            final_lr=lr[1],
+            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler_kwargs={"eta_min": lr[1],},
             callbacks=[save_model1, sample1],
         )
     else:
@@ -203,7 +205,8 @@ def train(
             epochs=epochs // 2,
             verbose="all",
             initial_lr=lr[0],
-            final_lr=lr[1],
+            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler_kwargs={"eta_min": lr[1],},
             callbacks=[save_model1, sample1],
         )
         logger.info("Starting training on MSE and NLL")
@@ -217,7 +220,8 @@ def train(
             epochs=epochs - epochs // 2,
             verbose="all",
             initial_lr=lr[0],
-            final_lr=lr[1],
+            scheduler=optim.lr_scheduler.CosineAnnealingLr,
+            scheduler_kwargs={"eta_min": lr[1],},
             parameters=model.outer_transform.parameters(),
             callbacks=[save_model2, sample2],
         )
@@ -247,10 +251,10 @@ def parse_args():
     parser.add_argument("--inner", type=int, default=10)
     parser.add_argument("--outer", type=int, default=10)
     parser.add_argument("--alpha", type=float, default=0.01)
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batchsize", type=int, default=128)
-    parser.add_argument("--lr", type=float, default=1.0e-4)
-    parser.add_argument("--lrdecay", type=float, default=0.1)
+    parser.add_argument("--lr", type=float, default=5.0e-4)
+    parser.add_argument("--lrdecay", type=float, default=1.e-3)
     parser.add_argument(
         "--dir",
         type=str,
