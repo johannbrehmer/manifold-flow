@@ -236,7 +236,11 @@ class Trainer(object):
     def make_dataloader(self, dataset, validation_split, batch_size):
         if validation_split is None or validation_split <= 0.0:
             train_loader = DataLoader(
-                dataset, batch_size=batch_size, shuffle=True, pin_memory=self.run_on_gpu
+                dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                #pin_memory=self.run_on_gpu,
+                num_workers=10,
             )
             val_loader = None
 
@@ -258,13 +262,15 @@ class Trainer(object):
                 dataset,
                 sampler=train_sampler,
                 batch_size=batch_size,
-                pin_memory=self.run_on_gpu,
+                #pin_memory=self.run_on_gpu,
+                num_workers=10,
             )
             val_loader = DataLoader(
                 dataset,
                 sampler=val_sampler,
                 batch_size=batch_size,
-                pin_memory=self.run_on_gpu,
+                #pin_memory=self.run_on_gpu,
+                num_workers=10,
             )
 
         return train_loader, val_loader

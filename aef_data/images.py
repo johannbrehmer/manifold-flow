@@ -265,7 +265,7 @@ def get_data(dataset_name, num_bits, dataset_root, train=True):
                 root=root, train=False, download=True, transform=test_transform
             )
 
-    elif dataset_name == "imagenet-32" or dataset == "imagenet-64":
+    elif dataset_name == "imagenet-32" or dataset_name == "imagenet-64":
         if dataset_name == "imagenet-32":
             root = os.path.join(dataset_root, "imagenet32")
             c, h, w = (3, 32, 32)
