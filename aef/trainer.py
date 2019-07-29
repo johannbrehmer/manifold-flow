@@ -1,12 +1,12 @@
 import logging
 import numpy as np
 import torch
-import torch.optim as optim
+from torch import optim, nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-from matplotlib import pyplot as plt
-from sklearn.manifold import TSNE
+# from matplotlib import pyplot as plt
+# from sklearn.manifold import TSNE
 
 logger = logging.getLogger(__name__)
 
