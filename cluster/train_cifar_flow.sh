@@ -9,6 +9,6 @@
 #SBATCH --gres=gpu:1
 
 source activate madminer
-cd /scratch/jb6504/autoencoded-flow/
+cd /scratch/jb6504/autoencoded-flow2/
 
-python -u train.py cifar --dataset cifar --dir /scratch/jb6504/autoencoded-flow --lr 5.e-4 --outer 3 --debug
+python -u train.py cifar --dataset cifar --dir /scratch/jb6504/autoencoded-flow2 --lr 5.e-4 --outer 3 --debug
