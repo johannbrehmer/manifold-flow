@@ -6,7 +6,7 @@ import sys
 import torch
 import argparse
 from matplotlib import pyplot as plt
-from torch import optim
+from torch import optim, nn
 
 sys.path.append("../")
 
