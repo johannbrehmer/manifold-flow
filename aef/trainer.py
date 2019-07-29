@@ -92,8 +92,10 @@ class Trainer(object):
         batch_size=100,
         optimizer=optim.Adam,
         optimizer_kwargs=None,
-        initial_lr=0.001,
-        final_lr=0.0001,
+        initial_lr=1.e-3,
+        scheduler=optim.lr_scheduler.CosineAnnealingLr,
+        scheduler_kwargs=None,
+        restart_scheduler=None,
         validation_split=0.25,
         early_stopping=True,
         early_stopping_patience=None,
@@ -112,6 +114,16 @@ class Trainer(object):
         if parameters is None:
             parameters = self.model.parameters()
         opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
+
+        logger.debug("Setting up LR scheduler")
+        scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
+        sched = None
+        epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
+        if scheduler is not None:
+            try:
+                sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
+            except:
+                sched = scheduler(optimizer=opt, **scheduler_kwargs)
 
         early_stopping = (
             early_stopping and (validation_split is not None) and (epochs > 1)
@@ -150,9 +162,6 @@ class Trainer(object):
         # Loop over epochs
         for i_epoch in range(epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
-
-            lr = self.calculate_lr(i_epoch, epochs, initial_lr, final_lr)
-            self.set_lr(opt, lr)
             logger.debug("Learning rate: %s", lr)
 
             try:
@@ -200,9 +209,19 @@ class Trainer(object):
                 verbose=verbose_epoch,
             )
 
+            # Callbacks
             if callbacks is not None:
                 for callback in callbacks:
                     callback(i_epoch, self.model, loss_train, loss_val)
+
+            # LR schedule
+            if sched is not None:
+                sched.step(i_epoch)
+                if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
+                    try:
+                        sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
+                    except:
+                        sched = scheduler(optimizer=opt, **scheduler_kwargs)
 
         if early_stopping and len(losses_val) > 0:
             self.wrap_up_early_stopping(
@@ -248,17 +267,6 @@ class Trainer(object):
             )
 
         return train_loader, val_loader
-
-    @staticmethod
-    def calculate_lr(i_epoch, n_epochs, initial_lr, final_lr):
-        if n_epochs == 1:
-            return initial_lr
-        return initial_lr * (final_lr / initial_lr) ** float(i_epoch / (n_epochs - 1.0))
-
-    @staticmethod
-    def set_lr(optimizer, lr):
-        for param_group in optimizer.param_groups:
-            param_group["lr"] = lr
 
     def epoch(
         self,
