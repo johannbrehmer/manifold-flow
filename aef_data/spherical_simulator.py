@@ -75,7 +75,7 @@ def _log_likelihood(z_phi, z_eps, latent_dim, phases, widths, epsilon):
 
     log_det = latent_dim * np.abs(r)
     log_det += np.sum(
-        np.arange(latent_dim - 1, 0, -1)[np.newaxis, :] * np.log(np.abs(np.sin(z_phi))),
+        np.arange(latent_dim - 1, -1, -1)[np.newaxis, :] * np.log(np.abs(np.sin(z_phi))),
         axis=1,
     )
 
