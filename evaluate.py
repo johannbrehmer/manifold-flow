@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 
 sys.path.append("../")
 
-from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
+from aef.flows.autoencoding_flow import TwoStepAutoencodingFlow
 from aef.trainer import NumpyDataset
 from aef import losses
 from aef_data import linear_simulator, spherical_simulator
@@ -91,7 +91,7 @@ def eval_on_test_data(
     # Load state dict
     ae.load_state_dict(
         torch.load(
-            "{}/data/models/{}.pt".format(base_dir, model_filename), map_location="cpu"
+            "{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"
         )
     )
     ae = ae.to(device, dtype)
@@ -182,7 +182,7 @@ def eval_generated_data(
     # Load state dict
     ae.load_state_dict(
         torch.load(
-            "{}/data/models/{}.pt".format(base_dir, model_filename), map_location="cpu"
+            "{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"
         )
     )
     ae = ae.to(device, dtype)

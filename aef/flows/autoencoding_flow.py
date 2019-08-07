@@ -3,8 +3,8 @@ from torch import nn
 import logging
 
 from aef.utils import product
-from aef.models import vector_transforms, image_transforms
-from nsf.nde import distributions, transforms
+from aef.flows import vector_transforms, image_transforms
+from aef import distributions, transforms
 
 logger = logging.getLogger(__name__)
 

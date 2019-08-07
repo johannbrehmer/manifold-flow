@@ -1,8 +1,7 @@
 from torch.nn import functional as F
 
-from nsf.nde import transforms
-from nsf import utils
-import nsf.nn as nn_
+from aef import transforms, utils
+import aef.nn as nn_
 
 
 def _create_linear_transform(linear_transform_type, features):

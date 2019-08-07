@@ -1,9 +1,9 @@
 from torch import nn
 import logging
 
-from aef.models import vector_transforms, image_transforms
+from aef.flows import vector_transforms, image_transforms
 from aef.utils import product
-from nsf.nde import distributions
+from aef import distributions
 
 
 logger = logging.getLogger(__name__)

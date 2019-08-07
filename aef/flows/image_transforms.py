@@ -3,9 +3,8 @@ from torch import nn
 import logging
 
 from nsf.experiments.autils import Conv2dSameSize
-from nsf.nde import distributions, transforms, flows
-from nsf import utils
-from nsf import nn as nn_
+from aef import transforms, utils
+from aef import nn as nn_
 
 logger = logging.getLogger(__name__)
 

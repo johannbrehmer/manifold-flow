@@ -10,8 +10,8 @@ from torch import optim
 
 sys.path.append("../")
 
-from aef.models.autoencoding_flow import TwoStepAutoencodingFlow
-from aef.models.flow import Flow
+from aef.flows.autoencoding_flow import TwoStepAutoencodingFlow
+from aef.flows.flow import Flow
 from aef.trainer import AutoencodingFlowTrainer, NumpyDataset
 from aef.losses import nll, mse
 from aef.utils import product, save_image
@@ -108,7 +108,7 @@ def train(
     def save_model1(epoch, model, loss_train, loss_val):
         torch.save(
             model.state_dict(),
-            "{}/data/models/{}_phase1_epoch{}.pt".format(
+            "{}/data/flows/{}_phase1_epoch{}.pt".format(
                 base_dir, model_filename, epoch
             ),
         )
@@ -116,7 +116,7 @@ def train(
     def save_model2(epoch, model, loss_train, loss_val):
         torch.save(
             model.state_dict(),
-            "{}/data/models/{}_phase2_epoch{}.pt".format(
+            "{}/data/flows/{}_phase2_epoch{}.pt".format(
                 base_dir, model_filename, epoch
             ),
         )
@@ -231,10 +231,10 @@ def train(
 
     # Save
     logger.info(
-        "Saving model to %s", "{}/data/models/{}.pt".format(base_dir, model_filename)
+        "Saving model to %s", "{}/data/flows/{}.pt".format(base_dir, model_filename)
     )
     torch.save(
-        model.state_dict(), "{}/data/models/{}.pt".format(base_dir, model_filename)
+        model.state_dict(), "{}/data/flows/{}.pt".format(base_dir, model_filename)
     )
 
 
