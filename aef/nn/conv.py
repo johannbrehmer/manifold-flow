@@ -294,6 +294,11 @@ class ConvDecoder(nn.Module):
         outputs = self.final_layer(temps)
         return outputs
 
+class Conv2dSameSize(nn.Conv2d):
+    def __init__(self, in_channels, out_channels, kernel_size):
+        same_padding = kernel_size // 2  # Padding that would keep the spatial dims the same
+        super().__init__(in_channels, out_channels, kernel_size,
+                         padding=same_padding)
 
 def main():
     batch_size, channels, width, height = 16, 1, 28, 28

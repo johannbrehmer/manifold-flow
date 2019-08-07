@@ -11,4 +11,5 @@ from .conv import (
     SylvesterFlowConvDecoderNet,
     ConvEncoder,
     ConvDecoder,
+    Conv2dSameSize
 )
