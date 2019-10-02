@@ -20,10 +20,10 @@ class InputOutsideDomain(Exception):
 class Transform(nn.Module):
     """Base class for all transform objects."""
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         raise NotImplementedError()
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         raise InverseNotAvailable()
 
 
@@ -40,22 +40,31 @@ class CompositeTransform(Transform):
         self._transforms = nn.ModuleList(transforms)
 
     @staticmethod
-    def _cascade(inputs, funcs, context):
+    def _cascade(inputs, funcs, context, full_jacobian=False):
         batch_size = inputs.shape[0]
         outputs = inputs
-        total_logabsdet = torch.zeros(batch_size)
-        for func in funcs:
-            outputs, logabsdet = func(outputs, context)
-            total_logabsdet += logabsdet
-        return outputs, total_logabsdet
 
-    def forward(self, inputs, context=None):
+        if full_jacobian:
+            total_jacobian = None
+            for func in funcs:
+                outputs, jacobian = func(outputs, context, full_jacobian=True)
+                total_jacobian = jacobian if total_jacobian is None else torch.mm(total_jacobian, jacobian)
+            return outputs, total_jacobian
+
+        else:
+            total_logabsdet = torch.zeros(batch_size)
+            for func in funcs:
+                outputs, logabsdet = func(outputs, context, full_jacobian=False)
+                total_logabsdet += logabsdet
+            return outputs, total_logabsdet
+
+    def forward(self, inputs, context=None, full_jacobian=False):
         funcs = self._transforms
-        return self._cascade(inputs, funcs, context)
+        return self._cascade(inputs, funcs, context, full_jacobian)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         funcs = (transform.inverse for transform in self._transforms[::-1])
-        return self._cascade(inputs, funcs, context)
+        return self._cascade(inputs, funcs, context, full_jacobian)
 
 
 class MultiscaleCompositeTransform(Transform):
@@ -127,7 +136,7 @@ class MultiscaleCompositeTransform(Transform):
         self._output_shapes.append(output_shape)
         return hidden_shape
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         if self._split_dim >= inputs.dim():
             raise ValueError('No split_dim in inputs.')
         if self._num_transforms != len(self._transforms):
@@ -140,7 +149,7 @@ class MultiscaleCompositeTransform(Transform):
             hiddens = inputs
 
             for i, transform in enumerate(self._transforms[:-1]):
-                transform_outputs, logabsdet = transform(hiddens, context)
+                transform_outputs, logabsdet = transform(hiddens, context, full_jacobian)
                 outputs, hiddens = torch.chunk(transform_outputs,
                                                chunks=2,
                                                dim=self._split_dim)
@@ -148,20 +157,32 @@ class MultiscaleCompositeTransform(Transform):
                 yield outputs, logabsdet
 
             # Don't do the splitting for the last transform.
-            outputs, logabsdet = self._transforms[-1](hiddens, context)
+            outputs, logabsdet = self._transforms[-1](hiddens, context, full_jacobian)
             yield outputs, logabsdet
 
-        all_outputs = []
-        total_logabsdet = torch.zeros(batch_size)
+        if full_jacobian:
+            all_outputs = []
+            total_jacobian = None
 
-        for outputs, logabsdet in cascade():
-            all_outputs.append(outputs.reshape(batch_size, -1))
-            total_logabsdet += logabsdet
+            for outputs, jacobian in cascade():
+                all_outputs.append(outputs.reshape(batch_size, -1))
+                total_jacobian = jacobian if total_jacobian is None else torch.mm(total_jacobian, jacobian)
 
-        all_outputs = torch.cat(all_outputs, dim=-1)
-        return all_outputs, total_logabsdet
+            all_outputs = torch.cat(all_outputs, dim=-1)
+            return all_outputs, total_jacobian
 
-    def inverse(self, inputs, context=None):
+        else:
+            all_outputs = []
+            total_logabsdet = torch.zeros(batch_size)
+
+            for outputs, logabsdet in cascade():
+                all_outputs.append(outputs.reshape(batch_size, -1))
+                total_logabsdet += logabsdet
+
+            all_outputs = torch.cat(all_outputs, dim=-1)
+            return all_outputs, total_logabsdet
+
+    def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 2:
             raise ValueError('Expecting NxD inputs')
         if self._num_transforms != len(self._transforms):
@@ -181,20 +202,35 @@ class MultiscaleCompositeTransform(Transform):
             split_inputs.append(flat_input.view(-1, *self._output_shapes[i]))
         rev_split_inputs = split_inputs[::-1]
 
-        total_logabsdet = torch.zeros(batch_size)
+        if full_jacobian:
 
-        # We don't do the splitting for the last (here first) transform.
-        hiddens, logabsdet = rev_inv_transforms[0](rev_split_inputs[0], context)
-        total_logabsdet += logabsdet
+            # We don't do the splitting for the last (here first) transform.
+            hiddens, total_jacobian = rev_inv_transforms[0](rev_split_inputs[0], context, full_jacobian=True)
 
-        for inv_transform, input_chunk in zip(rev_inv_transforms[1:], rev_split_inputs[1:]):
-            tmp_concat_inputs = torch.cat([input_chunk, hiddens], dim=self._split_dim)
-            hiddens, logabsdet = inv_transform(tmp_concat_inputs, context)
+            for inv_transform, input_chunk in zip(rev_inv_transforms[1:], rev_split_inputs[1:]):
+                tmp_concat_inputs = torch.cat([input_chunk, hiddens], dim=self._split_dim)
+                hiddens, jacobian = inv_transform(tmp_concat_inputs, context, full_jacobian=True)
+                total_jacobian = torch.mm(total_jacobian, jacobian)
+
+            outputs = hiddens
+
+            return outputs, total_jacobian
+
+        else:
+            total_logabsdet = torch.zeros(batch_size)
+
+            # We don't do the splitting for the last (here first) transform.
+            hiddens, logabsdet = rev_inv_transforms[0](rev_split_inputs[0], context)
             total_logabsdet += logabsdet
 
-        outputs = hiddens
+            for inv_transform, input_chunk in zip(rev_inv_transforms[1:], rev_split_inputs[1:]):
+                tmp_concat_inputs = torch.cat([input_chunk, hiddens], dim=self._split_dim)
+                hiddens, logabsdet = inv_transform(tmp_concat_inputs, context)
+                total_logabsdet += logabsdet
 
-        return outputs, total_logabsdet
+            outputs = hiddens
+
+            return outputs, total_logabsdet
 
 
 class InverseTransform(Transform):
@@ -209,8 +245,8 @@ class InverseTransform(Transform):
         super().__init__()
         self._transform = transform
 
-    def forward(self, inputs, context=None):
-        return self._transform.inverse(inputs, context)
+    def forward(self, inputs, context=None, full_jacobian=False):
+        return self._transform.inverse(inputs, context, full_jacobian)
 
-    def inverse(self, inputs, context=None):
-        return self._transform(inputs, context)
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        return self._transform(inputs, context, full_jacobian)
