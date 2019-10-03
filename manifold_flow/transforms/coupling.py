@@ -92,10 +92,20 @@ class CouplingTransform(transforms.Transform):
                 identity_split, jacobian_identity =\
                     self.unconditional_transform(identity_split, context, full_jacobian=True)
             else:
-                jacobian_identity = torch.eye(len(self.num_identity_features)).unsqueeze(0)  # (1, n, n)
+                jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
+            # Put together full Jacobian
             batchsize = inputs.size
-            jacobian = torch.zeros(batchsize, )
+            jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
+            jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
+            jacobian[:,self.transform_features, self.identity_features] = torch.mm(jacobian_coupling, jacobian_transform)
+            jacobian[:,self.transform_features, self.transform_features] = jacobian_coupling
+
+            outputs = torch.empty_like(inputs)
+            outputs[:, self.identity_features, ...] = identity_split
+            outputs[:, self.transform_features, ...] = transform_split
+
+            return outputs, jacobian
 
         else:
             transform_params = self.transform_net(identity_split, context)
@@ -110,11 +120,11 @@ class CouplingTransform(transforms.Transform):
                     self.unconditional_transform(identity_split, context)
                 logabsdet += logabsdet_identity
 
-        outputs = torch.empty_like(inputs)
-        outputs[:, self.identity_features, ...] = identity_split
-        outputs[:, self.transform_features, ...] = transform_split
+            outputs = torch.empty_like(inputs)
+            outputs[:, self.identity_features, ...] = identity_split
+            outputs[:, self.transform_features, ...] = transform_split
 
-        return outputs, logabsdet
+            return outputs, logabsdet
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() not in [2, 4]:
