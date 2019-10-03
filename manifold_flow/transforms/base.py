@@ -48,7 +48,7 @@ class CompositeTransform(Transform):
             total_jacobian = None
             for func in funcs:
                 outputs, jacobian = func(outputs, context, full_jacobian=True)
-                total_jacobian = jacobian if total_jacobian is None else torch.mm(total_jacobian, jacobian)
+                total_jacobian = jacobian if total_jacobian is None else torch.mm(jacobian, total_jacobian)
             return outputs, total_jacobian
 
         else:
@@ -166,7 +166,7 @@ class MultiscaleCompositeTransform(Transform):
 
             for outputs, jacobian in cascade():
                 all_outputs.append(outputs.reshape(batch_size, -1))
-                total_jacobian = jacobian if total_jacobian is None else torch.mm(total_jacobian, jacobian)
+                total_jacobian = jacobian if total_jacobian is None else torch.mm(jacobian, total_jacobian)
 
             all_outputs = torch.cat(all_outputs, dim=-1)
             return all_outputs, total_jacobian
@@ -210,7 +210,7 @@ class MultiscaleCompositeTransform(Transform):
             for inv_transform, input_chunk in zip(rev_inv_transforms[1:], rev_split_inputs[1:]):
                 tmp_concat_inputs = torch.cat([input_chunk, hiddens], dim=self._split_dim)
                 hiddens, jacobian = inv_transform(tmp_concat_inputs, context, full_jacobian=True)
-                total_jacobian = torch.mm(total_jacobian, jacobian)
+                total_jacobian = torch.mm(jacobian, total_jacobian)
 
             outputs = hiddens
 
