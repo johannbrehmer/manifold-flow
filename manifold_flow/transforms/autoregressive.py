@@ -21,27 +21,27 @@ class AutoregressiveTransform(transforms.Transform):
         super(AutoregressiveTransform, self).__init__()
         self.autoregressive_net = autoregressive_net
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         autoregressive_params = self.autoregressive_net(inputs, context)
-        outputs, logabsdet = self._elementwise_forward(inputs, autoregressive_params)
+        outputs, logabsdet = self._elementwise_forward(inputs, autoregressive_params, full_jacobian=full_jacobian)
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         num_inputs = np.prod(inputs.shape[1:])
         outputs = torch.zeros_like(inputs)
         logabsdet = None
         for _ in range(num_inputs):
             autoregressive_params = self.autoregressive_net(outputs, context)
-            outputs, logabsdet = self._elementwise_inverse(inputs, autoregressive_params)
+            outputs, logabsdet = self._elementwise_inverse(inputs, autoregressive_params, full_jacobian=full_jacobian)
         return outputs, logabsdet
 
     def _output_dim_multiplier(self):
         raise NotImplementedError()
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         raise NotImplementedError()
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
         raise NotImplementedError()
 
 
@@ -74,21 +74,27 @@ class MaskedAffineAutoregressiveTransform(AutoregressiveTransform):
     def _output_dim_multiplier(self):
         return 2
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         unconstrained_scale, shift = self._unconstrained_scale_and_shift(autoregressive_params)
         scale = torch.sigmoid(unconstrained_scale + 2.) + 1e-3
         log_scale = torch.log(scale)
         outputs = scale * inputs + shift
-        logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
-        return outputs, logabsdet
+        if full_jacobian:
+            raise NotImplementedError
+        else:
+            logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
+            return outputs, logabsdet
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
         unconstrained_scale, shift = self._unconstrained_scale_and_shift(autoregressive_params)
         scale = torch.sigmoid(unconstrained_scale + 2.) + 1e-3
         log_scale = torch.log(scale)
         outputs = (inputs - shift) / scale
-        logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
-        return outputs, logabsdet
+        if full_jacobian:
+            raise NotImplementedError
+        else:
+            logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
+            return outputs, logabsdet
 
     def _unconstrained_scale_and_shift(self, autoregressive_params):
         # split_idx = autoregressive_params.size(1) // 2
@@ -134,12 +140,15 @@ class MaskedPiecewiseLinearAutoregressiveTransform(AutoregressiveTransform):
     def _output_dim_multiplier(self):
         return self.num_bins
 
-    def _elementwise(self, inputs, autoregressive_params, inverse=False):
+    def _elementwise(self, inputs, autoregressive_params, inverse=False, full_jacobian=False):
         batch_size = inputs.shape[0]
 
         unnormalized_pdf = autoregressive_params.view(batch_size,
                                                       self.features,
                                                       self._output_dim_multiplier())
+
+        if full_jacobian:
+            raise NotImplementedError
 
         outputs, logabsdet = splines.linear_spline(inputs=inputs,
                                                    unnormalized_pdf=unnormalized_pdf,
@@ -147,11 +156,11 @@ class MaskedPiecewiseLinearAutoregressiveTransform(AutoregressiveTransform):
 
         return outputs, utils.sum_except_batch(logabsdet)
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params)
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params, inverse=True)
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, inverse=True, full_jacobian=full_jacobian)
 
 
 class MaskedPiecewiseQuadraticAutoregressiveTransform(AutoregressiveTransform):
@@ -199,7 +208,11 @@ class MaskedPiecewiseQuadraticAutoregressiveTransform(AutoregressiveTransform):
         else:
             return self.num_bins * 2 + 1
 
-    def _elementwise(self, inputs, autoregressive_params, inverse=False):
+    def _elementwise(self, inputs, autoregressive_params, inverse=False, full_jacobian=False):
+
+        if full_jacobian:
+            raise NotImplementedError
+
         batch_size = inputs.shape[0]
 
         transform_params = autoregressive_params.view(batch_size,
@@ -237,11 +250,11 @@ class MaskedPiecewiseQuadraticAutoregressiveTransform(AutoregressiveTransform):
 
         return outputs, utils.sum_except_batch(logabsdet)
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params)
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params, inverse=True)
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, inverse=True, full_jacobian=full_jacobian)
 
 
 class MaskedPiecewiseCubicAutoregressiveTransform(AutoregressiveTransform):
@@ -275,7 +288,11 @@ class MaskedPiecewiseCubicAutoregressiveTransform(AutoregressiveTransform):
     def _output_dim_multiplier(self):
         return self.num_bins * 2 + 2
 
-    def _elementwise(self, inputs, autoregressive_params, inverse=False):
+    def _elementwise(self, inputs, autoregressive_params, inverse=False, full_jacobian=False):
+
+        if full_jacobian:
+            raise NotImplementedError
+
         batch_size = inputs.shape[0]
 
         transform_params = autoregressive_params.view(batch_size,
@@ -302,11 +319,11 @@ class MaskedPiecewiseCubicAutoregressiveTransform(AutoregressiveTransform):
         )
         return outputs, utils.sum_except_batch(logabsdet)
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params)
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params, inverse=True)
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, inverse=True, full_jacobian=full_jacobian)
 
 
 class MaskedPiecewiseRationalQuadraticAutoregressiveTransform(AutoregressiveTransform):
@@ -357,7 +374,11 @@ class MaskedPiecewiseRationalQuadraticAutoregressiveTransform(AutoregressiveTran
         else:
             raise ValueError
 
-    def _elementwise(self, inputs, autoregressive_params, inverse=False):
+    def _elementwise(self, inputs, autoregressive_params, inverse=False, full_jacobian=False):
+
+        if full_jacobian:
+            raise NotImplementedError
+
         batch_size, features = inputs.shape[0], inputs.shape[1]
 
         transform_params = autoregressive_params.view(
@@ -400,11 +421,11 @@ class MaskedPiecewiseRationalQuadraticAutoregressiveTransform(AutoregressiveTran
 
         return outputs, utils.sum_except_batch(logabsdet)
 
-    def _elementwise_forward(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params)
+    def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
 
-    def _elementwise_inverse(self, inputs, autoregressive_params):
-        return self._elementwise(inputs, autoregressive_params, inverse=True)
+    def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
+        return self._elementwise(inputs, autoregressive_params, inverse=True, full_jacobian=full_jacobian)
 
 
 def main():
