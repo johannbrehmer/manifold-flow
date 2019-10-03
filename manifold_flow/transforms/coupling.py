@@ -62,7 +62,7 @@ class CouplingTransform(transforms.Transform):
     def num_transform_features(self):
         return len(self.transform_features)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() not in [2, 4]:
             raise ValueError('Inputs must be a 2D or a 4D tensor.')
 
@@ -73,16 +73,42 @@ class CouplingTransform(transforms.Transform):
         identity_split = inputs[:, self.identity_features, ...]
         transform_split = inputs[:, self.transform_features, ...]
 
+        # Calculate phi = transform(identity_split)
         transform_params = self.transform_net(identity_split, context)
-        transform_split, logabsdet = self._coupling_transform_forward(
-            inputs=transform_split,
-            transform_params=transform_params
-        )
 
-        if self.unconditional_transform is not None:
-            identity_split, logabsdet_identity =\
-                self.unconditional_transform(identity_split, context)
-            logabsdet += logabsdet_identity
+        if full_jacobian:
+            # Calculate Jacobian of d phi / d identity_split
+            identity_split.requires_grad = True
+            transform_params = self.transform_net(identity_split, context)
+            jacobian_transform = utils.batch_jacobian(transform_params, identity_split)
+
+            transform_split, jacobian_coupling = self._coupling_transform_forward(
+                inputs=transform_split,
+                transform_params=transform_params,
+                full_jacobian=True
+            )
+
+            if self.unconditional_transform is not None:
+                identity_split, jacobian_identity =\
+                    self.unconditional_transform(identity_split, context, full_jacobian=True)
+            else:
+                jacobian_identity = torch.eye(len(self.num_identity_features)).unsqueeze(0)  # (1, n, n)
+
+            batchsize = inputs.size
+            jacobian = torch.zeros(batchsize, )
+
+        else:
+            transform_params = self.transform_net(identity_split, context)
+
+            transform_split, logabsdet = self._coupling_transform_forward(
+                inputs=transform_split,
+                transform_params=transform_params
+            )
+
+            if self.unconditional_transform is not None:
+                identity_split, logabsdet_identity =\
+                    self.unconditional_transform(identity_split, context)
+                logabsdet += logabsdet_identity
 
         outputs = torch.empty_like(inputs)
         outputs[:, self.identity_features, ...] = identity_split
@@ -90,7 +116,7 @@ class CouplingTransform(transforms.Transform):
 
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() not in [2, 4]:
             raise ValueError('Inputs must be a 2D or a 4D tensor.')
 

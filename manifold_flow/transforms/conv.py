@@ -27,17 +27,23 @@ class OneByOneConvolution(transforms.LULinear):
 
         return outputs, utils.sum_except_batch(logabsdet)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 4:
             raise ValueError('Inputs must be a 4D tensor.')
+
+        if full_jacobian:
+            raise NotImplementedError
 
         inputs, _ = self.permutation(inputs)
 
         return self._lu_forward_inverse(inputs, inverse=False)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 4:
             raise ValueError('Inputs must be a 4D tensor.')
+
+        if full_jacobian:
+            raise NotImplementedError
 
         outputs, logabsdet = self._lu_forward_inverse(inputs, inverse=True)
 
