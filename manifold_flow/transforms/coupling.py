@@ -74,8 +74,6 @@ class CouplingTransform(transforms.Transform):
         transform_split = inputs[:, self.transform_features, ...]
 
         # Calculate phi = transform(identity_split)
-        transform_params = self.transform_net(identity_split, context)
-
         if full_jacobian:
             # Calculate Jacobian of d phi / d identity_split
             identity_split.requires_grad = True
@@ -137,6 +135,8 @@ class CouplingTransform(transforms.Transform):
         identity_split = inputs[:, self.identity_features, ...]
         transform_split = inputs[:, self.transform_features, ...]
 
+        # TODO: from here
+
         logabsdet = 0.0
         if self.unconditional_transform is not None:
             identity_split, logabsdet = self.unconditional_transform.inverse(identity_split,
@@ -159,11 +159,11 @@ class CouplingTransform(transforms.Transform):
         """Number of features to output for each transform dimension."""
         raise NotImplementedError()
 
-    def _coupling_transform_forward(self, inputs, transform_params):
+    def _coupling_transform_forward(self, inputs, transform_params, full_jacobian=False):
         """Forward pass of the coupling transform."""
         raise NotImplementedError()
 
-    def _coupling_transform_inverse(self, inputs, transform_params):
+    def _coupling_transform_inverse(self, inputs, transform_params, full_jacobian=False):
         """Inverse of the coupling transform."""
         raise NotImplementedError()
 
