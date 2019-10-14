@@ -7,13 +7,17 @@ from manifold_flow import transforms
 class IdentityTransform(transforms.Transform):
     """Transform that leaves input unchanged."""
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         batch_size = inputs.shape[0]
-        logabsdet = torch.zeros(batch_size)
-        return inputs, logabsdet
+        if full_jacobian:
+            jacobian = torch.eye(inputs.shape[1:]).unsqueeze(0)
+            return inputs, jacobian
+        else:
+            logabsdet = torch.zeros(batch_size)
+            return inputs, logabsdet
 
-    def inverse(self, inputs, context=None):
-        return self(inputs, context)
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        return self(inputs, context, full_jacobian)
 
 
 class AffineScalarTransform(transforms.Transform):
