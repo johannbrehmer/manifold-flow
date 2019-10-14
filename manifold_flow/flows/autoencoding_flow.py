@@ -73,23 +73,23 @@ class TwoStepAutoencodingFlow(nn.Module):
         self.projection = Projection(self.total_data_dim, self.total_latent_dim)
 
         if isinstance(self.data_dim, int):
-            if isinstance(self.outer_transform, str):
+            if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
                 self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform)
             else:
                 self.outer_transform = outer_transform
         else:
             c, h, w = data_dim
-            if isinstance(self.outer_transform, str):
+            if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for image data with base type %s", outer_transform)
                 self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
             else:
                 self.outer_transform = outer_transform
 
-        if isinstance(self.inner_transform, str):
+        if isinstance(inner_transform, str):
             logger.debug("Creating default inner transform with base type %s", outer_transform)
             self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform)
-        elif self.inner_transform is None:
+        elif inner_transform is None:
             self.inner_transform = transforms.IdentityTransform()
         else:
             self.inner_transform = inner_transform

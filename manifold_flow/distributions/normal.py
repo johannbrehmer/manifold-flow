@@ -39,6 +39,40 @@ class StandardNormal(distributions.Distribution):
             return torch.zeros(context.shape[0], *self._shape)
 
 
+class RescaledNormal(distributions.Distribution):
+    """A multivariate Normal with zero mean and unit covariance."""
+
+    def __init__(self, shape, std=1.):
+        super().__init__()
+        self._shape = torch.Size(shape)
+        self.std = std
+        self._log_z = 0.5 * np.prod(shape) * np.log(2 * np.pi) + np.prod(shape) * torch.log(self.std)
+
+    def _log_prob(self, inputs, context):
+        # Note: the context is ignored.
+        if inputs.shape[1:] != self._shape:
+            raise ValueError('Expected input of shape {}, got {}'.format(
+                self._shape, inputs.shape[1:]))
+        neg_energy = -0.5 * utils.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std**2
+        return neg_energy - self._log_z
+
+    def _sample(self, num_samples, context):
+        if context is None:
+            return self.std * torch.randn(num_samples, *self._shape)
+        else:
+            # The value of the context is ignored, only its size is taken into account.
+            context_size = context.shape[0]
+            samples = self.std * torch.randn(context_size * num_samples, *self._shape)
+            return utils.split_leading_dim(samples, [context_size, num_samples])
+
+    def _mean(self, context):
+        if context is None:
+            return torch.zeros(self._shape)
+        else:
+            # The value of the context is ignored, only its size is taken into account.
+            return torch.zeros(context.shape[0], *self._shape)
+
+
 class ConditionalDiagonalNormal(distributions.Distribution):
     """A diagonal multivariate Normal whose parameters are functions of a context."""
 
