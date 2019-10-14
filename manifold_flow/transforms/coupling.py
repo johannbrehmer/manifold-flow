@@ -169,7 +169,6 @@ class CouplingTransform(transforms.Transform):
 
             return outputs, jacobian
 
-
         else:
             logabsdet = 0.0
             if self.unconditional_transform is not None:
@@ -218,19 +217,27 @@ class AffineCouplingTransform(CouplingTransform):
         scale = torch.sigmoid(unconstrained_scale + 2) + 1e-3
         return scale, shift
 
-    def _coupling_transform_forward(self, inputs, transform_params):
+    def _coupling_transform_forward(self, inputs, transform_params, full_jacobian=False):
         scale, shift = self._scale_and_shift(transform_params)
         log_scale = torch.log(scale)
         outputs = inputs * scale + shift
-        logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
-        return outputs, logabsdet
+        if full_jacobian:
+            jacobian = utils.batch_diagonal(log_scale)
+            return outputs, jacobian
+        else:
+            logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
+            return outputs, logabsdet
 
-    def _coupling_transform_inverse(self, inputs, transform_params):
+    def _coupling_transform_inverse(self, inputs, transform_params, full_jacobian=False):
         scale, shift = self._scale_and_shift(transform_params)
         log_scale = torch.log(scale)
         outputs = (inputs - shift) / scale
-        logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
-        return outputs, logabsdet
+        if full_jacobian:
+            jacobian = -utils.batch_diagonal(log_scale)
+            return outputs, jacobian
+        else:
+            logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
+            return outputs, logabsdet
 
 
 class AdditiveCouplingTransform(AffineCouplingTransform):

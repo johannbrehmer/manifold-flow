@@ -56,6 +56,22 @@ def batch_jacobian(outputs, inputs, create_graph=False):
     return jac
 
 
+def batch_diagonal(input):
+    # idea from here: https://discuss.pytorch.org/t/batch-of-diagonal-matrix/13560
+    # batches a stack of vectors (batch x N) -> a stack of diagonal matrices (batch x N x N)
+    # works in  2D -> 3D, should also work in higher dimensions
+    # make a zero matrix, which duplicates the last dim of input
+    dims = [input.size(i) for i in torch.arange(input.dim())]
+    dims.append(dims[-1])
+    output = torch.zeros(dims)
+    # stride across the first dimensions, add one to get the diagonal of the last dimension
+    strides = [output.stride(i) for i in torch.arange(input.dim() - 1 )]
+    strides.append(output.size(-1) + 1)
+    # stride and copy the imput to the diagonal
+    output.as_strided(input.size(), strides ).copy_(input)
+    return output
+
+
 def shuffle(*arrays):
     """ Shuffles multiple arrays simultaneously """
 
