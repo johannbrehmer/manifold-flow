@@ -135,25 +135,59 @@ class CouplingTransform(transforms.Transform):
         identity_split = inputs[:, self.identity_features, ...]
         transform_split = inputs[:, self.transform_features, ...]
 
-        # TODO: from here
+        if full_jacobian:
+            # Calculate Jacobian of d phi / d identity_split
+            identity_split.requires_grad = True
 
-        logabsdet = 0.0
-        if self.unconditional_transform is not None:
-            identity_split, logabsdet = self.unconditional_transform.inverse(identity_split,
-                                                                             context)
+            if self.unconditional_transform is not None:
+                identity_split, jacobian_identity = self.unconditional_transform.inverse(
+                    identity_split, context, full_jacobian=True
+                )
+            else:
+                jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
-        transform_params = self.transform_net(identity_split, context)
-        transform_split, logabsdet_split = self._coupling_transform_inverse(
-            inputs=transform_split,
-            transform_params=transform_params
-        )
-        logabsdet += logabsdet_split
+            transform_params = self.transform_net(identity_split, context)
+            jacobian_transform = utils.batch_jacobian(transform_params, identity_split)
 
-        outputs = torch.empty_like(inputs)
-        outputs[:, self.identity_features] = identity_split
-        outputs[:, self.transform_features] = transform_split
+            transform_split, jacobian_coupling = self._coupling_transform_inverse(
+                inputs=transform_split,
+                transform_params=transform_params,
+                full_jacobian=True,
+            )
 
-        return outputs, logabsdet
+            # Put together full Jacobian
+            # TODO: check that this is true for the inverse direction
+            batchsize = inputs.size
+            jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
+            jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
+            jacobian[:,self.transform_features, self.identity_features] = torch.mm(jacobian_coupling, jacobian_transform)
+            jacobian[:,self.transform_features, self.transform_features] = jacobian_coupling
+
+            outputs = torch.empty_like(inputs)
+            outputs[:, self.identity_features] = identity_split
+            outputs[:, self.transform_features] = transform_split
+
+            return outputs, jacobian
+
+
+        else:
+            logabsdet = 0.0
+            if self.unconditional_transform is not None:
+                identity_split, logabsdet = self.unconditional_transform.inverse(identity_split,
+                                                                                 context)
+
+            transform_params = self.transform_net(identity_split, context)
+            transform_split, logabsdet_split = self._coupling_transform_inverse(
+                inputs=transform_split,
+                transform_params=transform_params
+            )
+            logabsdet += logabsdet_split
+
+            outputs = torch.empty_like(inputs)
+            outputs[:, self.identity_features] = identity_split
+            outputs[:, self.transform_features] = transform_split
+
+            return outputs, logabsdet
 
     def _transform_dim_multiplier(self):
         """Number of features to output for each transform dimension."""
