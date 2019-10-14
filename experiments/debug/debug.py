@@ -15,7 +15,7 @@ for key in logging.Logger.manager.loggerDict:
     if "manifold_flow" not in key:
         logging.getLogger(key).setLevel(logging.WARNING)
 
-n = 1000
+n = 1
 x0 = torch.randn(n).view(-1,1)
 x1 = 0.5*(1.5 + x0)*(1.5-x0)
 x = torch.cat([x0,x1],1)

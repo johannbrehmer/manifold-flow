@@ -1,6 +1,7 @@
 """Implementations of permutation-like transforms."""
 
 import torch
+import numpy as np
 
 from manifold_flow import utils, transforms
 
@@ -56,7 +57,7 @@ class Permutation(transforms.Transform):
             jacobian = torch.ones(outputs.size() + inputs.size()[1:]) * jacobian
 
             # Finally, view it as a (batch, n, n) Jacobian
-            jacobian = jacobian.view((inputs.size()[0], torch.prod(inputs.size()[1:]), torch.prod(inputs.size()[1:])))
+            jacobian = jacobian.view((inputs.size()[0], np.prod(inputs.size()[1:]), np.prod(inputs.size()[1:])))
 
             return outputs, jacobian
         else:
