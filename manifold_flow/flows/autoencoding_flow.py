@@ -24,7 +24,7 @@ class Projection(transforms.Transform):
 
         assert self.input_dim_total >= self.output_dim_total, "Input dimension has to be larger than output dimension"
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
             u = inputs[:, : self.output_dim]
         elif self.mode_in == "image" and self.mode_out == "vector":
@@ -34,7 +34,7 @@ class Projection(transforms.Transform):
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
         return u
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
             x = torch.cat(
                 (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
@@ -57,8 +57,8 @@ class TwoStepAutoencodingFlow(nn.Module):
         self,
         data_dim,
         latent_dim=10,
-        inner="rq-coupling",
-        outer="rq-coupling",
+        inner_transform="rq-coupling",
+        outer_transform="rq-coupling",
         steps_inner=3,
         steps_outer=3,
     ):
@@ -73,12 +73,26 @@ class TwoStepAutoencodingFlow(nn.Module):
         self.projection = Projection(self.total_data_dim, self.total_latent_dim)
 
         if isinstance(self.data_dim, int):
-            self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner)
+            if isinstance(self.outer_transform, str):
+                logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
+                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform)
+            else:
+                self.outer_transform = outer_transform
         else:
             c, h, w = data_dim
-            self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner)
+            if isinstance(self.outer_transform, str):
+                logger.debug("Creating default outer transform for image data with base type %s", outer_transform)
+                self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
+            else:
+                self.outer_transform = outer_transform
+
+        if isinstance(self.inner_transform, str):
+            logger.debug("Creating default inner transform with base type %s", outer_transform)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform)
+        elif self.inner_transform is None:
+            self.inner_transform = transforms.IdentityTransform()
+        else:
+            self.inner_transform = inner_transform
 
         self._report_model_parameters()
 
