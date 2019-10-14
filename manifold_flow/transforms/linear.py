@@ -43,14 +43,18 @@ class Linear(transforms.Transform):
         self.using_cache = using_cache
         self.cache = LinearCache()
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         if not self.training and self.using_cache:
             self._check_forward_cache()
             outputs = F.linear(inputs, self.cache.weight, self.bias)
-            logabsdet = self.cache.logabsdet * torch.ones(outputs.shape[0])
-            return outputs, logabsdet
+            if full_jacobian:
+                jacobian = torch.ones(outputs.shape[0]) * self.cache.weight.unsqueeze(0)
+                return outputs, jacobian
+            else:
+                logabsdet = self.cache.logabsdet * torch.ones(outputs.shape[0])
+                return outputs, logabsdet
         else:
-            return self.forward_no_cache(inputs)
+            return self.forward_no_cache(inputs, full_jacobian=full_jacobian)
 
     def _check_forward_cache(self):
         if self.cache.weight is None and self.cache.logabsdet is None:
@@ -62,14 +66,18 @@ class Linear(transforms.Transform):
         elif self.cache.logabsdet is None:
             self.cache.logabsdet = self.logabsdet()
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         if not self.training and self.using_cache:
             self._check_inverse_cache()
             outputs = F.linear(inputs - self.bias, self.cache.inverse)
-            logabsdet = (-self.cache.logabsdet) * torch.ones(outputs.shape[0])
-            return outputs, logabsdet
+            if full_jacobian:
+                jacobian = torch.ones(outputs.shape[0]) * self.cache.inverse.unsqueeze(0)
+                return outputs, jacobian
+            else:
+                logabsdet = (-self.cache.logabsdet) * torch.ones(outputs.shape[0])
+                return outputs, logabsdet
         else:
-            return self.inverse_no_cache(inputs)
+            return self.inverse_no_cache(inputs, full_jacobian=full_jacobian)
 
     def _check_inverse_cache(self):
         if self.cache.inverse is None and self.cache.logabsdet is None:
@@ -102,11 +110,11 @@ class Linear(transforms.Transform):
         # inverse and weight matrix logabsdet together.
         return self.weight_inverse(), self.logabsdet()
 
-    def forward_no_cache(self, inputs):
+    def forward_no_cache(self, inputs, full_jacobian):
         """Applies `forward` method without using the cache."""
         raise NotImplementedError()
 
-    def inverse_no_cache(self, inputs):
+    def inverse_no_cache(self, inputs, full_jacobian):
         """Applies `inverse` method without using the cache."""
         raise NotImplementedError()
 
@@ -153,7 +161,7 @@ class NaiveLinear(Linear):
             stdv = 1.0 / np.sqrt(features)
             init.uniform_(self._weight, -stdv, stdv)
 
-    def forward_no_cache(self, inputs):
+    def forward_no_cache(self, inputs, full_jacobian=False):
         """Cost:
             output = O(D^2N)
             logabsdet = O(D^3)
@@ -163,11 +171,15 @@ class NaiveLinear(Linear):
         """
         batch_size = inputs.shape[0]
         outputs = F.linear(inputs, self._weight, self.bias)
-        logabsdet = utils.logabsdet(self._weight)
-        logabsdet = logabsdet * torch.ones(batch_size)
-        return outputs, logabsdet
+        if full_jacobian:
+            jacobian = torch.ones(outputs.shape[0]) * self._weight.unsqueeze(0)
+            return outputs, jacobian
+        else:
+            logabsdet = utils.logabsdet(self._weight)
+            logabsdet = logabsdet * torch.ones(batch_size)
+            return outputs, logabsdet
 
-    def inverse_no_cache(self, inputs):
+    def inverse_no_cache(self, inputs, full_jacobian=False):
         """Cost:
             output = O(D^3 + D^2N)
             logabsdet = O(D^3)
@@ -175,6 +187,9 @@ class NaiveLinear(Linear):
             D = num of features
             N = num of inputs
         """
+        if full_jacobian:
+            raise NotImplementedError
+
         batch_size = inputs.shape[0]
         outputs = inputs - self.bias
         outputs, lu = torch.gesv(outputs.t(), self._weight)  # Linear-system solver.

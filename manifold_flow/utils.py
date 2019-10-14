@@ -47,6 +47,9 @@ def batch_jacobian(outputs, inputs, create_graph=False):
 
     assert outputs.size(0) == inputs.size(0)
 
+    outputs = outputs.view((outputs.size(0), -1))
+    inputs = inputs.view((inputs.size(0), -1))
+
     jac = calculate_jacobian(outputs, inputs)
     jac = torch.einsum("bibj->bij", jac)
 

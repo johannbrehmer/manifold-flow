@@ -23,22 +23,28 @@ class Permutation(transforms.Transform):
         return torch.argsort(self._permutation)
 
     @staticmethod
-    def _permute(inputs, permutation, dim):
+    def _permute(inputs, permutation, dim, full_jacobian=False):
         if dim >= inputs.ndimension():
             raise ValueError("No dimension {} in inputs.".format(dim))
         if inputs.shape[dim] != len(permutation):
             raise ValueError("Dimension {} in inputs must be of size {}."
                              .format(dim, len(permutation)))
         batch_size = inputs.shape[0]
-        outputs = torch.index_select(inputs, dim, permutation)
-        logabsdet = torch.zeros(batch_size)
-        return outputs, logabsdet
+        if full_jacobian:
+            inputs.requires_grad = True
+            outputs = torch.index_select(inputs, dim, permutation)
+            jacobian = utils.batch_jacobian(outputs, inputs)
+            return outputs, jacobian
+        else:
+            outputs = torch.index_select(inputs, dim, permutation)
+            logabsdet = torch.zeros(batch_size)
+            return outputs, logabsdet
 
-    def forward(self, inputs, context=None):
-        return self._permute(inputs, self._permutation, self._dim)
+    def forward(self, inputs, context=None, full_jacobian=False):
+        return self._permute(inputs, self._permutation, self._dim, full_jacobian=full_jacobian)
 
-    def inverse(self, inputs, context=None):
-        return self._permute(inputs, self._inverse_permutation, self._dim)
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        return self._permute(inputs, self._inverse_permutation, self._dim, full_jacobian=full_jacobian)
 
 
 class RandomPermutation(Permutation):
