@@ -98,12 +98,13 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def forward(self, x):
         # Encode
-        u, h, log_det_inner, log_det_outer = self._encode(x)
+        u, h, log_det_inner, jacobian_outer = self._encode(x)
 
         # Decode
         x = self.decode(u)
 
         # Log prob
+        log_det_outer = -0.5 * torch.log(torch.det(torch.mm(jacobian_outer.T, jacobian_outer)))
         log_prob = self.latent_distribution._log_prob(u, context=None)
         log_prob = log_prob + log_det_outer + log_det_inner
 
@@ -121,9 +122,10 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def log_prob(self, x):
         # Encode
-        u, _, log_det_inner, log_det_outer = self._encode(x)
+        u, _, log_det_inner, jacobian_outer = self._encode(x)
 
         # Log prob
+        log_det_outer = -0.5 * torch.log(torch.det(torch.mm(jacobian_outer.T, jacobian_outer)))
         log_prob = self.latent_distribution._log_prob(u, context=None)
         log_prob = log_prob + log_det_outer + log_det_inner
 
@@ -136,10 +138,10 @@ class TwoStepAutoencodingFlow(nn.Module):
         return x
 
     def _encode(self, x):
-        h, log_det_outer = self.outer_transform(x)
+        h, jacobian_outer = self.outer_transform(x, full_jacobian=True)
         h = self.projection(h)
         u, log_det_inner = self.inner_transform(h)
-        return u, h, log_det_inner, log_det_outer
+        return u, h, log_det_inner, jacobian_outer
 
     def _report_model_parameters(self):
         all_params = sum(p.numel() for p in self.parameters())
