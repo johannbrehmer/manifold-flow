@@ -31,9 +31,33 @@ class Permutation(transforms.Transform):
                              .format(dim, len(permutation)))
         batch_size = inputs.shape[0]
         if full_jacobian:
-            inputs.requires_grad = True
+            # inputs.requires_grad = True
             outputs = torch.index_select(inputs, dim, permutation)
-            jacobian = utils.batch_jacobian(outputs, inputs)
+
+            # The brute force way does not seem to work, not sure why, maybe index_select breaks autodiff
+            # jacobian = utils.batch_jacobian(outputs, inputs)
+
+            # First build the Jacobian as a 2D matrix
+            jacobian = torch.zeros((outputs.size()[dim], inputs.size()[dim]))
+            jacobian[permutation, torch.arange(0, len(permutation), 1)] = 1.
+
+            # Add dummy dimensions for batch size...
+            jacobian = jacobian.unsqueeze(0)  # (1, n, n)
+            # ... and for every dimension smaller than dim...
+            for i in range(dim - 1):
+                jacobian = jacobian.unsqueeze(2 + 2*i)
+                jacobian = jacobian.unsqueeze(1 + i)
+            # ... and for every dimension larger than dim...
+            for i in range(len(inputs.size()) - dim - 1):
+                jacobian = jacobian.unsqueeze(1 + 2 * dim + 2*i)
+                jacobian = jacobian.unsqueeze(1 + dim + i)
+
+            # Broadcast to full size
+            jacobian = torch.ones(outputs.size() + inputs.size()[1:]) * jacobian
+
+            # Finally, view it as a (batch, n, n) Jacobian
+            jacobian = jacobian.view((inputs.size()[0], torch.prod(inputs.size()[1:]), torch.prod(inputs.size()[1:])))
+
             return outputs, jacobian
         else:
             outputs = torch.index_select(inputs, dim, permutation)

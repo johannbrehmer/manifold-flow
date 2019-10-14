@@ -9,7 +9,7 @@ from manifold_flow import distributions, transforms
 logger = logging.getLogger(__name__)
 
 
-class Projection(transforms.Transform):
+class ProjectionSplit(transforms.Transform):
     def __init__(self, input_dim, output_dim):
         super().__init__()
 
@@ -27,12 +27,14 @@ class Projection(transforms.Transform):
     def forward(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
             u = inputs[:, : self.output_dim]
+            rest = inputs[:, self.output_dim: ]
         elif self.mode_in == "image" and self.mode_out == "vector":
-            u = inputs.view(inputs.size(0), -1)
-            u = u[:, : self.output_dim]
+            h = inputs.view(inputs.size(0), -1)
+            u = h[:, : self.output_dim]
+            rest = h[:, self.output_dim: ]
         else:
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
-        return u
+        return u, rest
 
     def inverse(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
@@ -52,7 +54,7 @@ class Projection(transforms.Transform):
         return x
 
 
-class TwoStepAutoencodingFlow(nn.Module):
+class PIE(nn.Module):
     def __init__(
         self,
         data_dim,
@@ -61,16 +63,18 @@ class TwoStepAutoencodingFlow(nn.Module):
         outer_transform="rq-coupling",
         steps_inner=3,
         steps_outer=3,
+        epsilon=1.e-3
     ):
-        super(TwoStepAutoencodingFlow, self).__init__()
+        super(PIE, self).__init__()
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
 
-        self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
-        self.projection = Projection(self.total_data_dim, self.total_latent_dim)
+        self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
+        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_latent_dim,), std=epsilon)
+        self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
@@ -98,18 +102,20 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def forward(self, x):
         # Encode
-        u, h, log_det_inner, jacobian_outer = self._encode(x)
+        u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x)
 
         # Decode
         x = self.decode(u)
 
         # Log prob
-        log_prob = self._log_prob(u, log_det_inner, jacobian_outer)
+        log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+        log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
+        log_prob = log_prob + log_det_outer + log_det_inner
 
         return x, log_prob, u
 
     def encode(self, x):
-        u, _, _, _ = self._encode(x, calculate_jacobian=False)
+        u, _, _, _, _ = self._encode(x)
         return u
 
     def decode(self, u):
@@ -120,36 +126,26 @@ class TwoStepAutoencodingFlow(nn.Module):
 
     def log_prob(self, x):
         # Encode
-        u, _, log_det_inner, jacobian_outer = self._encode(x)
+        u, _, h_orthogonal, log_det_inner, log_det_outer = self._encode(x)
 
         # Log prob
-        log_prob = self._log_prob(u, log_det_inner, jacobian_outer)
+        log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+        log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
+        log_prob = log_prob + log_det_outer + log_det_inner
 
         return log_prob
 
     def sample(self, u=None, n=1):
         if u is None:
-            u = self.latent_distribution.sample(n)
+            u = self.manifold_latent_distribution.sample(n)
         x = self.decode(u)
         return x
 
-    def _encode(self, x, calculate_jacobian=True):
-        if calculate_jacobian:
-            x.requires_grad = True
-        h, jacobian_outer = self.outer_transform(x, full_jacobian=calculate_jacobian)
-        h = self.projection(h)
-        u, log_det_inner = self.inner_transform(h)
-        if calculate_jacobian:
-            return u, h, log_det_inner, jacobian_outer
-        else:
-            return u, h, None, None
-
-    def _log_prob(self, u, log_det_inner, jacobian_outer):
-        jtj = torch.bmm(torch.transpose(jacobian_outer,-2,-1), jacobian_outer)
-        log_det_outer = -0.5 * torch.logdet(jtj)
-        log_prob = self.latent_distribution._log_prob(u, context=None)
-        log_prob = log_prob + log_det_outer + log_det_inner
-        return log_prob
+    def _encode(self, x):
+        h, log_det_outer = self.outer_transform(x)
+        h_manifold, h_orthogonal = self.projection(h)
+        u, log_det_inner = self.inner_transform(h_manifold)
+        return u, h_manifold, h_orthogonal, log_det_inner, log_det_outer
 
     def _report_model_parameters(self):
         all_params = sum(p.numel() for p in self.parameters())

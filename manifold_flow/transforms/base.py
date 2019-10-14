@@ -48,7 +48,7 @@ class CompositeTransform(Transform):
             total_jacobian = None
             for func in funcs:
                 outputs, jacobian = func(outputs, context, full_jacobian=True)
-                total_jacobian = jacobian if total_jacobian is None else torch.mm(jacobian, total_jacobian)
+                total_jacobian = jacobian if total_jacobian is None else torch.bmm(jacobian, total_jacobian)
             return outputs, total_jacobian
 
         else:

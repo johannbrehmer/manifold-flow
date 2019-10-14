@@ -73,31 +73,24 @@ class CouplingTransform(transforms.Transform):
         identity_split = inputs[:, self.identity_features, ...]
         transform_split = inputs[:, self.transform_features, ...]
 
-        # Calculate phi = transform(identity_split)
         if full_jacobian:
-            # Calculate Jacobian of d phi / d identity_split
-            identity_split.requires_grad = True
             transform_params = self.transform_net(identity_split, context)
-            jacobian_transform = utils.batch_jacobian(transform_params, identity_split)
-
-            transform_split, jacobian_coupling = self._coupling_transform_forward(
+            transform_split, _ = self._coupling_transform_forward(
                 inputs=transform_split,
-                transform_params=transform_params,
-                full_jacobian=True
+                transform_params=transform_params
             )
+            jacobian_transform = utils.batch_jacobian(transform_split, identity_split)
 
             if self.unconditional_transform is not None:
-                identity_split, jacobian_identity =\
-                    self.unconditional_transform(identity_split, context, full_jacobian=True)
+                identity_split, jacobian_identity = self.unconditional_transform(identity_split, context)
             else:
                 jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
             # Put together full Jacobian
-            batchsize = inputs.size
+            batchsize = inputs.size(0)
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
             jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
-            jacobian[:,self.transform_features, self.identity_features] = torch.mm(jacobian_coupling, jacobian_transform)
-            jacobian[:,self.transform_features, self.transform_features] = jacobian_coupling
+            jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
             outputs[:, self.identity_features, ...] = identity_split
@@ -137,34 +130,31 @@ class CouplingTransform(transforms.Transform):
 
         if full_jacobian:
             # Calculate Jacobian of d phi / d identity_split
-            identity_split.requires_grad = True
-
             if self.unconditional_transform is not None:
-                identity_split, jacobian_identity = self.unconditional_transform.inverse(
+                identity_split_after_unconditional_transform, jacobian_identity = self.unconditional_transform.inverse(
                     identity_split, context, full_jacobian=True
                 )
             else:
+                identity_split_after_unconditional_transform = identity_split
                 jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
             transform_params = self.transform_net(identity_split, context)
             jacobian_transform = utils.batch_jacobian(transform_params, identity_split)
 
-            transform_split, jacobian_coupling = self._coupling_transform_inverse(
+            transform_split, _ = self._coupling_transform_inverse(
                 inputs=transform_split,
                 transform_params=transform_params,
-                full_jacobian=True,
             )
+            jacobian_transform = utils.batch_jacobian(transform_split, identity_split)
 
-            # Put together full Jacobian
-            # TODO: check that this is true for the inverse direction
+            # Put together full Jacobian\
             batchsize = inputs.size
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
             jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
-            jacobian[:,self.transform_features, self.identity_features] = torch.mm(jacobian_coupling, jacobian_transform)
-            jacobian[:,self.transform_features, self.transform_features] = jacobian_coupling
+            jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
-            outputs[:, self.identity_features] = identity_split
+            outputs[:, self.identity_features] = identity_split_after_unconditional_transform
             outputs[:, self.transform_features] = transform_split
 
             return outputs, jacobian
