@@ -222,7 +222,7 @@ class AffineCouplingTransform(CouplingTransform):
         log_scale = torch.log(scale)
         outputs = inputs * scale + shift
         if full_jacobian:
-            jacobian = utils.batch_diagonal(log_scale)
+            jacobian = utils.batch_diagonal(scale)
             return outputs, jacobian
         else:
             logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
@@ -233,7 +233,7 @@ class AffineCouplingTransform(CouplingTransform):
         log_scale = torch.log(scale)
         outputs = (inputs - shift) / scale
         if full_jacobian:
-            jacobian = -utils.batch_diagonal(log_scale)
+            jacobian = -utils.batch_diagonal(scale)
             return outputs, jacobian
         else:
             logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
@@ -257,13 +257,13 @@ class AdditiveCouplingTransform(AffineCouplingTransform):
 
 
 class PiecewiseCouplingTransform(CouplingTransform):
-    def _coupling_transform_forward(self, inputs, transform_params):
-        return self._coupling_transform(inputs, transform_params, inverse=False)
+    def _coupling_transform_forward(self, inputs, transform_params, full_jacobian=False):
+        return self._coupling_transform(inputs, transform_params, inverse=False, full_jacobian=full_jacobian)
 
-    def _coupling_transform_inverse(self, inputs, transform_params):
-        return self._coupling_transform(inputs, transform_params, inverse=True)
+    def _coupling_transform_inverse(self, inputs, transform_params, full_jacobian=False):
+        return self._coupling_transform(inputs, transform_params, inverse=True, full_jacobian=full_jacobian)
 
-    def _coupling_transform(self, inputs, transform_params, inverse=False):
+    def _coupling_transform(self, inputs, transform_params, inverse=False, full_jacobian=False):
         if inputs.dim() == 4:
             b, c, h, w = inputs.shape
             # For images, reshape transform_params from Bx(C*?)xHxW to BxCxHxWx?
@@ -273,11 +273,14 @@ class PiecewiseCouplingTransform(CouplingTransform):
             # For 2D data, reshape transform_params from Bx(D*?) to BxDx?
             transform_params = transform_params.reshape(b, d, -1)
 
-        outputs, logabsdet = self._piecewise_cdf(inputs, transform_params, inverse)
+        if full_jacobian:
+            outputs, jacobian = self._piecewise_cdf(inputs, transform_params, inverse, full_jacobian=True)
+            return outputs, jacobian
+        else:
+            outputs, logabsdet = self._piecewise_cdf(inputs, transform_params, inverse)
+            return outputs, utils.sum_except_batch(logabsdet)
 
-        return outputs, utils.sum_except_batch(logabsdet)
-
-    def _piecewise_cdf(self, inputs, transform_params, inverse=False):
+    def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         raise NotImplementedError()
 
 
@@ -314,14 +317,15 @@ class PiecewiseLinearCouplingTransform(PiecewiseCouplingTransform):
     def _transform_dim_multiplier(self):
         return self.num_bins
 
-    def _piecewise_cdf(self, inputs, transform_params, inverse=False):
+    def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         unnormalized_pdf = transform_params
 
         if self.tails is None:
             return splines.linear_spline(
                 inputs=inputs,
                 unnormalized_pdf=unnormalized_pdf,
-                inverse=inverse
+                inverse=inverse,
+                full_jacobian=full_jacobian
             )
         else:
             return splines.unconstrained_linear_spline(
@@ -329,7 +333,8 @@ class PiecewiseLinearCouplingTransform(PiecewiseCouplingTransform):
                 unnormalized_pdf=unnormalized_pdf,
                 inverse=inverse,
                 tails=self.tails,
-                tail_bound=self.tail_bound
+                tail_bound=self.tail_bound,
+                full_jacobian=full_jacobian
             )
 
 class PiecewiseQuadraticCouplingTransform(PiecewiseCouplingTransform):
@@ -374,7 +379,7 @@ class PiecewiseQuadraticCouplingTransform(PiecewiseCouplingTransform):
         else:
             return self.num_bins * 2 + 1
 
-    def _piecewise_cdf(self, inputs, transform_params, inverse=False):
+    def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         unnormalized_widths = transform_params[..., :self.num_bins]
         unnormalized_heights = transform_params[..., self.num_bins:]
 
@@ -399,6 +404,7 @@ class PiecewiseQuadraticCouplingTransform(PiecewiseCouplingTransform):
             inverse=inverse,
             min_bin_width=self.min_bin_width,
             min_bin_height=self.min_bin_height,
+            full_jacobian=full_jacobian,
             **spline_kwargs
         )
 
@@ -439,7 +445,7 @@ class PiecewiseCubicCouplingTransform(PiecewiseCouplingTransform):
     def _transform_dim_multiplier(self):
         return self.num_bins * 2 + 2
 
-    def _piecewise_cdf(self, inputs, transform_params, inverse=False):
+    def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         unnormalized_widths = transform_params[..., :self.num_bins]
         unnormalized_heights = transform_params[..., self.num_bins:2*self.num_bins]
         unnorm_derivatives_left = transform_params[..., 2*self.num_bins][..., None]
@@ -468,6 +474,7 @@ class PiecewiseCubicCouplingTransform(PiecewiseCouplingTransform):
             inverse=inverse,
             min_bin_width=self.min_bin_width,
             min_bin_height=self.min_bin_height,
+            full_jacobian=full_jacobian,
             **spline_kwargs
         )
 
@@ -512,7 +519,7 @@ class PiecewiseRationalQuadraticCouplingTransform(PiecewiseCouplingTransform):
         else:
             return self.num_bins * 3 + 1
 
-    def _piecewise_cdf(self, inputs, transform_params, inverse=False):
+    def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         unnormalized_widths = transform_params[..., :self.num_bins]
         unnormalized_heights = transform_params[..., self.num_bins:2*self.num_bins]
         unnormalized_derivatives = transform_params[..., 2 * self.num_bins:]
@@ -545,6 +552,7 @@ class PiecewiseRationalQuadraticCouplingTransform(PiecewiseCouplingTransform):
             min_bin_width=self.min_bin_width,
             min_bin_height=self.min_bin_height,
             min_derivative=self.min_derivative,
+            full_jacobian=full_jacobian,
             **spline_kwargs
         )
 
