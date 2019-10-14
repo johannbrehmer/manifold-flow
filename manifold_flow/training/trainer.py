@@ -5,8 +5,8 @@ from torch import optim, nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-# from matplotlib import pyplot as plt
-# from sklearn.manifold import TSNE
+from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
 
 logger = logging.getLogger(__name__)
 
@@ -475,10 +475,9 @@ class Trainer(object):
 
 class AutoencodingFlowTrainer(Trainer):
     def __init__(
-        self, model, run_on_gpu=True, double_precision=False, output_filename=None
+        self, model, run_on_gpu=True, double_precision=False
     ):
         super().__init__(model, run_on_gpu, double_precision)
-        self.output_filename = output_filename
 
     def first_batch(self, batch_data):
         if self.multi_gpu:
@@ -500,63 +499,70 @@ class AutoencodingFlowTrainer(Trainer):
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
-    # def report_batch(self, i_epoch, i_batch, train, batch_data):
-    #     if i_batch > 0 or (not train) or self.output_filename is None:
-    #         return
-    #
-    #     x, y = batch_data
-    #     x = x.view(x.size(0), -1)
-    #     x = x.to(self.device, self.dtype)
-    #     x_out, _, u = self.model(x)
-    #
-    #     x = x.detach().numpy().reshape(-1, 28, 28)
-    #     x_out = x_out.detach().numpy().reshape(-1, 28, 28)
-    #     u = u.detach().numpy().reshape(x_out.shape[0], -1)
-    #     y = y.detach().numpy().astype(np.int).reshape(-1)
-    #     tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(
-    #         u
-    #     )
-    #
-    #     plt.figure(figsize=(5, 5))
-    #     for i in range(10):
-    #         plt.scatter(
-    #             u[y == i][:, 0],
-    #             u[y == i][:, 1],
-    #             s=15.0,
-    #             alpha=1.0,
-    #             label="{}".format(i + 1),
-    #         )
-    #     plt.legend()
-    #     plt.tight_layout()
-    #     plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
-    #     plt.close()
-    #
-    #     plt.figure(figsize=(5, 5))
-    #     for i in range(10):
-    #         plt.scatter(
-    #             tsne[y == i][:, 0],
-    #             tsne[y == i][:, 1],
-    #             s=15.0,
-    #             alpha=1.0,
-    #             label="{}".format(i + 1),
-    #         )
-    #     plt.legend()
-    #     plt.tight_layout()
-    #     plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
-    #     plt.close()
-    #
-    #     plt.figure(figsize=(10, 10))
-    #     for i in range(8):
-    #         plt.subplot(4, 4, 2 * i + 1)
-    #         plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
-    #         plt.gca().get_xaxis().set_visible(False)
-    #         plt.gca().get_yaxis().set_visible(False)
-    #         plt.subplot(4, 4, 2 * i + 2)
-    #         plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
-    #         plt.gca().get_xaxis().set_visible(False)
-    #         plt.gca().get_yaxis().set_visible(False)
-    #     plt.tight_layout()
-    #     plt.savefig(
-    #         "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
-    #     )
-    #     plt.close()
+
+class ImageAutoencodingFlowTrainer(AutoencodingFlowTrainer):
+    def __init__(
+        self, model, run_on_gpu=True, double_precision=False, output_filename=None
+    ):
+        super().__init__(model, run_on_gpu, double_precision)
+        self.output_filename = output_filename
+
+    def report_batch(self, i_epoch, i_batch, train, batch_data):
+        if i_batch > 0 or (not train) or self.output_filename is None:
+            return
+
+        x, y = batch_data
+        resolution = x.size()[1]
+        x = x.view(x.size(0), -1)
+        x = x.to(self.device, self.dtype)
+        x_out, _, u = self.model(x)
+
+        x = x.detach().numpy().reshape(-1, resolution, resolution)
+        x_out = x_out.detach().numpy().reshape(-1, resolution, resolution)
+        u = u.detach().numpy().reshape(x_out.shape[0], -1)
+        y = y.detach().numpy().astype(np.int).reshape(-1)
+        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u)
+
+        plt.figure(figsize=(5, 5))
+        for i in range(10):
+            plt.scatter(
+                u[y == i][:, 0],
+                u[y == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
+        plt.close()
+
+        plt.figure(figsize=(5, 5))
+        for i in range(10):
+            plt.scatter(
+                tsne[y == i][:, 0],
+                tsne[y == i][:, 1],
+                s=15.0,
+                alpha=1.0,
+                label="{}".format(i + 1),
+            )
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
+        plt.close()
+
+        plt.figure(figsize=(10, 10))
+        for i in range(8):
+            plt.subplot(4, 4, 2 * i + 1)
+            plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+            plt.subplot(4, 4, 2 * i + 2)
+            plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+        plt.tight_layout()
+        plt.savefig(
+            "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
+        )
+        plt.close()
