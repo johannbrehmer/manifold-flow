@@ -79,7 +79,7 @@ class CouplingTransform(transforms.Transform):
         if full_jacobian:
             transform_params = self.transform_net(identity_split, context)
 
-            logger.debug("transform_params depends on inputs: %s", utils.check_dependence(transform_params, inputs))
+            # logger.debug("transform_params depends on inputs: %s", utils.check_dependence(transform_params, inputs))
 
             transform_split, _ = self._coupling_transform_forward(
                 inputs=transform_split,

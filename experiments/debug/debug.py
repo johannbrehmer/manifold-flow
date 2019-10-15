@@ -12,10 +12,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 for key in logging.Logger.manager.loggerDict:
-    if "manifold_flow" not in key:
+    if "manifold_flow" not in key and __name__ not in key:
         logging.getLogger(key).setLevel(logging.WARNING)
 
-n = 1
+n = 100
 x0 = torch.randn(n).view(-1,1)
 x1 = 0.5*(1.5 + x0)*(1.5-x0)
 x = torch.cat([x0,x1],1)
@@ -39,6 +39,9 @@ flow = mf.flows.autoencoding_flow.TwoStepAutoencodingFlow(
 )
 
 x_reco_before, log_prob_before, u_before = flow(x)
-x_gen_before = flow.sample(n=1000)
+
+logger.info("Estimated log prob: %s", log_prob_before.detach().numpy())
+
+x_gen_before = flow.sample(n=n)
 
 logger.info("Generated: %s", x_gen_before.detach().numpy())
