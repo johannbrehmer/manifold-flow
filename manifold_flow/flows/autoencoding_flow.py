@@ -147,7 +147,7 @@ class TwoStepAutoencodingFlow(nn.Module):
     def _log_prob(self, u, log_det_inner, jacobian_outer):
         jacobian_outer = jacobian_outer[:, :, :self.latent_dim]
         jtj = torch.bmm(torch.transpose(jacobian_outer,-2,-1), jacobian_outer)
-        log_det_outer = -0.5 * torch.logdet(jtj)
+        log_det_outer = -0.5 * torch.slogdet(jtj)[1]
 
         log_prob = self.latent_distribution._log_prob(u, context=None)
         log_prob = log_prob + log_det_outer + log_det_inner

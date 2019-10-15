@@ -73,13 +73,23 @@ class CouplingTransform(transforms.Transform):
         identity_split = inputs[:, self.identity_features, ...]
         transform_split = inputs[:, self.transform_features, ...]
 
+        # logger.debug("identity_split depends on inputs: %s", utils.check_dependence(identity_split, inputs))
+        # logger.debug("transform_split depends on inputs: %s", utils.check_dependence(transform_split, inputs))
+
         if full_jacobian:
             transform_params = self.transform_net(identity_split, context)
+
+            logger.debug("transform_params depends on inputs: %s", utils.check_dependence(transform_params, inputs))
+
             transform_split, _ = self._coupling_transform_forward(
                 inputs=transform_split,
                 transform_params=transform_params
             )
-            jacobian_transform = utils.batch_jacobian(transform_split, identity_split)
+            # logger.debug("transform_split depends on inputs: %s", utils.check_dependence(transform_split, inputs))
+            # logger.debug("Jacobian: %s", utils.calculate_jacobian(transform_split, inputs))
+            # logger.debug("Batch Jacobian: %s", utils.batch_jacobian(transform_split, inputs))
+
+            jacobian_transform = utils.batch_jacobian(transform_split, inputs)
 
             if self.unconditional_transform is not None:
                 identity_split, jacobian_identity = self.unconditional_transform(identity_split, context)
@@ -139,13 +149,12 @@ class CouplingTransform(transforms.Transform):
                 jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
             transform_params = self.transform_net(identity_split, context)
-            jacobian_transform = utils.batch_jacobian(transform_params, identity_split)
 
             transform_split, _ = self._coupling_transform_inverse(
                 inputs=transform_split,
                 transform_params=transform_params,
             )
-            jacobian_transform = utils.batch_jacobian(transform_split, identity_split)
+            jacobian_transform = utils.batch_jacobian(transform_split, inputs)
 
             # Put together full Jacobian\
             batchsize = inputs.size

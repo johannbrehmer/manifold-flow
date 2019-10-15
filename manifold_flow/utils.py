@@ -7,7 +7,19 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-def calculate_jacobian(outputs, inputs, create_graph=False):
+def check_dependence(outputs, inputs):
+    try:
+        for i, out in enumerate(outputs.view(-1)):
+            col_i = torch.autograd.grad(out, inputs, retain_graph=True, create_graph=False, allow_unused=True)[0]
+            if col_i is not None and np.max(np.abs(col_i.detach().numpy())) > 1.e-9:
+                return True
+        return False
+    except RuntimeError as e:
+        logger.debug("%s", e)
+        return False
+
+
+def calculate_jacobian(outputs, inputs, create_graph=True):
     """Computes the jacobian of outputs with respect to inputs.
 
     Based on gelijergensen's code at https://gist.github.com/sbarratt/37356c46ad1350d4c30aefbd488a4faa.
@@ -33,7 +45,7 @@ def calculate_jacobian(outputs, inputs, create_graph=False):
     return jac.view(outputs.size() + inputs.size())
 
 
-def batch_jacobian(outputs, inputs, create_graph=False):
+def batch_jacobian(outputs, inputs, create_graph=True):
     """Computes the jacobian of outputs with respect to inputs, assuming the first dimension of both are the minibatch.
 
     Based on gelijergensen's code at https://gist.github.com/sbarratt/37356c46ad1350d4c30aefbd488a4faa.
@@ -45,12 +57,8 @@ def batch_jacobian(outputs, inputs, create_graph=False):
         jacobian of outputs with respect to inputs
     """
 
-    assert outputs.size(0) == inputs.size(0)
-
-    outputs = outputs.view((outputs.size(0), -1))
-    inputs = inputs.view((inputs.size(0), -1))
-
     jac = calculate_jacobian(outputs, inputs)
+    jac = jac.view((outputs.size(0), np.prod(outputs.size()[1:]), inputs.size(0), np.prod(inputs.size()[1:]), ))
     jac = torch.einsum("bibj->bij", jac)
 
     if create_graph:

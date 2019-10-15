@@ -3,8 +3,13 @@
 import numpy as np
 import torch
 from torch import nn
+import logging
+from torch.utils.tensorboard import SummaryWriter
+from torchviz import make_dot
 
 from manifold_flow import utils
+
+logger = logging.getLogger(__name__)
 
 
 class InverseNotAvailable(Exception):
@@ -47,7 +52,29 @@ class CompositeTransform(Transform):
         if full_jacobian:
             total_jacobian = None
             for func in funcs:
-                outputs, jacobian = func(outputs, context, full_jacobian=True)
+                inputs = outputs
+                outputs, jacobian = func(inputs, context, full_jacobian=True)
+
+                # Debug computational graph
+                class Wrapper(nn.Module):
+                    def __init__(self, model):
+                        super().__init__()
+                        self.model = model
+
+                    def forward(self, inputs):
+                        return self.model(inputs, full_jacobian=False)[0]
+
+                wrapped_module = Wrapper(func)
+                log_filename = "/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow/experiments/debug/log/{}".format(type(func).__name__)
+                with SummaryWriter(log_filename) as writer:
+                    writer.add_graph(wrapped_module, inputs)
+                logger.debug("Wrote tensorboard to %s", log_filename)
+
+                # Cross-check for debugging
+                _, logabsdet = func(inputs, context, full_jacobian=False)
+                _, logabsdet_from_jacobian = torch.slogdet(jacobian)
+                logger.debug("Transformation %s has Jacobian\n%s\nwith log abs det %s (ground truth %s)", type(func).__name__, jacobian.detach().numpy()[0], logabsdet_from_jacobian[0].item(), logabsdet[0].item())
+
                 total_jacobian = jacobian if total_jacobian is None else torch.bmm(jacobian, total_jacobian)
             return outputs, total_jacobian
 
