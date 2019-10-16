@@ -106,6 +106,9 @@ class Trainer(object):
         parameters=None,
         callbacks=None
     ):
+        if loss_labels is None:
+            loss_labels = [fn.__name__ for fn in loss_functions]
+
         logger.debug("Initialising training data")
         train_loader, val_loader = self.make_dataloader(
             dataset, validation_split, batch_size

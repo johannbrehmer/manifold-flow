@@ -99,7 +99,7 @@ class CouplingTransform(transforms.Transform):
             # Put together full Jacobian
             batchsize = inputs.size(0)
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
-            jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
+            (jacobian[:,self.identity_features, :])[:,:, self.identity_features] = jacobian_identity
             jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
@@ -157,9 +157,9 @@ class CouplingTransform(transforms.Transform):
             jacobian_transform = utils.batch_jacobian(transform_split, inputs)
 
             # Put together full Jacobian\
-            batchsize = inputs.size
+            batchsize = inputs.size(0)
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
-            jacobian[:,self.identity_features, self.identity_features] = jacobian_identity
+            (jacobian[:,self.identity_features, :])[:,:, self.identity_features] = jacobian_identity
             jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
