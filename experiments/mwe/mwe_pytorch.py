@@ -1,7 +1,7 @@
 """
 Small working example for the calculation of the Jacobian of an affine coupling transform. TL;DR: It's slow.
 
-Requires utils.py and pyTorch >= 1.2.
+Requires utils_pytorch.py and pyTorch >= 1.2.
 
 Strongly based on https://github.com/bayesiains/nsf, bugs are all my own though.
 """
@@ -12,7 +12,7 @@ from torch import nn
 import time
 
 sys.path.append(".")
-from utils import batch_jacobian, sum_except_batch, ResidualNet
+from utils_pytorch import batch_jacobian, sum_except_batch, ResidualNet
 
 
 class AffineCouplingTransform(nn.Module):
