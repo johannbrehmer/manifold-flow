@@ -6,6 +6,7 @@ import torch
 
 from manifold_flow import utils, transforms
 from manifold_flow.transforms import splines
+from manifold_flow import timer
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,8 @@ class CouplingTransform(transforms.Transform):
             # logger.debug("Jacobian: %s", utils.calculate_jacobian(transform_split, inputs))
             # logger.debug("Batch Jacobian: %s", utils.batch_jacobian(transform_split, inputs))
 
+            timer.timer(start="Jacobian coupling transform")
+
             jacobian_transform = utils.batch_jacobian(transform_split, inputs)
 
             if self.unconditional_transform is not None:
@@ -105,6 +108,8 @@ class CouplingTransform(transforms.Transform):
             outputs = torch.empty_like(inputs)
             outputs[:, self.identity_features, ...] = identity_split
             outputs[:, self.transform_features, ...] = transform_split
+
+            timer.timer(stop="Jacobian coupling transform")
 
             return outputs, jacobian
 
@@ -139,7 +144,8 @@ class CouplingTransform(transforms.Transform):
         transform_split = inputs[:, self.transform_features, ...]
 
         if full_jacobian:
-            # Calculate Jacobian of d phi / d identity_split
+            timer.timer(start="Jacobian inverse coupling transform")
+
             if self.unconditional_transform is not None:
                 identity_split_after_unconditional_transform, jacobian_identity = self.unconditional_transform.inverse(
                     identity_split, context, full_jacobian=True
@@ -165,6 +171,8 @@ class CouplingTransform(transforms.Transform):
             outputs = torch.empty_like(inputs)
             outputs[:, self.identity_features] = identity_split_after_unconditional_transform
             outputs[:, self.transform_features] = transform_split
+
+            timer.timer(stop="Jacobian inverse coupling transform")
 
             return outputs, jacobian
 

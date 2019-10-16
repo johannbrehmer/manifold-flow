@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 _timer = OrderedDict()
 _time_started = OrderedDict()
 
-def reset_timer():
+
+def reset():
     global _timer, _time_started
     _timer = OrderedDict()
     _time_started = OrderedDict()
@@ -39,4 +40,7 @@ def report():
 
     logger.info("Timer:")
     for key, value in six.iteritems(_timer):
-        logger.info("  {:>32s}: {:6.2f}h".format(key, value / 3600.0))
+        h = int(value) // 3600
+        m = int(value - h *  3600) // 60
+        s = value - h *  3600 - m * 60
+        logger.info("  {:>32s}: {:3d}:{:02d}:{:05.2f}".format(key, h, m, s))
