@@ -7,12 +7,63 @@ Strongly based on https://github.com/bayesiains/nsf, bugs are all my own though.
 """
 
 import torch
-import sys
 from torch import nn
 import time
 
-sys.path.append(".")
-from utils_pytorch import batch_jacobian, sum_except_batch, ResidualNet
+
+def calculate_jacobian(outputs, inputs, create_graph=True):
+    """Computes the jacobian of outputs with respect to inputs.
+
+    Based on gelijergensen's code at https://gist.github.com/sbarratt/37356c46ad1350d4c30aefbd488a4faa.
+
+    :param outputs: tensor for the output of some function
+    :param inputs: tensor for the input of some function (probably a vector)
+    :param create_graph: set True for the resulting jacobian to be differentible
+    :returns: a tensor of size (outputs.size() + inputs.size()) containing the
+        jacobian of outputs with respect to inputs
+    """
+    jac = outputs.new_zeros(outputs.size() + inputs.size()).view((-1,) + inputs.size())
+    for i, out in enumerate(outputs.view(-1)):
+        col_i = torch.autograd.grad(out, inputs, retain_graph=True, create_graph=create_graph, allow_unused=True)[0]
+        if col_i is None:
+            # this element of output doesn't depend on the inputs, so leave gradient 0
+            continue
+        else:
+            jac[i] = col_i
+
+    if create_graph:
+        jac.requires_grad_()
+
+    return jac.view(outputs.size() + inputs.size())
+
+
+def batch_jacobian(outputs, inputs, create_graph=True):
+    """ Batches calculate_jacobian."""
+    jacs = []
+    for input, output in zip(inputs, outputs):
+        jacs.append(calculate_jacobian(output, input).unsqueeze(0))
+    jacs = torch.cat(jacs, 0)
+    return jacs
+
+
+def batch_diagonal(input):
+    """ Batches a stack of vectors (batch x N) -> a stack of diagonal matrices (batch x N x N) """
+    # make a zero matrix, which duplicates the last dim of input
+    dims = [input.size(i) for i in torch.arange(input.dim())]
+    dims.append(dims[-1])
+    output = torch.zeros(dims)
+    # stride across the first dimensions, add one to get the diagonal of the last dimension
+    strides = [output.stride(i) for i in torch.arange(input.dim() - 1)]
+    strides.append(output.size(-1) + 1)
+    # stride and copy the imput to the diagonal
+    output.as_strided(input.size(), strides).copy_(input)
+    return output
+
+
+def sum_except_batch(x, num_batch_dims=1):
+    """Sums all elements of `x` except for the first `num_batch_dims` dimensions."""
+    reduce_dims = list(range(num_batch_dims, x.ndimension()))
+    return torch.sum(x, dim=reduce_dims)
 
 
 class AffineCouplingTransform(nn.Module):
@@ -25,13 +76,7 @@ class AffineCouplingTransform(nn.Module):
     > L. Dinh et al., Density estimation using Real NVP, ICLR 2017.
     """
 
-    def __init__(self,
-                 mask,
-                 hidden_features=20,
-                 num_blocks=5,
-                 activation=nn.functional.relu,
-                 dropout_probability=0.,
-                 use_batch_norm=False):
+    def __init__(self, mask, hidden_features=100, hidden_layers=3):
         """
         Constructor.
 
@@ -56,18 +101,13 @@ class AffineCouplingTransform(nn.Module):
 
         assert len(self.identity_features) + len(self.transform_features) == self.features
 
-        self.transform_net = ResidualNet(
-            in_features=len(self.identity_features),
-            out_features=len(self.transform_features) * 2,
-            hidden_features=hidden_features,
-            context_features=None,
-            num_blocks=num_blocks,
-            activation=activation,
-            dropout_probability=dropout_probability,
-            use_batch_norm=use_batch_norm,
-        )
+        layers = [nn.Linear(len(self.identity_features), hidden_features), nn.ReLU()]
+        for _ in range(hidden_layers - 1):
+            layers += [nn.Linear(hidden_features, hidden_features), nn.ReLU()]
+        layers += [nn.Linear(hidden_features, len(self.transform_features) * 2)]
+        self.transform_net = nn.Sequential(*layers)
 
-    def forward(self, inputs, context=None, full_jacobian=False):
+    def forward(self, inputs, full_jacobian=False):
         if inputs.dim() not in [2, 4]:
             raise ValueError('Inputs must be a 2D or a 4D tensor.')
         if inputs.shape[1] != self.features:
@@ -79,7 +119,7 @@ class AffineCouplingTransform(nn.Module):
         transform_split = inputs[:, self.transform_features, ...]
 
         # Calculate transformation parameters based on first half of input
-        transform_params = self.transform_net(identity_split, context)
+        transform_params = self.transform_net(identity_split)
 
         # Transform second half of input
         unconstrained_scale = transform_params[:, len(self.transform_features):, ...]
@@ -108,14 +148,14 @@ class AffineCouplingTransform(nn.Module):
         return outputs, jacobian if full_jacobian else logabsdet
 
 
-def time_transform(features=20, batchsize=100, hidden_features=100, num_blocks=10, calculate_full_jacobian=True):
+def time_transform(features=100, batchsize=100, hidden_features=100, hidden_layers=10, calculate_full_jacobian=True):
     data = torch.randn(batchsize, features)
     data.requires_grad = True
 
     mask = torch.zeros(features).byte()
     mask[0::2] += 1
 
-    transform = AffineCouplingTransform(mask, hidden_features=hidden_features, num_blocks=num_blocks)
+    transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers)
 
     time_before = time.time()
     _ = transform(data, full_jacobian=calculate_full_jacobian)

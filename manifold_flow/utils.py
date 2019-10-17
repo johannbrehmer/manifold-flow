@@ -4,6 +4,8 @@ import numpy as np
 import logging
 import torch
 
+from manifold_flow import timer
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,14 +59,39 @@ def batch_jacobian(outputs, inputs, create_graph=True):
         jacobian of outputs with respect to inputs
     """
 
-    jac = calculate_jacobian(outputs, inputs)
-    jac = jac.view((outputs.size(0), np.prod(outputs.size()[1:]), inputs.size(0), np.prod(inputs.size()[1:]), ))
-    jac = torch.einsum("bibj->bij", jac)
+    jacs = []
+    for input, output in zip(inputs, outputs):
+        jacs.append(calculate_jacobian(output, input, create_graph).unsqueeze(0))
+    jacs = torch.cat(jacs, 0)
+    return jacs
 
-    if create_graph:
-        jac.requires_grad_()
 
-    return jac
+# def batch_jacobian(outputs, inputs, create_graph=True):
+#     """Computes the jacobian of outputs with respect to inputs, assuming the first dimension of both are the minibatch.
+#
+#     Based on gelijergensen's code at https://gist.github.com/sbarratt/37356c46ad1350d4c30aefbd488a4faa.
+#
+#     :param outputs: tensor for the output of some function
+#     :param inputs: tensor for the input of some function (probably a vector)
+#     :param create_graph: set True for the resulting jacobian to be differentible
+#     :returns: a tensor of size (outputs.size() + inputs.size()) containing the
+#         jacobian of outputs with respect to inputs
+#     """
+#
+#     timer.timer(start="  calculate_jacobian(...)")
+#     jac = calculate_jacobian(outputs, inputs)
+#     timer.timer(stop="  calculate_jacobian(...)", start="  jac.view(...)")
+#     jac = jac.view((outputs.size(0), np.prod(outputs.size()[1:]), inputs.size(0), np.prod(inputs.size()[1:]), ))
+#     timer.timer(start="  torch.einsum(...)", stop="  jac.view(...)")
+#     jac = torch.einsum("bibj->bij", jac)
+#     timer.timer(stop="  torch.einsum(...)", start="  jac.requires_grad_()")
+#
+#     if create_graph:
+#         jac.requires_grad_()
+#
+#     timer.timer(stop="  jac.requires_grad_()")
+#
+#     return jac
 
 
 def batch_diagonal(input):
