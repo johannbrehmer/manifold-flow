@@ -190,7 +190,7 @@ def time_transform(features=100, batchsize=100, hidden_features=100, hidden_laye
     return time_taken
 
 
-def time_as_function_of_features(features=[2] + list(np.arange(25,501,25)), **kwargs):
+def time_as_function_of_features(features=[2] + list(np.arange(25,251,25)), **kwargs):
     results_full = []
     results_det = []
     for feature in features:
@@ -199,7 +199,7 @@ def time_as_function_of_features(features=[2] + list(np.arange(25,501,25)), **kw
     return np.array(features), np.array(results_full), np.array(results_det)
 
 
-def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(25,501,25)), **kwargs):
+def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(25,251,25)), **kwargs):
     results_full = []
     results_det = []
     for batchsize in batchsizes:
