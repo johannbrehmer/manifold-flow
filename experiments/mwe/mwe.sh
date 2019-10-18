@@ -8,7 +8,7 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 
-source activate ml
+conda activate ml
 cd /scratch/jb6504/manifold_flow_mwe
 
 python -u mwe_pytorch.py
