@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from torch import nn
 import time
+from matplotlib import pyplot as plt
 
 
 def calculate_jacobian(outputs, inputs, create_graph=True):
@@ -169,13 +170,11 @@ class AffineCouplingTransform(nn.Module):
         return outputs, jacobian if full_jacobian else logabsdet
 
 
-def time_transform(features=100, batchsize=100, hidden_features=100, hidden_layers=10, calculate_full_jacobian=True):
+def time_transform(features=100, batchsize=100, hidden_features=100, hidden_layers=5, calculate_full_jacobian=True):
     data = torch.randn(batchsize, features)
     data.requires_grad = True
-
     mask = torch.zeros(features).byte()
     mask[0::2] += 1
-
     transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers)
 
     time_before = time.time()
@@ -185,10 +184,79 @@ def time_transform(features=100, batchsize=100, hidden_features=100, hidden_laye
     return time_taken
 
 
+def time_as_function_of_features(features=[2,5,10,20,50,100,200], **kwargs):
+    results_full = []
+    results_det = []
+    for feature in features:
+        results_full.append(time_transform(features=feature, calculate_full_jacobian=True, **kwargs))
+        results_det.append(time_transform(features=feature, calculate_full_jacobian=False, **kwargs))
+    return np.array(features), np.array(results_full), np.array(results_det)
+
+
+def time_as_function_of_batchsize(batchsizes=[1,2,5,10,20,50,100,200], **kwargs):
+    results_full = []
+    results_det = []
+    for batchsize in batchsizes:
+        results_full.append(time_transform(batchsize=batchsize, calculate_full_jacobian=True, **kwargs))
+        results_det.append(time_transform(batchsize=batchsize, calculate_full_jacobian=False, **kwargs))
+    return np.array(batchsizes), np.array(results_full), np.array(results_det)
+
+
+def time_as_function_of_layers(layers=[1,2,4,7,10,15,20], **kwargs):
+    results_full = []
+    results_det = []
+    for layer in layers:
+        results_full.append(time_transform(hidden_layers=layer, calculate_full_jacobian=True, **kwargs))
+        results_det.append(time_transform(hidden_layers=layer, calculate_full_jacobian=False, **kwargs))
+    return np.array(layers), np.array(results_full), np.array(results_det)
+
+
+def plot_results(xs, ys_full, ys_det, labels, det_factor=1000, filename="manifold_flow_timing.pdf"):
+    n_panels = len(xs)
+    ymax = max([np.max(y) for y in ys_full] + [det_factor * np.max(y) for y in ys_det]) * 1.05
+
+    plt.figure(figsize=(4 * n_panels + 0.5, 4.5))
+
+    for i, (x, y_full, y_det, label) in enumerate(zip(xs, ys_full, ys_det, labels)):
+        ax = plt.subplot(1, n_panels, i+1)
+
+        plt.plot(x, y_full, c="C0", ls="-", label="Full Jacobian calculation")
+        plt.plot(x, det_factor * y_det, c="C1", ls="--", label=r"Determinant calculation ($\times {}$)".format(det_factor))
+
+        plt.xlabel(label)
+        plt.ylim(0., ymax)
+        if i == 0:
+            plt.legend(loc="upper left")
+            plt.ylabel("Time for forward pass [s]")
+        else:
+            plt.ylabel(None)
+            ax.set_yticklabels([])
+
+    plt.tight_layout()
+    plt.savefig(filename)
+
+
 if __name__ == "__main__":
     print("Hi!")
+
+    print("Simple timing test:")
     time_det = time_transform(calculate_full_jacobian=False)
-    print("Forward pass, calculating the Jacobian determinant: {:.3f}s".format(time_det))
+    print("  Forward pass, calculating the Jacobian determinant: {:.3f}s".format(time_det))
     time_full = time_transform(calculate_full_jacobian=True)
-    print("Forward pass, calculating the full Jacobian:        {:.3f}s".format(time_full))
+    print("  Forward pass, calculating the full Jacobian:        {:.3f}s".format(time_full))
+
+    print("Measuring time as function of features")
+    x_features, y_full_features, y_det_features = time_as_function_of_features()
+    print("Measuring time as function of batch size")
+    x_batchsize, y_full_batchsize, y_det_batchsize = time_as_function_of_batchsize()
+    print("Measuring time as function of hidden layers")
+    x_hidden, y_full_hidden, y_det_hidden = time_as_function_of_layers()
+    print("Saving results to manifold_flow_timing.pdf")
+    plot_results(
+        xs = [x_features, x_batchsize, x_hidden],
+        ys_full = [y_full_features, y_full_batchsize, y_full_hidden],
+        ys_det = [y_det_features, y_det_batchsize, y_det_hidden],
+        labels = ["Data features", "Batch size", "Hidden layers"]
+    )
+
     print("That's it, have a nice day!")
