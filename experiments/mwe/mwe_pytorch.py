@@ -1,7 +1,7 @@
 """
 Small working example for the calculation of the Jacobian of an affine coupling transform. TL;DR: It's slow.
 
-Requires utils_pytorch.py and pyTorch >= 1.2.
+Tested with Python 3.6, PyTorch 1.3.0, and Matplotlib 3.1.1.
 
 Strongly based on https://github.com/bayesiains/nsf, bugs are all my own though.
 """
@@ -42,19 +42,19 @@ def calculate_jacobian(outputs, inputs, create_graph=True):
 def batch_jacobian(outputs, inputs, create_graph=True):
     """ Batches calculate_jacobian."""
 
-    # Strategy A: not very efficient, since we know there are no cross-batch effects.
+    # Option A: slow...
     jacs = calculate_jacobian(outputs, inputs)
     jacs = jacs.view((outputs.size(0), np.prod(outputs.size()[1:]), inputs.size(0), np.prod(inputs.size()[1:]), ))
     jacs = torch.einsum("bibj->bij", jacs)
 
-    # # Strategy B: equally inefficient...
+    # # Option B: equally inefficient...
     # jacs = []
     # for i in range(outputs.size(0)):
     #     jac = calculate_jacobian(outputs[i], inputs)
     #     jacs.append(jac.unsqueeze(0)[:,:,i,:])
     # jacs = torch.cat(jacs, 0)
 
-    # # Strategy C: Faster, but doesn't work (d outputs / d inputs[i] isn't defined, only d outputs / d inputs)
+    # # Option C: Doesn't work (d outputs / d inputs[i] isn't defined, only d outputs / d inputs)
     # jacs = []
     # for output, input in zip(outputs, inputs):
     #     jac = calculate_jacobian(output, input)  # This is 0 :(
@@ -171,6 +171,9 @@ class AffineCouplingTransform(nn.Module):
 
 
 def time_transform(features=100, batchsize=100, hidden_features=100, hidden_layers=5, calculate_full_jacobian=True):
+    if torch.cuda.is_available():
+        torch.set_default_tensor_type('torch.cuda.DoubleTensor')
+
     data = torch.randn(batchsize, features)
     data.requires_grad = True
     mask = torch.zeros(features).byte()
@@ -178,8 +181,6 @@ def time_transform(features=100, batchsize=100, hidden_features=100, hidden_laye
     transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers)
 
     if torch.cuda.is_available():
-        print("Found CUDA")
-        data = data.to(torch.device("cuda"))
         transform = transform.to(torch.device("cuda"))
 
     time_before = time.time()
@@ -189,7 +190,7 @@ def time_transform(features=100, batchsize=100, hidden_features=100, hidden_laye
     return time_taken
 
 
-def time_as_function_of_features(features=[2,5,10,20,50,100,200], **kwargs):
+def time_as_function_of_features(features=[2] + list(np.arange(25,501,25)), **kwargs):
     results_full = []
     results_det = []
     for feature in features:
@@ -198,16 +199,18 @@ def time_as_function_of_features(features=[2,5,10,20,50,100,200], **kwargs):
     return np.array(features), np.array(results_full), np.array(results_det)
 
 
-def time_as_function_of_batchsize(batchsizes=[1,2,5,10,20,50,100,200], **kwargs):
+def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(25,501,25)), **kwargs):
     results_full = []
     results_det = []
     for batchsize in batchsizes:
+        if batchsize < 1:
+            batchsize = 1
         results_full.append(time_transform(batchsize=batchsize, calculate_full_jacobian=True, **kwargs))
         results_det.append(time_transform(batchsize=batchsize, calculate_full_jacobian=False, **kwargs))
     return np.array(batchsizes), np.array(results_full), np.array(results_det)
 
 
-def time_as_function_of_layers(layers=[1,2,4,7,10,15,20], **kwargs):
+def time_as_function_of_layers(layers=np.arange(1,21), **kwargs):
     results_full = []
     results_det = []
     for layer in layers:
