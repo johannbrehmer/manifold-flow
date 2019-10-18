@@ -177,6 +177,11 @@ def time_transform(features=100, batchsize=100, hidden_features=100, hidden_laye
     mask[0::2] += 1
     transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers)
 
+    if torch.cuda.is_available():
+        print("Found CUDA")
+        data = data.to(torch.device("cuda"))
+        transform = transform.to(torch.device("cuda"))
+
     time_before = time.time()
     _ = transform(data, full_jacobian=calculate_full_jacobian)
     time_taken = time.time() - time_before
