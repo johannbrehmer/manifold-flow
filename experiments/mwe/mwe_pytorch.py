@@ -6,6 +6,7 @@ Requires utils_pytorch.py and pyTorch >= 1.2.
 Strongly based on https://github.com/bayesiains/nsf, bugs are all my own though.
 """
 
+import numpy as np
 import torch
 from torch import nn
 import time
@@ -24,7 +25,7 @@ def calculate_jacobian(outputs, inputs, create_graph=True):
     """
     jac = outputs.new_zeros(outputs.size() + inputs.size()).view((-1,) + inputs.size())
     for i, out in enumerate(outputs.view(-1)):
-        col_i = torch.autograd.grad(out, inputs, retain_graph=True, create_graph=create_graph, allow_unused=True)[0]
+        col_i = torch.autograd.grad(out, inputs, create_graph=create_graph, allow_unused=True, only_inputs=True)[0]
         if col_i is None:
             # this element of output doesn't depend on the inputs, so leave gradient 0
             continue
@@ -39,10 +40,26 @@ def calculate_jacobian(outputs, inputs, create_graph=True):
 
 def batch_jacobian(outputs, inputs, create_graph=True):
     """ Batches calculate_jacobian."""
-    jacs = []
-    for input, output in zip(inputs, outputs):
-        jacs.append(calculate_jacobian(output, input).unsqueeze(0))
-    jacs = torch.cat(jacs, 0)
+
+    # Strategy A: not very efficient, since we know there are no cross-batch effects.
+    jacs = calculate_jacobian(outputs, inputs)
+    jacs = jacs.view((outputs.size(0), np.prod(outputs.size()[1:]), inputs.size(0), np.prod(inputs.size()[1:]), ))
+    jacs = torch.einsum("bibj->bij", jacs)
+
+    # # Strategy B: equally inefficient...
+    # jacs = []
+    # for i in range(outputs.size(0)):
+    #     jac = calculate_jacobian(outputs[i], inputs)
+    #     jacs.append(jac.unsqueeze(0)[:,:,i,:])
+    # jacs = torch.cat(jacs, 0)
+
+    # # Strategy C: Faster, but doesn't work (d outputs / d inputs[i] isn't defined, only d outputs / d inputs)
+    # jacs = []
+    # for output, input in zip(outputs, inputs):
+    #     jac = calculate_jacobian(output, input)  # This is 0 :(
+    #     jacs.append(jac.unsqueeze(0))
+    # jacs = torch.cat(jacs, 0)
+
     return jacs
 
 
@@ -137,11 +154,15 @@ class AffineCouplingTransform(nn.Module):
         jacobian = None
         logabsdet = None
         if full_jacobian:
-            jacobian_transform = batch_jacobian(transform_split, inputs)
-            jacobian_identity = torch.eye(len(self.identity_features)).unsqueeze(0)  # (1, n, n)
             jacobian = torch.zeros(inputs.size() + inputs.size()[1:])
-            (jacobian[:, self.identity_features, :])[:, :, self.identity_features] = jacobian_identity
-            jacobian[:, self.transform_features, :] = jacobian_transform
+            jacobian[:, self.identity_features, self.identity_features] = 1.
+            jacobian[:, self.transform_features, :] = batch_jacobian(transform_split, inputs)
+
+            # # For debugging, check that the Jacobian determinant agrees
+            # print("Determinant cross-check: {} vs {}".format(
+            #     torch.slogdet(jacobian[0]),
+            #     torch.sum(log_scale[0])
+            # ))
         else:
             logabsdet = sum_except_batch(log_scale, num_batch_dims=1)
 
