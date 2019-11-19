@@ -64,20 +64,6 @@ def batch_jacobian(outputs, inputs, create_graph=True):
     return jacs
 
 
-def batch_diagonal(input):
-    """ Batches a stack of vectors (batch x N) -> a stack of diagonal matrices (batch x N x N) """
-    # make a zero matrix, which duplicates the last dim of input
-    dims = [input.size(i) for i in torch.arange(input.dim())]
-    dims.append(dims[-1])
-    output = torch.zeros(dims)
-    # stride across the first dimensions, add one to get the diagonal of the last dimension
-    strides = [output.stride(i) for i in torch.arange(input.dim() - 1)]
-    strides.append(output.size(-1) + 1)
-    # stride and copy the imput to the diagonal
-    output.as_strided(input.size(), strides).copy_(input)
-    return output
-
-
 def sum_except_batch(x, num_batch_dims=1):
     """Sums all elements of `x` except for the first `num_batch_dims` dimensions."""
     reduce_dims = list(range(num_batch_dims, x.ndimension()))
