@@ -5,6 +5,7 @@ import logging
 import argparse
 import os
 from scipy.stats import norm
+import itertools
 
 
 def simulator(epsilon, latent_dim, data_dim, n, phases, widths):
@@ -57,8 +58,11 @@ def _transform_x_to_z(x, latent_dim):
         z_phi[:, i] = np.arccos(
             x[:, i] / np.sum(x[:, i : latent_dim + 1] ** 2, axis=1) ** 0.5
         )
+    # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates
+    z_phi[:, latent_dim - 1] = np.where(x[:, latent_dim] < 0., 2. * np.pi - z_phi[:, latent_dim - 1], z_phi[:, latent_dim - 1])
+
     r = np.sum(x[:, : latent_dim + 1] ** 2, axis=1) ** 0.5
-    z_eps = x[:, latent_dim:]
+    z_eps = np.copy(x[:, latent_dim:])
     z_eps[:, 0] = r - 1
     return z_phi, z_eps
 
@@ -70,7 +74,12 @@ def _log_likelihood(z_phi, z_eps, latent_dim, phases, widths, epsilon):
     widths_ = np.empty((z_phi.shape[0], latent_dim))
     widths_[:] = widths
 
-    logp_sub = np.log(norm(loc=phases_, scale=widths_).pdf(z_phi))
+    p_sub = 0.
+    individual_shifts = [-3., -2., -1., 0., 1., 2., 3.]
+    for shift in itertools.product(individual_shifts, repeat=latent_dim):
+        print(z_phi + 2.*np.pi*np.array(shift))
+        p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
+    logp_sub = np.log(p_sub)
     logp_eps = np.log(norm(loc=0.0, scale=epsilon).pdf(z_eps))
 
     log_det = latent_dim * np.abs(r)

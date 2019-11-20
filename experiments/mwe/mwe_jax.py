@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """
 Small working example for the calculation of the Jacobian of an affine coupling transform. TL;DR: It's slow.
 
@@ -13,6 +15,7 @@ from jax.experimental import stax
 from jax.experimental.stax import Conv, Dense, MaxPool, Relu, Flatten, LogSoftmax
 import time
 from matplotlib import pyplot as plt
+from experiments.mwe import timer
 
 
 def sum_except_batch(x):
@@ -35,15 +38,17 @@ class AffineCouplingTransform:
     > L. Dinh et al., Density estimation using Real NVP, ICLR 2017.
     """
 
-    def __init__(self, mask, hidden_features=100, hidden_layers=3):
-        self.features = len(mask)
-        features_vector = np.arange(self.features)
+    def __init__(self, mask, hidden_features=100, hidden_layers=3, full_jacobian=False):
+        timer.timer(start="__init__()")
 
+        self.features = len(mask)
         self.identity_features = onp.argwhere(mask <= 0).flatten()
         self.transform_features = onp.argwhere(mask > 0).flatten()
+        self.full_jacobian = full_jacobian
 
         assert len(self.identity_features) + len(self.transform_features) == self.features
 
+        # Build transform net
         layers = [Dense(hidden_features), Relu]
         for _ in range(hidden_layers - 1):
             layers += [Dense(hidden_features), Relu]
@@ -54,6 +59,16 @@ class AffineCouplingTransform:
         rng = jax.random.PRNGKey(0)
         in_shape = (-1, len(self.identity_features))
         transform_net_out_shape, self.transform_net_params = transform_net_init(rng, in_shape)
+
+        # Jacobian
+
+        if full_jacobian == "forward":
+            self._transform_jacobian = jax.jacfwd(self._transform)
+        elif full_jacobian == "reverse":
+            self._transform_jacobian = jax.jacrev(self._transform)
+        else:
+            self._transform_jacobian = None
+        timer.timer(stop="__init__()")
 
     def _transform(self, inputs):
         """ Transformation in a separate function, making it easy to calculate the Jacobian """
@@ -72,39 +87,61 @@ class AffineCouplingTransform:
 
         return transform_split
 
-    def forward(self, inputs, full_jacobian=False):
+    def forward(self, inputs):
+        # timer.timer(start="forward()")
+
         # Split input
+        # timer.timer(start="  forward: split input")
         identity_split = inputs[:, self.identity_features]
         transform_split = inputs[:, self.transform_features]
+        # timer.timer(stop="  forward: split input")
 
         # Calculate transformation parameters based on first half of input
+        # timer.timer(start="  forward: transform params")
         transform_params = self.transform_net_apply(self.transform_net_params, identity_split)
+        # timer.timer(stop="  forward: transform params")
 
         # Transform second half of input
+        # timer.timer(start="  forward: transform input")
         unconstrained_scale = transform_params[:, len(self.transform_features):, ...]
         shift = transform_params[:, :len(self.transform_features), ...]
         scale = sigmoid(unconstrained_scale + 2) + 1e-3
         log_scale = np.log(scale)
         transform_split = transform_split * scale + shift
+        # timer.timer(stop="  forward: transform input")
 
         # Merge outputs together
-        outputs = np.empty_like(inputs)
-        jax.ops.index_update(outputs, jax.ops.index[:, self.identity_features], identity_split)
-        jax.ops.index_update(outputs, jax.ops.index[:, self.transform_features], transform_split)
+        # timer.timer(start="  forward: merge outputs")
+        outputs = onp.empty_like(inputs)
+        outputs[:, self.identity_features, ...] = identity_split
+        outputs[:, self.transform_features, ...] = transform_split
+        # jax.ops.index_update(outputs, jax.ops.index[:, self.identity_features], identity_split)
+        # jax.ops.index_update(outputs, jax.ops.index[:, self.transform_features], transform_split)
+        # timer.timer(stop="  forward: merge outputs")
 
         # Calculate full Jacobian matrix, or just log abs det Jacobian
         jacobian = None
         logabsdet = None
-        if full_jacobian in ["forward", "reverse"]:
-            if full_jacobian == "forward":
-                transform_jacobian = jax.jacfwd(self._transform)(inputs)
-            else:
-                transform_jacobian = jax.jacrev(self._transform)(inputs)
-            transform_jacobian = np.sum(transform_jacobian, axis=2)  # (batch, outputs, inputs)
+        if self.full_jacobian in ["forward", "reverse"]:
+            # timer.timer(start="  forward: calculate jacobian")
+            transform_jacobian = [
+                self._transform_jacobian(input.reshape((1, input.shape[0])))
+                for input in inputs
+            ]
+            transform_jacobian = onp.asarray(transform_jacobian)
+            transform_jacobian = transform_jacobian.reshape(
+                (transform_jacobian.shape[0], transform_jacobian.shape[2], transform_jacobian.shape[4])
+            )
+            # timer.timer(stop="  forward: calculate jacobian")
+            # timer.timer(start="  forward: sum jacobian")
+            # transform_jacobian = np.sum(transform_jacobian, axis=2)
+            # timer.timer(stop="  forward: sum jacobian")
 
+            # timer.timer(start="  forward: concatenate jacobian")
             jacobian = onp.zeros(inputs.shape + inputs.shape[1:])
             jacobian[:, self.identity_features, self.identity_features] = 1.
             jacobian[:, self.transform_features, :] = transform_jacobian
+            # timer.timer(stop="  forward: concatenate jacobian")
 
             # # For debugging, check that the Jacobian determinant agrees
             # print("Determinant cross-check: {} vs {}".format(
@@ -112,27 +149,35 @@ class AffineCouplingTransform:
             #     onp.sum(log_scale[0])
             # ))
         else:
+            # timer.timer(start="  forward: sum logabsdet")
             logabsdet = sum_except_batch(log_scale)
+            # timer.timer(stop="  forward: sum logabsdet")
 
-        return outputs, jacobian if full_jacobian else logabsdet
+        # timer.timer(stop="forward()")
+
+        return outputs, jacobian if self.full_jacobian else logabsdet
 
 
 def time_transform(features=100, batchsize=100, hidden_features=100, hidden_layers=5, calculate_full_jacobian=False):
     # TODO: CUDA
 
+    # timer.reset()
+
     data = onp.random.randn(batchsize, features)
     mask = onp.zeros(features, dtype=np.bool_)
     mask[0::2] = 1
-    transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers)
+    transform = AffineCouplingTransform(mask, hidden_features=hidden_features, hidden_layers=hidden_layers, full_jacobian=calculate_full_jacobian)
 
     time_before = time.time()
-    _ = transform.forward(data, full_jacobian=calculate_full_jacobian)
+    _ = transform.forward(data)
     time_taken = time.time() - time_before
+
+    # timer.report_timer()
 
     return time_taken
 
 
-def time_as_function_of_features(features=[2] + list(np.arange(50,201,50)), **kwargs):
+def time_as_function_of_features(features=[2] + list(np.arange(50,251,25)), **kwargs):
     results_fwd = []
     results_rev = []
     results_det = []
@@ -143,7 +188,7 @@ def time_as_function_of_features(features=[2] + list(np.arange(50,201,50)), **kw
     return np.array(features), np.array(results_fwd), np.array(results_rev), np.array(results_det)
 
 
-def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(50,201,50)), **kwargs):
+def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(50,251,25)), **kwargs):
     results_fwd = []
     results_rev = []
     results_det = []
@@ -156,7 +201,7 @@ def time_as_function_of_batchsize(batchsizes=[1] + list(np.arange(50,201,50)), *
     return np.array(batchsizes), np.array(results_fwd), np.array(results_rev), np.array(results_det)
 
 
-def time_as_function_of_layers(layers=np.arange(1,10,1), **kwargs):
+def time_as_function_of_layers(layers=np.arange(1,21,1), **kwargs):
     results_fwd = []
     results_rev = []
     results_det = []
@@ -167,7 +212,7 @@ def time_as_function_of_layers(layers=np.arange(1,10,1), **kwargs):
     return np.array(layers), np.array(results_fwd), np.array(results_rev), np.array(results_det)
 
 
-def plot_results(xs, ys_fwd, ys_rev, ys_det, labels, det_factor=10, filename="manifold_flow_timing.pdf"):
+def plot_results(xs, ys_fwd, ys_rev, ys_det, labels, det_factor=1, filename="manifold_flow_timing_jax.pdf"):
     n_panels = len(xs)
     ymax = max([np.max(y) for y in ys_fwd] + [np.max(y) for y in ys_rev] + [det_factor * np.max(y) for y in ys_det]) * 1.05
 
@@ -176,9 +221,9 @@ def plot_results(xs, ys_fwd, ys_rev, ys_det, labels, det_factor=10, filename="ma
     for i, (x, y_fwd, y_rev, y_det, label) in enumerate(zip(xs, ys_fwd, ys_rev, ys_det, labels)):
         ax = plt.subplot(1, n_panels, i+1)
 
-        plt.plot(x, y_fwd, c="C0", ls="-", label="Forward-mode Jacobian calculation")
-        plt.plot(x, y_rev, c="C1", ls="--", label="Reverse-mode Jacobian calculation")
-        plt.plot(x, det_factor * y_det, c="C2", ls=":", label=r"Determinant calculation ($\times {}$)".format(det_factor))
+        plt.plot(x, y_fwd, c="C0", ls="-", label="Full Jacobian calculation, forward mode")
+        plt.plot(x, y_rev, c="C1", ls="--", label="Full Jacobian calculation, reverse mode")
+        plt.plot(x, det_factor * y_det, c="C2", ls=":", label=r"Determinant calculation")
 
         plt.xlabel(label)
         plt.ylim(0., ymax)
