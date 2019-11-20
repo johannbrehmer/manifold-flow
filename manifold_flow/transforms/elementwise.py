@@ -57,6 +57,7 @@ class ConditionalAffineScalarTransform(transforms.Transform):
 class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
     def __init__(self,
                  param_net=None,
+                 features=1,
                  num_bins=10,
                  tails="linear",
                  tail_bound=100.,
@@ -75,20 +76,16 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
         self.tail_bound = tail_bound
 
         if param_net is None:
-            self.param_net = None
-            self.params = torch.zeros(self._output_dim_multiplier())
+            self.params = torch.zeros(features * self._output_dim_multiplier())
             torch.nn.init.normal_(self.params)
             self.params = torch.nn.Parameter(self.params)
+            self.param_net = lambda _ : self.params
         else:
             self.param_net = param_net
             self.params = None
 
     def forward(self, inputs, context=None, full_jacobian=False):
-        if self.param_net is not None:
-            assert context is not None
-            params = self.param_net(context)
-        else:
-            params = self.params
+        params = self.param_net(context)
         outputs, logabsdet = self._elementwise_forward(inputs, params, full_jacobian=full_jacobian)
         return outputs, logabsdet
 
@@ -112,10 +109,13 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
         batch_size, features = inputs.shape[0], inputs.shape[1]
 
         transform_params = params.view(
-            batch_size,
+            -1,
             features,
             self._output_dim_multiplier()
         )
+
+        if transform_params.size(0) < batch_size:
+            transform_params = transform_params + torch.zeros((batch_size, features, self._output_dim_multiplier()))
 
         unnormalized_widths = transform_params[...,:self.num_bins]
         unnormalized_heights = transform_params[...,self.num_bins:2*self.num_bins]
