@@ -77,7 +77,6 @@ def _log_likelihood(z_phi, z_eps, latent_dim, phases, widths, epsilon):
     p_sub = 0.
     individual_shifts = [-3., -2., -1., 0., 1., 2., 3.]
     for shift in itertools.product(individual_shifts, repeat=latent_dim):
-        print(z_phi + 2.*np.pi*np.array(shift))
         p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
     logp_sub = np.log(p_sub)
     logp_eps = np.log(norm(loc=0.0, scale=epsilon).pdf(z_eps))

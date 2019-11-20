@@ -10,7 +10,7 @@ from torch.nn import MSELoss
 
 sys.path.append("../")
 
-from manifold_flow.flows.autoencoding_flow import TwoStepAutoencodingFlow
+from manifold_flow.flows.manifold_flow import ManifoldFlow
 from manifold_flow.trainer import NumpyDataset
 from manifold_flow import losses
 from aef_data import linear_simulator, spherical_simulator
@@ -81,7 +81,7 @@ def eval_on_test_data(
     dataloader = DataLoader(data, batch_size=batch_size, pin_memory=run_on_gpu)
 
     # Model
-    ae = TwoStepAutoencodingFlow(
+    ae = ManifoldFlow(
         data_dim=data_dim,
         latent_dim=flow_latent_dim,
         steps_inner=flow_steps_inner,
@@ -172,7 +172,7 @@ def eval_generated_data(
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
     # Model
-    ae = TwoStepAutoencodingFlow(
+    ae = ManifoldFlow(
         data_dim=data_dim,
         latent_dim=flow_latent_dim,
         steps_inner=flow_steps_inner,

@@ -31,7 +31,7 @@ trf = mf.flows.vector_transforms.create_transform(
     use_batch_norm=False
 )
 
-flow = mf.flows.autoencoding_flow.TwoStepAutoencodingFlow(
+flow = mf.flows.manifold_flow.ManifoldFlow(
     data_dim=2,
     latent_dim=1,
     inner_transform=None,

@@ -10,7 +10,7 @@ from torch import optim
 
 sys.path.append("../")
 
-from manifold_flow.flows.autoencoding_flow import TwoStepAutoencodingFlow
+from manifold_flow.flows.manifold_flow import ManifoldFlow
 from manifold_flow.flows.flow import Flow
 from manifold_flow.trainer import AutoencodingFlowTrainer, NumpyDataset
 from manifold_flow.losses import nll, mse
@@ -94,7 +94,7 @@ def train(
 
     else:
         logger.info("Creating auto-encoding flow with %s latent dimensions", latent_dim)
-        model = TwoStepAutoencodingFlow(
+        model = ManifoldFlow(
             data_dim=data_dim,
             latent_dim=latent_dim,
             steps_inner=flow_steps_inner,

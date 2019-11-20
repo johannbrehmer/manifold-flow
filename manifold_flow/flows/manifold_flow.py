@@ -52,7 +52,7 @@ class Projection(transforms.Transform):
         return x
 
 
-class TwoStepAutoencodingFlow(nn.Module):
+class ManifoldFlow(nn.Module):
     def __init__(
         self,
         data_dim,
@@ -62,7 +62,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         steps_inner=3,
         steps_outer=3,
     ):
-        super(TwoStepAutoencodingFlow, self).__init__()
+        super(ManifoldFlow, self).__init__()
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
@@ -159,7 +159,7 @@ class TwoStepAutoencodingFlow(nn.Module):
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
         logger.debug(
-            "Created autoencoding flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
+            "Created manifold flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
             all_params / 1e6,
             trainable_params / 1.0e6,
             size / 1.0e9,
