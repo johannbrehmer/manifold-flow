@@ -25,11 +25,19 @@ class Flow(nn.Module):
 
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
 
-        if isinstance(data_dim, int):
-            self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform)
+        if isinstance(self.data_dim, int):
+            if isinstance(transform, str):
+                logger.debug("Creating default outer transform for scalar data with base type %s", transform)
+                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform)
+            else:
+                self.transform = transform
         else:
             c, h, w = data_dim
-            self.transform = image_transforms.create_transform(c, h, w, steps)
+            if isinstance(transform, str):
+                logger.debug("Creating default outer transform for image data")
+                self.outer_transform = image_transforms.create_transform(c, h, w, steps)
+            else:
+                self.transform = transform
 
         self._report_model_parameters()
 

@@ -46,7 +46,7 @@ class RescaledNormal(distributions.Distribution):
         super().__init__()
         self._shape = torch.Size(shape)
         self.std = std
-        self._log_z = 0.5 * np.prod(shape) * np.log(2 * np.pi) + np.prod(shape) * torch.log(self.std)
+        self._log_z = 0.5 * np.prod(shape) * np.log(2 * np.pi) + np.prod(shape) * np.log(self.std)
 
     def _log_prob(self, inputs, context):
         # Note: the context is ignored.

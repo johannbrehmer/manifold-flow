@@ -476,7 +476,7 @@ class Trainer(object):
                 raise NanException
 
 
-class AutoencodingFlowTrainer(Trainer):
+class ManifoldFlowTrainer(Trainer):
     def __init__(
         self, model, run_on_gpu=True, double_precision=False
     ):
@@ -503,7 +503,7 @@ class AutoencodingFlowTrainer(Trainer):
         return losses
 
 
-class ImageAutoencodingFlowTrainer(AutoencodingFlowTrainer):
+class ImageManifoldFlowTrainer(ManifoldFlowTrainer):
     def __init__(
         self, model, run_on_gpu=True, double_precision=False, output_filename=None
     ):

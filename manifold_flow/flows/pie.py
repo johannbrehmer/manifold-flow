@@ -85,7 +85,7 @@ class PIE(nn.Module):
         else:
             c, h, w = data_dim
             if isinstance(outer_transform, str):
-                logger.debug("Creating default outer transform for image data with base type %s", outer_transform)
+                logger.debug("Creating default outer transform for image data")
                 self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
             else:
                 self.outer_transform = outer_transform
