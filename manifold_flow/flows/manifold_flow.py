@@ -64,6 +64,8 @@ class ManifoldFlow(nn.Module):
     ):
         super(ManifoldFlow, self).__init__()
 
+        assert latent_dim < data_dim
+
         self.data_dim = data_dim
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)

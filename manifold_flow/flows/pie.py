@@ -67,13 +67,15 @@ class PIE(nn.Module):
     ):
         super(PIE, self).__init__()
 
+        assert latent_dim < data_dim
+
         self.data_dim = data_dim
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
-        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_latent_dim,), std=epsilon)
+        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=epsilon)
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
         if isinstance(self.data_dim, int):

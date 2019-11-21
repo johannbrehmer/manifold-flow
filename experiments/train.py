@@ -155,7 +155,7 @@ def train(args):
     # Train
     if args.algorithm in ["flow", "pie"]:
         logger.info("Starting training on NLL")
-        trainer.train(
+        learning_curves = trainer.train(
             dataset=dataset,
             loss_functions=[losses.nll],
             loss_labels=["NLL"],
@@ -165,20 +165,23 @@ def train(args):
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
         )
+        learning_curves = np.vstack(learning_curves).T
     else:
         logger.info("Starting training on MSE")
-        trainer.train(
+        learning_curves = trainer.train(
             dataset=dataset,
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[args.mfalpha, args.mfbeta],
+            loss_weights=[args.alpha, args.beta],
             batch_size=args.batchsize,
             epochs=args.epochs // 2,
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
         )
+        learning_curves = np.vstack(learning_curves).T
+
         logger.info("Starting training on NLL")
-        trainer.train(
+        learning_curves2 = trainer.train(
             dataset=dataset,
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
@@ -189,10 +192,17 @@ def train(args):
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
         )
 
+        learning_curves2 = np.vstack(learning_curves2).T
+        learning_curves = np.vstack((learning_curves, learning_curves2))
+
     # Save
-    logger.info("Saving model to %s", "{}/experiments/models/{}.pt".format(args.dir, args.modelname))
-    os.makedirs("{}/experiments/data/models".format(args.dir, args.modelname), exist_ok=True)
+    logger.info("Saving model to %s", "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname))
+    os.makedirs("{}/experiments/data/models".format(args.dir), exist_ok=True)
     torch.save(model.state_dict(), "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname))
+
+    logger.info("Saving learning curve to %s", "{}/experiments/data/learning_curves/{}.pt".format(args.dir, args.modelname))
+    os.makedirs("{}/experiments/data/learning_curves".format(args.dir), exist_ok=True)
+    np.save("{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname), learning_curves)
 
 
 def parse_args():
@@ -206,11 +216,11 @@ def parse_args():
     parser.add_argument("--datadim", type=int, default=10)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
-    parser.add_argument("--modellatentdim", type=int, default=10)
-    parser.add_argument("--transform", type=str, default="affine-autoregressive")
+    parser.add_argument("--modellatentdim", type=int, default=9)
+    parser.add_argument("--transform", type=str, default="affine-coupling")
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--alpha", type=float, default=100.0)
