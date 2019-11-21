@@ -1,1 +1,1 @@
-from .spherical_simulator import SphericalGaussianSimulator
+from experiments.data_generation.spherical_simulator import SphericalGaussianSimulator

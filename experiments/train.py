@@ -106,7 +106,7 @@ def train(args):
     # Data
     if args.dataset == "spherical_gaussian":
         x = np.load(
-            "{}/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+            "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
                 args.dir, args.latentdim, args.datadim, args.epsilon
             )
         )
@@ -170,9 +170,9 @@ def train(args):
         )
 
     # Save
-    logger.info("Saving model to %s", "{}/data/models/{}.pt".format(args.dir, args.modelname))
-    os.makedirs("{}/data/models".format(args.dir, args.modelname), exist_ok=True)
-    torch.save(model.state_dict(), "{}/data/models/{}.pt".format(args.dir, args.modelname))
+    logger.info("Saving model to %s", "{}/experiments/models/{}.pt".format(args.dir, args.modelname))
+    os.makedirs("{}/experiments/models".format(args.dir, args.modelname), exist_ok=True)
+    torch.save(model.state_dict(), "{}/experiments/models/{}.pt".format(args.dir, args.modelname))
 
 
 def parse_args():

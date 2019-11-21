@@ -25,15 +25,15 @@ def generate(args):
     x_test = simulator.sample(args.test)
 
     # Save
-    os.mkdirs("{}/data/samples/spherical_gaussian".format(args.dir))
+    os.makedirs("{}/experiments/data/spherical_gaussian".format(args.dir), exist_ok=True)
     np.save(
-        "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+        "{}/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_train,
     )
     np.save(
-        "{}/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
+        "{}/experiments/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_test,

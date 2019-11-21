@@ -1,11 +1,9 @@
 #! /usr/bin/env python
 
 import numpy as np
-import logging
 from scipy.stats import norm
 import itertools
 from experiments.data_generation.base import BaseSimulator
-from experiments.generate_data import generate, args
 
 
 class SphericalGaussianSimulator(BaseSimulator):
