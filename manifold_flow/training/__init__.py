@@ -1,1 +1,2 @@
-from manifold_flow.training import losses, trainer
+from manifold_flow.training import losses
+from manifold_flow.training.trainer import ManifoldFlowTrainer, ImageManifoldFlowTrainer, NumpyDataset

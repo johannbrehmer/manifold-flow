@@ -2,14 +2,13 @@
 
 import numpy as np
 import logging
-import argparse
-import os
 from scipy.stats import norm
 import itertools
 from experiments.data_generation.base import BaseSimulator
+from experiments.generate_data import generate, args
 
 
-class SphericalGaussianSimultor(BaseSimulator):
+class SphericalGaussianSimulator(BaseSimulator):
     def __init__(self, latent_dim=9, data_dim=10, phases=1.25*np.pi, widths=0.6, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
@@ -107,53 +106,3 @@ class SphericalGaussianSimultor(BaseSimulator):
         logp = np.concatenate((logp_sub, logp_eps), axis=1)
         logp = np.sum(logp, axis=1) + log_det
         return logp
-
-
-def generate(
-    epsilon=0.01,
-    latent_dim=9,
-    data_dim=10,
-    n_train=1000000,
-    n_test=10000,
-    base_dir=".",
-):
-    if not os.path.exists("{}/data/spherical_gaussian".format(base_dir)):
-        os.mkdir("{}/data/spherical_gaussian".format(base_dir))
-    simulator = SphericalGaussianSimultor(latent_dim, data_dim, epsilon=epsilon)
-    x_train = simulator.sample(n_train)
-    x_test = simulator.sample(n_test)
-    np.save(
-        "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
-            base_dir, latent_dim, data_dim, epsilon
-        ),
-        x_train,
-    )
-    np.save(
-        "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
-            base_dir, latent_dim, data_dim, epsilon
-        ),
-        x_test,
-    )
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--epsilon", type=float, default=0.01)
-    parser.add_argument(
-        "--dir",
-        type=str,
-        default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow",
-    )
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-        datefmt="%H:%M",
-        level=logging.INFO,
-    )
-    logging.info("Hi!")
-    args = parse_args()
-    generate(args.epsilon, base_dir=args.dir)
-    logging.info("All done! Have a nice day!")
