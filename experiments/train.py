@@ -95,7 +95,7 @@ logger = logging.getLogger(__name__)
 
 def train(args):
     if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
+        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
     logger.info(
         "Training model %s algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
         args.modelname,

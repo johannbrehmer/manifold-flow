@@ -8,7 +8,7 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 
-source activate madminer
+source activate ml
 cd /scratch/jb6504/manifold-flow
 
 case ${SLURM_ARRAY_TASK_ID} in
