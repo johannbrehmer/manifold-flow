@@ -13,7 +13,7 @@ class Flow(nn.Module):
     def __init__(
         self,
         data_dim,
-        transform="rq-coupling",
+        transform="affine-autoregressive",
         steps=3,
     ):
         super(Flow, self).__init__()

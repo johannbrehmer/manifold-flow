@@ -25,15 +25,15 @@ def generate(args):
     x_test = simulator.sample(args.test)
 
     # Save
-    os.makedirs("{}/experiments/data/spherical_gaussian".format(args.dir), exist_ok=True)
+    os.makedirs("{}/experiments/data/samples/spherical_gaussian".format(args.dir), exist_ok=True)
     np.save(
-        "{}/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_train,
     )
     np.save(
-        "{}/experiments/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
+        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_test,
@@ -43,7 +43,7 @@ def generate(args):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"],)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
 
     parser.add_argument("--truelatentdim", type=int, default=9)
     parser.add_argument("--datadim", type=int, default=10)
@@ -60,9 +60,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-        datefmt="%H:%M",
-        level=logging.DEBUG if args.debug else logging.INFO,
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
     logger.info("Hi!")
     generate(args)

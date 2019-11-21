@@ -95,10 +95,16 @@ logger = logging.getLogger(__name__)
 
 def train(args):
     if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{}".format(
-            args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon
-        )
-    logger.info("Training model %s algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)", args.modelname, args.algorithm, args.modellatentdim, args.dataset, args.datadim, args.truelatentdim)
+        args.modelname = "{}_{}_{}_{}_{}_{}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
+    logger.info(
+        "Training model %s algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
+        args.modelname,
+        args.algorithm,
+        args.modellatentdim,
+        args.dataset,
+        args.datadim,
+        args.truelatentdim,
+    )
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -106,8 +112,8 @@ def train(args):
     # Data
     if args.dataset == "spherical_gaussian":
         x = np.load(
-            "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
-                args.dir, args.latentdim, args.datadim, args.epsilon
+            "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+                args.dir, args.truelatentdim, args.datadim, args.epsilon
             )
         )
         y = np.ones(x.shape[0])
@@ -119,13 +125,27 @@ def train(args):
     # Model
     if args.algorithm == "flow":
         logger.info("Creating standard flow with %s layers", args.outerlayers)
-        model = Flow(data_dim=args.datadim, transform=args.outerlayers)
+        model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform)
     elif args.algorithm == "pie":
         logger.info("Creating PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
-        model = PIE(data_dim=args.datadim, latent_dim=args.modellatentdim, inner_transform=args.innerlayers, outer_transform=args.outerlayers)
+        model = PIE(
+            data_dim=args.datadim,
+            latent_dim=args.modellatentdim,
+            steps_inner=args.innerlayers,
+            steps_outer=args.outerlayers,
+            outer_transform=args.transform,
+            inner_transform=args.transform,
+        )
     elif args.algorithm == "mf":
         logger.info("Creating manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
-        model = ManifoldFlow(data_dim=args.datadim, latent_dim=args.modellatentdim, inner_transform=args.innerlayers, outer_transform=args.outerlayers)
+        model = ManifoldFlow(
+            data_dim=args.datadim,
+            latent_dim=args.modellatentdim,
+            steps_inner=args.innerlayers,
+            steps_outer=args.outerlayers,
+            outer_transform=args.transform,
+            inner_transform=args.transform,
+        )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
 
@@ -162,7 +182,7 @@ def train(args):
             dataset=dataset,
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[0., 1.],
+            loss_weights=[0.0, 1.0],
             batch_size=args.batchsize,
             epochs=args.epochs // 2,
             initial_lr=args.lr,
@@ -171,29 +191,30 @@ def train(args):
 
     # Save
     logger.info("Saving model to %s", "{}/experiments/models/{}.pt".format(args.dir, args.modelname))
-    os.makedirs("{}/experiments/models".format(args.dir, args.modelname), exist_ok=True)
-    torch.save(model.state_dict(), "{}/experiments/models/{}.pt".format(args.dir, args.modelname))
+    os.makedirs("{}/experiments/data/models".format(args.dir, args.modelname), exist_ok=True)
+    torch.save(model.state_dict(), "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname))
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--name", type=str, default=None, help="Model name.")
+    parser.add_argument("--modelname", type=str, default=None, help="Model name.")
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"],)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
 
     parser.add_argument("--truelatentdim", type=int, default=9)
     parser.add_argument("--datadim", type=int, default=10)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
     parser.add_argument("--modellatentdim", type=int, default=10)
+    parser.add_argument("--transform", type=str, default="affine-autoregressive")
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batchsize", type=int, default=100)
-    parser.add_argument("--lr", type=float, default=1.e-3)
-    parser.add_argument("--alpha", type=float, default=100.)
-    parser.add_argument("--beta", type=float, default=1.e-3)
+    parser.add_argument("--lr", type=float, default=1.0e-3)
+    parser.add_argument("--alpha", type=float, default=100.0)
+    parser.add_argument("--beta", type=float, default=1.0e-2)
 
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
@@ -204,9 +225,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-        datefmt="%H:%M",
-        level=logging.DEBUG if args.debug else logging.INFO,
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
     logger.info("Hi!")
     train(args)

@@ -15,23 +15,10 @@ from manifold_flow.trainer import NumpyDataset
 from manifold_flow import losses
 from aef_data import linear_simulator, spherical_simulator
 
-logging.basicConfig(
-    format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
-    datefmt="%H:%M",
-    level=logging.DEBUG,
-)
+logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG)
 
 
-def eval_on_test_data(
-    model_filename,
-    dataset,
-    data_dim,
-    flow_latent_dim,
-    flow_steps_inner=5,
-    flow_steps_outer=5,
-    batch_size=1024,
-    base_dir=".",
-):
+def eval_on_test_data(model_filename, dataset, data_dim, flow_latent_dim, flow_steps_inner=5, flow_steps_outer=5, batch_size=1024, base_dir="."):
     logging.info("Evaluating %s on test data", model_filename)
 
     # Prepare evaluation
@@ -57,21 +44,13 @@ def eval_on_test_data(
         assert data_dim is not None
         transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
         true_latent_dim = 8
-        x = np.load(
-            "{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(
-                base_dir, true_latent_dim, data_dim
-            )
-        )
+        x = np.load("{}/data/gaussian/gaussian_{}_{}_x_train.npy".format(base_dir, true_latent_dim, data_dim))
         y = linear_simulator.true_logp(x, 0.001, 8, data_dim, transform, True)
         data = NumpyDataset(x, y)
     elif dataset == "spherical_gaussian":
         assert data_dim is not None
         true_latent_dim = 15
-        x = np.load(
-            "{}/data/spherical_gaussian/spherical_gaussian_{}_{}_x_test.npy".format(
-                base_dir, true_latent_dim, data_dim
-            )
-        )
+        x = np.load("{}/data/spherical_gaussian/spherical_gaussian_{}_{}_x_test.npy".format(base_dir, true_latent_dim, data_dim))
         y = np.zeros(x.shape[0])
         data = NumpyDataset(x, y)
     else:
@@ -81,19 +60,10 @@ def eval_on_test_data(
     dataloader = DataLoader(data, batch_size=batch_size, pin_memory=run_on_gpu)
 
     # Model
-    ae = ManifoldFlow(
-        data_dim=data_dim,
-        latent_dim=flow_latent_dim,
-        steps_inner=flow_steps_inner,
-        steps_outer=flow_steps_outer,
-    )
+    ae = ManifoldFlow(data_dim=data_dim, latent_dim=flow_latent_dim, steps_inner=flow_steps_inner, steps_outer=flow_steps_outer)
 
     # Load state dict
-    ae.load_state_dict(
-        torch.load(
-            "{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"
-        )
-    )
+    ae.load_state_dict(torch.load("{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"))
     ae = ae.to(device, dtype)
     ae.eval()
 
@@ -128,26 +98,12 @@ def eval_on_test_data(
     mse_reco = mse_reco / len(dataloader)
     mse_log_likelihood = mse_log_likelihood / len(dataloader)
 
-    logging.info(
-        "Result: - log likelihood = %s, reco MSE = %s, log likelihood MSE = %s",
-        nll,
-        mse_reco,
-        mse_log_likelihood,
-    )
+    logging.info("Result: - log likelihood = %s, reco MSE = %s, log likelihood MSE = %s", nll, mse_reco, mse_log_likelihood)
 
     return nll, mse_reco, mse_log_likelihood
 
 
-def eval_generated_data(
-    model_filename,
-    dataset,
-    data_dim,
-    flow_latent_dim,
-    flow_steps_inner=5,
-    flow_steps_outer=5,
-    n=10000,
-    base_dir=".",
-):
+def eval_generated_data(model_filename, dataset, data_dim, flow_latent_dim, flow_steps_inner=5, flow_steps_outer=5, n=10000, base_dir="."):
     logging.info("Generating and evaluating data from %s", model_filename)
 
     # Prepare evaluation
@@ -172,19 +128,10 @@ def eval_generated_data(
         raise NotImplementedError("Unknown dataset {}".format(dataset))
 
     # Model
-    ae = ManifoldFlow(
-        data_dim=data_dim,
-        latent_dim=flow_latent_dim,
-        steps_inner=flow_steps_inner,
-        steps_outer=flow_steps_outer,
-    )
+    ae = ManifoldFlow(data_dim=data_dim, latent_dim=flow_latent_dim, steps_inner=flow_steps_inner, steps_outer=flow_steps_outer)
 
     # Load state dict
-    ae.load_state_dict(
-        torch.load(
-            "{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"
-        )
-    )
+    ae.load_state_dict(torch.load("{}/data/flows/{}.pt".format(base_dir, model_filename), map_location="cpu"))
     ae = ae.to(device, dtype)
     ae.eval()
 
@@ -200,26 +147,13 @@ def eval_generated_data(
     # Calculate true likelihood of generated data
     if dataset == "gaussian":
         transform = np.load("{}/data/gaussian/gaussian_transform.npy".format(base_dir))
-        nll = -linear_simulator.true_logp(
-            x=x,
-            epsilon=0.001,
-            latent_dim=true_latent_dim,
-            data_dim=data_dim,
-            transform=transform,
-        )
+        nll = -linear_simulator.true_logp(x=x, epsilon=0.001, latent_dim=true_latent_dim, data_dim=data_dim, transform=transform)
         nll = np.mean(nll, axis=0)
     elif dataset == "spherical_gaussian":
         phases = np.load("{}/data/spherical_gaussian/spherical_gaussian_phases.npy".format(base_dir))
         widths = np.load("{}/data/spherical_gaussian/spherical_gaussian_widths.npy".format(base_dir))
-        nll = -spherical_simulator.true_logp(
-            x=x,
-            epsilon=0.01,
-            latent_dim=true_latent_dim,
-            phases=phases,
-            widths=widths,
-        )
+        nll = -spherical_simulator.true_logp(x=x, epsilon=0.01, latent_dim=true_latent_dim, phases=phases, widths=widths)
         nll = np.mean(nll, axis=0)
-
 
     logging.info("Result: - log likelihood = %s", nll)
 
@@ -229,26 +163,7 @@ def eval_generated_data(
 def eval_loop_gaussian(
     result_filename="gaussian",
     model_filename="gaussian_{}_{}_{}",
-    flow_latent_dims=(
-        2,
-        4,
-        6,
-        8,
-        10,
-        12,
-        14,
-        16,
-        18,
-        20,
-        22,
-        24,
-        26,
-        28,
-        30,
-        32,
-        64,
-        128,
-    ),
+    flow_latent_dims=(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 64, 128),
     data_dims=(8, 16, 32, 64, 128),
     flow_steps_inner=5,
     flow_steps_outer=5,
@@ -306,36 +221,18 @@ def eval_loop_gaussian(
     nll_gens = np.array(nll_gens)
     mse_log_likelihood_tests = np.array(mse_log_likelihood_tests)
 
-    np.save(
-        "{}/data/results/data_dims_{}.npy".format(base_dir, result_filename),
-        data_dims_out,
-    )
-    np.save(
-        "{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename),
-        flow_latent_dims_out,
-    )
-    np.save(
-        "{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests
-    )
-    np.save(
-        "{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename),
-        mse_reco_tests,
-    )
-    np.save(
-        "{}/data/results/mse_log_likelihood_test_{}.npy".format(
-            base_dir, result_filename
-        ),
-        mse_log_likelihood_tests,
-    )
-    np.save(
-        "{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens
-    )
+    np.save("{}/data/results/data_dims_{}.npy".format(base_dir, result_filename), data_dims_out)
+    np.save("{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), flow_latent_dims_out)
+    np.save("{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests)
+    np.save("{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename), mse_reco_tests)
+    np.save("{}/data/results/mse_log_likelihood_test_{}.npy".format(base_dir, result_filename), mse_log_likelihood_tests)
+    np.save("{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens)
 
 
 def eval_loop_spherical_gaussian(
     result_filename="spherical_gaussian",
     model_filename="spherical_gaussian_{}_{}_{}",
-    flow_latent_dims=tuple(list(range(2,33)) + [64, 128]),
+    flow_latent_dims=tuple(list(range(2, 33)) + [64, 128]),
     data_dims=(16, 32, 64, 128),
     flow_steps_inner=10,
     flow_steps_outer=10,
@@ -393,46 +290,19 @@ def eval_loop_spherical_gaussian(
     nll_gens = np.array(nll_gens)
     mse_log_likelihood_tests = np.array(mse_log_likelihood_tests)
 
-    np.save(
-        "{}/data/results/data_dims_{}.npy".format(base_dir, result_filename),
-        data_dims_out,
-    )
-    np.save(
-        "{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename),
-        flow_latent_dims_out,
-    )
-    np.save(
-        "{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests
-    )
-    np.save(
-        "{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename),
-        mse_reco_tests,
-    )
-    np.save(
-        "{}/data/results/mse_log_likelihood_test_{}.npy".format(
-            base_dir, result_filename
-        ),
-        mse_log_likelihood_tests,
-    )
-    np.save(
-        "{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens
-    )
+    np.save("{}/data/results/data_dims_{}.npy".format(base_dir, result_filename), data_dims_out)
+    np.save("{}/data/results/latent_dims_{}.npy".format(base_dir, result_filename), flow_latent_dims_out)
+    np.save("{}/data/results/nll_test_{}.npy".format(base_dir, result_filename), nll_tests)
+    np.save("{}/data/results/mse_reco_test_{}.npy".format(base_dir, result_filename), mse_reco_tests)
+    np.save("{}/data/results/mse_log_likelihood_test_{}.npy".format(base_dir, result_filename), mse_log_likelihood_tests)
+    np.save("{}/data/results/nll_gen_{}.npy".format(base_dir, result_filename), nll_gens)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("result", type=str)
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        default="tth",
-        choices=["cifar", "imagenet", "tth", "gaussian", "spherical_gaussian"],
-    )
-    parser.add_argument(
-        "--dir",
-        type=str,
-        default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow",
-    )
+    parser.add_argument("--dataset", type=str, default="tth", choices=["cifar", "imagenet", "tth", "gaussian", "spherical_gaussian"])
+    parser.add_argument("--dir", type=str, default="/Users/johannbrehmer/work/projects/ae_flow/autoencoded-flow")
     parser.add_argument("--data", type=int, default=(16, 32, 64, 128))
     return parser.parse_args()
 
@@ -443,12 +313,8 @@ if __name__ == "__main__":
     if isinstance(args.data, int):
         args.data = (args.data,)
 
-    if args.dataset ==  "gaussian":
-        eval_loop_gaussian(
-            base_dir=args.dir, data_dims=args.data, result_filename=args.result
-        )
-    elif args.dataset ==  "spherical_gaussian":
-        eval_loop_spherical_gaussian(
-            base_dir=args.dir, data_dims=args.data, result_filename=args.result
-        )
+    if args.dataset == "gaussian":
+        eval_loop_gaussian(base_dir=args.dir, data_dims=args.data, result_filename=args.result)
+    elif args.dataset == "spherical_gaussian":
+        eval_loop_spherical_gaussian(base_dir=args.dir, data_dims=args.data, result_filename=args.result)
     logging.info("All done! Have a nice day!")

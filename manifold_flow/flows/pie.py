@@ -59,10 +59,10 @@ class PIE(nn.Module):
         self,
         data_dim,
         latent_dim=10,
-        inner_transform="rq-coupling",
-        outer_transform="rq-coupling",
-        steps_inner=3,
-        steps_outer=3,
+        inner_transform="affine-autoregressive",
+        outer_transform="affine-autoregressive",
+        steps_inner=5,
+        steps_outer=5,
         epsilon=1.e-3
     ):
         super(PIE, self).__init__()

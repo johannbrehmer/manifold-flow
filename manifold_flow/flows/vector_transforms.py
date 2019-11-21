@@ -136,7 +136,7 @@ def _create_base_transform(
 def create_transform(
     dim,
     flow_steps,
-    linear_transform_type="lu",
+    linear_transform_type="permutation",
     base_transform_type="rq-coupling",
     hidden_features=256,
     num_transform_blocks=2,
