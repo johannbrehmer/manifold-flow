@@ -112,7 +112,7 @@ def train(args):
     # Data
     if args.dataset == "spherical_gaussian":
         x = np.load(
-            "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+            "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{:.3f}_x_train.npy".format(
                 args.dir, args.truelatentdim, args.datadim, args.epsilon
             )
         )
@@ -212,11 +212,11 @@ def parse_args():
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
 
-    parser.add_argument("--truelatentdim", type=int, default=9)
-    parser.add_argument("--datadim", type=int, default=10)
+    parser.add_argument("--truelatentdim", type=int, default=10)
+    parser.add_argument("--datadim", type=int, default=15)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
-    parser.add_argument("--modellatentdim", type=int, default=9)
+    parser.add_argument("--modellatentdim", type=int, default=10)
     parser.add_argument("--transform", type=str, default="affine-coupling")
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)

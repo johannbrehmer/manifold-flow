@@ -27,13 +27,13 @@ def generate(args):
     # Save
     os.makedirs("{}/experiments/data/samples/spherical_gaussian".format(args.dir), exist_ok=True)
     np.save(
-        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_train.npy".format(
+        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{:.3f}_x_train.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_train,
     )
     np.save(
-        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{}_x_test.npy".format(
+        "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{:.3f}_x_test.npy".format(
             args.dir, args.truelatentdim, args.datadim, args.epsilon
         ),
         x_test,
@@ -45,8 +45,8 @@ def parse_args():
 
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
 
-    parser.add_argument("--truelatentdim", type=int, default=9)
-    parser.add_argument("--datadim", type=int, default=10)
+    parser.add_argument("--truelatentdim", type=int, default=10)
+    parser.add_argument("--datadim", type=int, default=15)
     parser.add_argument("--epsilon", type=float, default=0.01)
     parser.add_argument("--train", type=int, default=1000000)
     parser.add_argument("--test", type=int, default=10000)

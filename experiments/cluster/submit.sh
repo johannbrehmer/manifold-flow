@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
-sbatch --array=2-32 train_spherical.sh
-sbatch --array=64-64 train_spherical.sh
-sbatch --array=128-128 train_spherical.sh
+sbatch simulate.sh
+sbatch train_flow_spherical.sh
+sbatch train_pie_spherical.sh
+sbatch --array=0-8 train_mf_spherical.sh
