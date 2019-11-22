@@ -25,7 +25,7 @@ class SphericalGaussianSimulator(BaseSimulator):
 
     def log_density(self, x):
         z_phi, z_eps = self._transform_x_to_z(x)
-        logp = self._log_likelihood(z_phi, z_eps)
+        logp = self._log_density(z_phi, z_eps)
         return logp
 
     def sample(self, n):
@@ -85,8 +85,8 @@ class SphericalGaussianSimulator(BaseSimulator):
         z_eps[:, 0] = r - 1
         return z_phi, z_eps
 
-    def _log_likelihood(self, z_phi, z_eps):
-        r = z_eps[:, 0]
+    def _log_density(self, z_phi, z_eps):
+        r = 1. + z_eps[:, 0]
         phases_ = np.empty((z_phi.shape[0], self._latent_dim))
         phases_[:] = self._phases
         widths_ = np.empty((z_phi.shape[0], self._latent_dim))
