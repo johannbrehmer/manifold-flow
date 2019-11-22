@@ -76,6 +76,7 @@ def evaluate(args):
     # Calculate likelihood of data
     logger.info("Calculating likelihood of generated samples")
     log_likelihood_gen = simulator.log_density(x_gen)
+    log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.e-12
 
     logger.info("Saving likelihood to %s", "{}/experiments/data/results/{}_samples_likelihood.npy".format(args.dir, args.modelname))
     np.save("{}/experiments/data/results/{}_samples_likelihood.npy".format(args.dir, args.modelname), log_likelihood_gen)
