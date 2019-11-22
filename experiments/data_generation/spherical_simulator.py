@@ -3,7 +3,10 @@
 import numpy as np
 from scipy.stats import norm
 import itertools
+import logging
 from experiments.data_generation.base import BaseSimulator
+
+logger = logging.getLogger(__name__)
 
 
 class SphericalGaussianSimulator(BaseSimulator):
@@ -24,7 +27,9 @@ class SphericalGaussianSimulator(BaseSimulator):
         return self._latent_dim
 
     def log_density(self, x):
+        logger.debug("Evaluating true log density for x = %s", x[0])
         z_phi, z_eps = self._transform_x_to_z(x)
+        logger.debug("Latent variables: z_phi = %s, z_eps = %s", z_phi[0], z_eps[0])
         logp = self._log_density(z_phi, z_eps)
         return logp
 
@@ -99,11 +104,15 @@ class SphericalGaussianSimulator(BaseSimulator):
         logp_sub = np.log(p_sub)
         logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
 
+        logger.debug("log density in z space: %s", np.sum(np.concatenate((logp_sub, logp_eps), axis=1), axis=1)[0])
+
         log_det = self._latent_dim * np.abs(r)
         log_det += np.sum(
             np.arange(self._latent_dim - 1, -1, -1)[np.newaxis, :] * np.log(np.abs(np.sin(z_phi))),
             axis=1,
         )
+
+        logger.debug("log det Jacobian: %s", log_det[0])
 
         logp = np.concatenate((logp_sub, logp_eps), axis=1)
         logp = np.sum(logp, axis=1) + log_det
