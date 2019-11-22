@@ -116,4 +116,6 @@ class SphericalGaussianSimulator(BaseSimulator):
 
         logp = np.concatenate((logp_sub, logp_eps), axis=1)
         logp = np.sum(logp, axis=1) + log_det
+
+        logger.debug("Output shape: %s", logp.shape)
         return logp
