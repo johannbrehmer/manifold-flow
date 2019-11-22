@@ -65,7 +65,7 @@ def evaluate(args):
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
-    model.load_state_dict(torch.load("{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)))
+    model.load_state_dict(torch.load("{}/experiments/data/models/{}.pt".format(args.dir, args.modelname), map_location=torch.device("cpu")))
 
     # Generate data
     logger.info("Sampling from model")
@@ -111,7 +111,7 @@ def parse_args():
     parser.add_argument("--innerlayers", type=int, default=5)
 
     parser.add_argument("--samples", type=int, default=10000)
-    parser.add_argument("--logpmin", type=float, default=-1000.)
+    parser.add_argument("--logpmin", type=float, default=-1000.0)
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
 
