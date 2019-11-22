@@ -98,7 +98,7 @@ class SphericalGaussianSimulator(BaseSimulator):
         widths_[:] = self._widths
 
         p_sub = 0.
-        individual_shifts = [-3., -2., -1., 0., 1., 2., 3.]
+        individual_shifts = [-1., 0., 1.]
         for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
             p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
         logp_sub = np.log(p_sub)
