@@ -12,7 +12,7 @@ sys.path.append("../")
 
 from manifold_flow.flows import ManifoldFlow, Flow, PIE
 from manifold_flow.training import ManifoldFlowTrainer, losses, NumpyDataset
-from experiments.data_generation import SphericalGaussianSimulator
+from experiments.simulators import SphericalGaussianSimulator
 
 logger = logging.getLogger(__name__)
 

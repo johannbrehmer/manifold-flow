@@ -29,7 +29,7 @@ class UnlabelledImageFolder(Dataset):
         image = default_loader(path)
         if self.transform is not None:
             image = self.transform(image)
-        # Add a bogus label to be compatible with standard image data_generation.
+        # Add a bogus label to be compatible with standard image simulators.
         return image, torch.tensor([0.0])
 
     def __len__(self):
@@ -143,7 +143,7 @@ class ImageNet64Fast(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        # Add a bogus label to be compatible with standard image data_generation.
+        # Add a bogus label to be compatible with standard image simulators.
         return img, torch.tensor([0.0])
 
     def __len__(self):

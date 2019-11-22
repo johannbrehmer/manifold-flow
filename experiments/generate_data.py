@@ -8,7 +8,7 @@ import logging
 
 sys.path.append("../")
 
-from experiments.data_generation import SphericalGaussianSimulator
+from experiments.simulators import SphericalGaussianSimulator
 
 logger = logging.getLogger(__name__)
 

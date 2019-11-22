@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import norm
 import itertools
 import logging
-from experiments.data_generation.base import BaseSimulator
+from experiments.simulators.base import BaseSimulator
 
 logger = logging.getLogger(__name__)
 
