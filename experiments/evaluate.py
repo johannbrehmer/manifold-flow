@@ -23,8 +23,6 @@ def evaluate(args):
     logger.info(
         "Evaluating model %s on data set %s (data dim %s, true latent dim %s)",
         args.modelname,
-        args.algorithm,
-        args.modellatentdim,
         args.dataset,
         args.datadim,
         args.truelatentdim,
@@ -110,8 +108,7 @@ def parse_args():
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
 
-    parser.add_argument("--samples", type=int, default=10000)
-    parser.add_argument("--logpmin", type=float, default=-1000.0)
+    parser.add_argument("--samples", type=int, default=1000)
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
 
