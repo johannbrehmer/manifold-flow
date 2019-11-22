@@ -10,3 +10,6 @@ class BaseSimulator:
 
     def sample(self, n):
         raise NotImplementedError
+
+    def distance_from_manifold(self, x):
+        raise NotImplementedError

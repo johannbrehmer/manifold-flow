@@ -33,6 +33,10 @@ class SphericalGaussianSimulator(BaseSimulator):
         x = self._transform_z_to_x(z_phi, z_eps)
         return x
 
+    def distance_from_manifold(self, x):
+        z_phi, z_eps = self._transform_x_to_z(x)
+        return np.sum(z_eps**2, axis=1)**0.5
+
     def _draw_z(self, n):
         # Spherical coordinates
         phases_ = np.empty((n, self._latent_dim))
