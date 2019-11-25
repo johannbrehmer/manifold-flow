@@ -36,16 +36,10 @@ class Projection(transforms.Transform):
 
     def inverse(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
-            x = torch.cat(
-                (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
-                dim=1,
-            )
+            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
         elif self.mode_in == "image" and self.mode_out == "vector":
             c, h, w = self.input_dim
-            x = torch.cat(
-                (inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)),
-                dim=1,
-            )
+            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)), dim=1)
             x = x.view(inputs.size(0), c, h, w)
         else:
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
@@ -80,7 +74,9 @@ class ManifoldFlow(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None)
+                self.outer_transform = vector_transforms.create_transform(
+                    data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None
+                )
             else:
                 self.outer_transform = outer_transform
         else:
@@ -151,8 +147,8 @@ class ManifoldFlow(nn.Module):
             return u, h, None, None
 
     def _log_prob(self, u, log_det_inner, jacobian_outer):
-        jacobian_outer = jacobian_outer[:, :, :self.latent_dim]
-        jtj = torch.bmm(torch.transpose(jacobian_outer,-2,-1), jacobian_outer)
+        jacobian_outer = jacobian_outer[:, :, : self.latent_dim]
+        jtj = torch.bmm(torch.transpose(jacobian_outer, -2, -1), jacobian_outer)
         log_det_outer = -0.5 * torch.slogdet(jtj)[1]
 
         log_prob = self.latent_distribution._log_prob(u, context=None)
@@ -164,9 +160,4 @@ class ManifoldFlow(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logger.debug(
-            "Created manifold flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
-            all_params / 1e6,
-            trainable_params / 1.0e6,
-            size / 1.0e9,
-        )
+        logger.debug("Created manifold flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

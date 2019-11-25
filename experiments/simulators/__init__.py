@@ -1,1 +1,2 @@
 from experiments.simulators.spherical_simulator import SphericalGaussianSimulator
+from experiments.simulators.conditional_spherical_simulator import ConditionalSphericalGaussianSimulator

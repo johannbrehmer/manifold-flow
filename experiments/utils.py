@@ -3,7 +3,7 @@ import torch
 import os
 
 from experiments.evaluate import logger
-from experiments.simulators import SphericalGaussianSimulator
+from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator
 from experiments.train import logger
 from manifold_flow.flows import Flow, PIE, ManifoldFlow
 from manifold_flow.training import NumpyDataset
@@ -31,18 +31,19 @@ def _filename(type, label, args):
 def _load_simulator(args):
     if args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
+    elif args.dataset == "conditional_spherical_gaussian":
+        simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     else:
         raise NotImplementedError("Unknown dataset {}".format(args.dataset))
     return simulator
 
 
-def _load_model(args):
+def _load_model(args, context_features):
     if args.algorithm == "flow":
         logger.info("Loading standard flow with %s layers", args.outerlayers)
-        model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform)
+        model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform, context_features=context_features)
     elif args.algorithm == "pie":
-        logger.info("Loading PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers,
-                    args.innerlayers)
+        logger.info("Loading PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
         model = PIE(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
@@ -50,10 +51,11 @@ def _load_model(args):
             steps_outer=args.outerlayers,
             outer_transform=args.transform,
             inner_transform=args.transform,
+            context_features=context_features,
+            apply_context_to_outer=args.conditionalouter,
         )
     elif args.algorithm == "mf":
-        logger.info("Loading manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim,
-                    args.outerlayers, args.innerlayers)
+        logger.info("Loading manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
         model = ManifoldFlow(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
@@ -61,6 +63,8 @@ def _load_model(args):
             steps_outer=args.outerlayers,
             outer_transform=args.transform,
             inner_transform=args.transform,
+            context_features=context_features,
+            apply_context_to_outer=args.conditionalouter,
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
@@ -88,12 +92,7 @@ def _load_test_samples(args):
 
 def _create_modelname(args):
     if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset,
-                                                        args.truelatentdim, args.datadim, args.epsilon)
+        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
     logger.info(
-        "Evaluating inference for model %s on data set %s (data dim %s, true latent dim %s)",
-        args.modelname,
-        args.dataset,
-        args.datadim,
-        args.truelatentdim,
+        "Evaluating inference for model %s on data set %s (data dim %s, true latent dim %s)", args.modelname, args.dataset, args.datadim, args.truelatentdim
     )

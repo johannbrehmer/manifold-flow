@@ -98,6 +98,7 @@ def parse_args():
     parser.add_argument("--datadim", type=int, default=15)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
+    parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--modellatentdim", type=int, default=10)
     parser.add_argument("--transform", type=str, default="affine-coupling")
     parser.add_argument("--outerlayers", type=int, default=5)

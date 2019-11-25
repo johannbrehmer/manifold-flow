@@ -8,19 +8,9 @@ def _create_linear_transform(linear_transform_type, features):
     if linear_transform_type == "permutation":
         return transforms.RandomPermutation(features=features)
     elif linear_transform_type == "lu":
-        return transforms.CompositeTransform(
-            [
-                transforms.RandomPermutation(features=features),
-                transforms.LULinear(features, identity_init=True),
-            ]
-        )
+        return transforms.CompositeTransform([transforms.RandomPermutation(features=features), transforms.LULinear(features, identity_init=True)])
     elif linear_transform_type == "svd":
-        return transforms.CompositeTransform(
-            [
-                transforms.RandomPermutation(features=features),
-                transforms.SVDLinear(features, num_householder=10, identity_init=True),
-            ]
-        )
+        return transforms.CompositeTransform([transforms.RandomPermutation(features=features), transforms.SVDLinear(features, num_householder=10, identity_init=True)])
     else:
         raise ValueError
 
@@ -164,7 +154,7 @@ def create_transform(
                         num_bins,
                         tail_bound,
                         apply_unconditional_transform,
-                        context_features
+                        context_features,
                     ),
                 ]
             )

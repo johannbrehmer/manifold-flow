@@ -27,27 +27,21 @@ class ProjectionSplit(transforms.Transform):
     def forward(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
             u = inputs[:, : self.output_dim]
-            rest = inputs[:, self.output_dim: ]
+            rest = inputs[:, self.output_dim :]
         elif self.mode_in == "image" and self.mode_out == "vector":
             h = inputs.view(inputs.size(0), -1)
             u = h[:, : self.output_dim]
-            rest = h[:, self.output_dim: ]
+            rest = h[:, self.output_dim :]
         else:
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
         return u, rest
 
     def inverse(self, inputs, **kwargs):
         if self.mode_in == "vector" and self.mode_out == "vector":
-            x = torch.cat(
-                (inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)),
-                dim=1,
-            )
+            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
         elif self.mode_in == "image" and self.mode_out == "vector":
             c, h, w = self.input_dim
-            x = torch.cat(
-                (inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)),
-                dim=1,
-            )
+            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)), dim=1)
             x = x.view(inputs.size(0), c, h, w)
         else:
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
@@ -63,7 +57,7 @@ class PIE(nn.Module):
         outer_transform="affine-autoregressive",
         steps_inner=5,
         steps_outer=5,
-        epsilon=1.e-3,
+        epsilon=1.0e-3,
         context_features=None,
         apply_context_to_outer=True,
     ):
@@ -84,7 +78,9 @@ class PIE(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None)
+                self.outer_transform = vector_transforms.create_transform(
+                    data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None
+                )
             else:
                 self.outer_transform = outer_transform
         else:
@@ -157,9 +153,4 @@ class PIE(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logger.debug(
-            "Created PIE with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
-            all_params / 1e6,
-            trainable_params / 1.0e6,
-            size / 1.0e9,
-        )
+        logger.debug("Created PIE with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

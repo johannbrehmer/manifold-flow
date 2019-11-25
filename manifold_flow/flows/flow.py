@@ -10,13 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Flow(nn.Module):
-    def __init__(
-        self,
-        data_dim,
-        transform="affine-autoregressive",
-        steps=3,
-        context_features=None,
-    ):
+    def __init__(self, data_dim, transform="affine-autoregressive", steps=3, context_features=None):
         super(Flow, self).__init__()
 
         self.data_dim = data_dim
@@ -88,9 +82,4 @@ class Flow(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logger.debug(
-            "Created standard flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB",
-            all_params / 1e6,
-            trainable_params / 1.0e6,
-            size / 1.0e9,
-        )
+        logger.debug("Created standard flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

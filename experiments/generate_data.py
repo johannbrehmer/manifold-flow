@@ -19,7 +19,7 @@ def generate(args):
     simulator = _load_simulator(args)
 
     # Parameters?
-    conditional = (simulator.parameter_dim() is not None)
+    conditional = simulator.parameter_dim() is not None
 
     parameters_train = simulator.sample_from_prior(args.train) if conditional else None
     parameters_test = np.asarray([simulator.default_parameters() for _ in args.test])

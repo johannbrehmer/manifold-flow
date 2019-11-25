@@ -68,7 +68,7 @@ def _evaluate_model_samples(args, simulator, x_gen):
     # Likelihood
     logger.info("Calculating likelihood of generated samples")
     log_likelihood_gen = simulator.log_density(x_gen)
-    log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.e-12
+    log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.0e-12
     np.save(_filename("results", "samples_likelihood", args), log_likelihood_gen)
 
     # Distance from manifold
@@ -91,6 +91,7 @@ def _mcmc(simulator, model=None, thin=10, n_samples=100, n_mcmc_samples=5000, bu
             log_prob = np.sum(simulator.log_density(x_obs, parameter=params))
             log_prob += simulator.evaluate_log_prior(params)
             return log_prob
+
     else:
         # MCMC based on neural likelihood estimator
         def log_posterior(params):
@@ -112,6 +113,7 @@ def parse_args():
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
 
+    parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--truelatentdim", type=int, default=10)
     parser.add_argument("--datadim", type=int, default=15)
     parser.add_argument("--epsilon", type=float, default=0.01)
@@ -122,7 +124,7 @@ def parse_args():
     parser.add_argument("--innerlayers", type=int, default=5)
 
     parser.add_argument("--generate", type=int, default=1000)
-    parser.add_argument("--samplesizes", nargs="+", type=int, default=[1,2,5,10,20,50,100,200,500,1000])
+    parser.add_argument("--samplesizes", nargs="+", type=int, default=[1, 2, 5, 10, 20, 50, 100, 200, 500, 1000])
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
 
