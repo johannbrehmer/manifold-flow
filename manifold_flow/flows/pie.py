@@ -65,6 +65,7 @@ class PIE(nn.Module):
         steps_outer=5,
         epsilon=1.e-3,
         context_features=None,
+        apply_context_to_outer=True,
     ):
         super(PIE, self).__init__()
 
@@ -74,6 +75,7 @@ class PIE(nn.Module):
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
+        self.apply_context_to_outer = apply_context_to_outer
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=epsilon)
@@ -82,7 +84,7 @@ class PIE(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features)
+                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None)
             else:
                 self.outer_transform = outer_transform
         else:
@@ -96,7 +98,7 @@ class PIE(nn.Module):
 
         if isinstance(inner_transform, str):
             logger.debug("Creating default inner transform with base type %s", outer_transform)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform, context_features=context_features)
         elif inner_transform is None:
             self.inner_transform = transforms.IdentityTransform()
         else:
@@ -125,7 +127,7 @@ class PIE(nn.Module):
     def decode(self, u, context=None):
         h, _ = self.inner_transform.inverse(u, context=context)
         h = self.projection.inverse(h)
-        x, _ = self.outer_transform.inverse(h, context=context)
+        x, _ = self.outer_transform.inverse(h, context=context if self.apply_context_to_outer else None)
         return x
 
     def log_prob(self, x, context=None):
@@ -146,7 +148,7 @@ class PIE(nn.Module):
         return x
 
     def _encode(self, x, context=None):
-        h, log_det_outer = self.outer_transform(x, context=context)
+        h, log_det_outer = self.outer_transform(x, context=context if self.apply_context_to_outer else None)
         h_manifold, h_orthogonal = self.projection(h)
         u, log_det_inner = self.inner_transform(h_manifold, context=context)
         return u, h_manifold, h_orthogonal, log_det_inner, log_det_outer
