@@ -64,21 +64,36 @@ def _load_model(args):
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
-    model.load_state_dict(torch.load("{}/experiments/data/models/{}.pt".format(args.dir, args.modelname),
-                                     map_location=torch.device("cpu")))
+    model.load_state_dict(torch.load(_filename("model", None, args), map_location=torch.device("cpu")))
     return model
 
 
-def _load_training_data(args):
+def _load_training_dataset(args):
     if args.dataset == "spherical_gaussian":
-        x = np.load(
-            "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{:.3f}_x_train.npy".format(
-                args.dir, args.truelatentdim, args.datadim, args.epsilon
-            )
-        )
-        y = np.ones(x.shape[0])
-        dataset = NumpyDataset(x, y)
-        logger.info("Loaded spherical Gaussian data")
+        x = np.load(_filename("sample", "x_train", args))
+        params = np.ones(x.shape[0])
+        dataset = NumpyDataset(x, params)
+    elif args.dataset == "conditional_spherical_gaussian":
+        x = np.load(_filename("sample", "x_train", args))
+        params = np.load(_filename("sample", "parameters_train", args))
+        dataset = NumpyDataset(x, params)
     else:
         raise NotImplementedError("Unknown dataset {}".format(args.dataset))
     return dataset
+
+
+def _load_test_samples(args):
+    return np.load(_filename("sample", "x_test", args))
+
+
+def _create_modelname(args):
+    if args.modelname is None:
+        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset,
+                                                        args.truelatentdim, args.datadim, args.epsilon)
+    logger.info(
+        "Evaluating inference for model %s on data set %s (data dim %s, true latent dim %s)",
+        args.modelname,
+        args.dataset,
+        args.datadim,
+        args.truelatentdim,
+    )

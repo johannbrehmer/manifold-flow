@@ -5,26 +5,19 @@ import logging
 import sys
 import torch
 import argparse
-import os
 
 sys.path.append("../")
 
-from manifold_flow.inference import mcmc
-from experiments.utils import _load_simulator, _load_model, _filename
+from experiments.inference import mcmc, sq_maximum_mean_discrepancy
+from experiments.utils import _load_simulator, _load_model, _filename, _create_modelname, _load_training_dataset
+from experiments.utils import _load_test_samples
 
 logger = logging.getLogger(__name__)
 
 
 def evaluate_samples(args):
-    if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
-    logger.info(
-        "Evaluating generative mode of model %s on data set %s (data dim %s, true latent dim %s)",
-        args.modelname,
-        args.dataset,
-        args.datadim,
-        args.truelatentdim,
-    )
+    # Model name
+    _create_modelname(args)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -43,15 +36,8 @@ def evaluate_samples(args):
 
 
 def evaluate_inference(args):
-    if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
-    logger.info(
-        "Evaluating inference for model %s on data set %s (data dim %s, true latent dim %s)",
-        args.modelname,
-        args.dataset,
-        args.datadim,
-        args.truelatentdim,
-    )
+    # Model name
+    _create_modelname(args)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -62,7 +48,20 @@ def evaluate_inference(args):
     # Model
     model = _load_model(args)
 
-    # TODO: MCMC, MMD calculation
+    # Evaluate MMD
+    mmds = []
+    for samples in args.samplesizes:
+        true_posterior_samples = _mcmc(simulator, n_samples=samples)
+        model_posterior_samples = _mcmc(simulator, model, n_samples=samples)
+        mmds.append(sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys"))
+    np.save(_filename("results", "mmd", args), mmds)
+
+
+def _sample_from_model(args, model):
+    logger.info("Sampling from model")
+    x_gen = model.sample(n=args.generate).detach().numpy()
+    np.save(_filename("results", "samples", args), x_gen)
+    return x_gen
 
 
 def _evaluate_model_samples(args, simulator, x_gen):
@@ -81,20 +80,25 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
-def _sample_from_model(args, model):
-    logger.info("Sampling from model")
-    x_gen = model.sample(n=args.samples).detach().numpy()
-    np.save(_filename("results", "samples", args), x_gen)
-    return x_gen
+def _mcmc(simulator, model=None, thin=10, n_samples=100, n_mcmc_samples=5000, burnin=100):
+    # Data
+    true_parameters = simulator.default_parameters()
+    x_obs = _load_test_samples(args)[:n_samples]
 
+    if model is None:
+        # MCMC based on ground truth likelihood
+        def log_posterior(params):
+            log_prob = np.sum(simulator.log_density(x_obs, parameter=params))
+            log_prob += simulator.evaluate_log_prior(params)
+            return log_prob
+    else:
+        # MCMC based on neural likelihood estimator
+        def log_posterior(params):
+            log_prob = np.sum(model.log_prob(torch.array(x_obs), context=torch.array(params)).detach().numpy())
+            log_prob += simulator.evaluate_log_prior(params)
+            return log_prob
 
-def _mcmc(simulator, model, thin=10, n_samples=100, n_mcmc_samples=5000, burnin=100):
-    parameters = simulator.default_parameters()
-    x = simulator.sample(parameters=parameters, n=n_samples)
-    prior = simulator.prior()
-
-    log_posterior = lambda t: model.log_prob(torch.array(x), context=torch.array(t)) + prior.eval(t)
-    sampler = mcmc.SliceSampler(parameters, log_posterior, thin=thin)
+    sampler = mcmc.SliceSampler(true_parameters, log_posterior, thin=thin)
     sampler.gen(burnin)  # burn in
     posterior_samples = sampler.gen(n_mcmc_samples)
 
@@ -117,7 +121,8 @@ def parse_args():
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
 
-    parser.add_argument("--samples", type=int, default=1000)
+    parser.add_argument("--generate", type=int, default=1000)
+    parser.add_argument("--samplesizes", nargs="+", type=int, default=[1,2,5,10,20,50,100,200,500,1000])
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
 
