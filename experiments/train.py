@@ -34,6 +34,8 @@ def train(args):
     simulator = _load_simulator(args)
     dataset = _load_training_dataset(args)
 
+    logger.info("Parameters: %s", simulator.parameter_dim())
+
     # Model
     model = _create_model(args, context_features=simulator.parameter_dim())
 
