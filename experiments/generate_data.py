@@ -8,8 +8,7 @@ import logging
 
 sys.path.append("../")
 
-from experiments.simulators import SphericalGaussianSimulator
-from experiments.utils import _load_simulator, _load_model, _filename
+from experiments.utils import _load_simulator, _filename
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +21,14 @@ def generate(args):
     conditional = simulator.parameter_dim() is not None
 
     parameters_train = simulator.sample_from_prior(args.train) if conditional else None
-    parameters_test = np.asarray([simulator.default_parameters() for _ in args.test])
+    parameters_test = np.vstack([simulator.default_parameters() for _ in range(args.test)])
+
 
     # Sample
+    logger.info("Generating %s training samples at parameters %s", args.train, parameters_train)
     x_train = simulator.sample(args.train, parameters=parameters_train)
+
+    logger.info("Generating %s test samples at parameters %s", args.test, parameters_test)
     x_test = simulator.sample(args.test, parameters=parameters_test)
 
     # Save
@@ -39,7 +42,7 @@ def generate(args):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
     parser.add_argument("--truelatentdim", type=int, default=10)
     parser.add_argument("--datadim", type=int, default=15)

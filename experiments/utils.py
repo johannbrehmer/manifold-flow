@@ -1,12 +1,13 @@
 import numpy as np
 import torch
 import os
+import logging
 
-from experiments.evaluate import logger
 from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator
-from experiments.train import logger
 from manifold_flow.flows import Flow, PIE, ManifoldFlow
 from manifold_flow.training import NumpyDataset
+
+logger = logging.getLogger(__name__)
 
 
 def _filename(type, label, args):

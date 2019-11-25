@@ -68,13 +68,20 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         # Spherical coordinates
         phases_ = np.empty((n, self._latent_dim))
         phases_[:] = self._phases
-        widths_ = np.empty((n, self._latent_dim))
-        widths_[:] = self._widths(parameters)
-        z_phi = np.random.normal(phases_, widths_, size=(n, self._latent_dim))
+
+        if parameters.shape == (n, self._latent_dim,):
+            widths_ = self._widths(parameters)
+        elif parameters.shape == (n, ):
+            widths_ = self._widths(parameters)
+        else:
+            widths_ = np.empty((n, self._latent_dim))
+            widths_[:] = self._widths(parameters)
+
+        z_phi = np.random.normal(phases_.flatten(), widths_.flatten(), size=(n*self._latent_dim)).reshape((n, self._latent_dim))
         z_phi = np.mod(z_phi, 2.0 * np.pi)
 
         # Fuzzy coordinates
-        z_eps = np.random.normal(0.0, self._epsilon, size=(n, self._data_dim - self._latent_dim))
+        z_eps = np.random.normal(0.0, self._epsilon, size=(n*(self._data_dim - self._latent_dim))).reshape((n, self._data_dim - self._latent_dim))
         return z_phi, z_eps
 
     def _transform_z_to_x(self, z_phi, z_eps):
