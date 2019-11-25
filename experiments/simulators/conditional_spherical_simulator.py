@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import norm, uniform
 import itertools
 import logging
 from experiments.simulators.base import BaseSimulator
@@ -9,16 +9,18 @@ from experiments.simulators.base import BaseSimulator
 logger = logging.getLogger(__name__)
 
 
-class SphericalGaussianSimulator(BaseSimulator):
-    def __init__(self, latent_dim=9, data_dim=10, phases=1.25*np.pi, widths=0.6, epsilon=0.01):
+class ConditionalSphericalGaussianSimulator(BaseSimulator):
+    def __init__(self, latent_dim=9, data_dim=10, phases=1.25*np.pi, min_width=0.1, max_width=np.pi, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
         self._phases = phases * np.ones(latent_dim) if isinstance(phases, float) else phases
-        self._widths = widths * np.ones(latent_dim) if isinstance(widths, float) else widths
+        self._minwidth = min_width
+        self._maxwidth = max_width
         self._epsilon = epsilon
 
         assert data_dim > latent_dim
         assert epsilon > 0.
+        assert 0. < min_width < max_width <= 2.0 * np.pi
 
     def data_dim(self):
         return self._data_dim
@@ -27,30 +29,47 @@ class SphericalGaussianSimulator(BaseSimulator):
         return self._latent_dim
 
     def parameter_dim(self):
-        return None
+        return self._latent_dim
 
     def log_density(self, x, parameters=None):
-        logger.debug("Evaluating true log density for x = %s", x[0])
+        assert parameters is not None
+
         z_phi, z_eps = self._transform_x_to_z(x)
         logger.debug("Latent variables: z_phi = %s, z_eps = %s", z_phi[0], z_eps[0])
-        logp = self._log_density(z_phi, z_eps)
+        logp = self._log_density(z_phi, z_eps, parameters=parameters)
+
         return logp
 
     def sample(self, n, parameters=None):
-        z_phi, z_eps = self._draw_z(n)
+        assert parameters is not None
+
+        z_phi, z_eps = self._draw_z(n, parameters=parameters)
         x = self._transform_z_to_x(z_phi, z_eps)
+
         return x
 
     def distance_from_manifold(self, x):
         z_phi, z_eps = self._transform_x_to_z(x)
         return np.sum(z_eps**2, axis=1)**0.5
 
-    def _draw_z(self, n):
+    def default_parameters(self):
+        return np.zeros_like(self._latent_dim)
+
+    def sample_from_prior(self, n):
+        return uniform.rvs(loc=-1., scale=2., size=(n, self._latent_dim))
+
+    def evaluate_log_prior(self, parameters):
+        return np.sum(uniform.logpdf(parameters, loc=-1., scale=2.), axis=1)
+
+    def _widths(self, parameters):
+        return self._minwidth + (0.5 + 0.5 * parameters) * (self._maxwidth - self._minwidth)
+
+    def _draw_z(self, n, parameters):
         # Spherical coordinates
         phases_ = np.empty((n, self._latent_dim))
         phases_[:] = self._phases
         widths_ = np.empty((n, self._latent_dim))
-        widths_[:] = self._widths
+        widths_[:] = self._widths(parameters)
         z_phi = np.random.normal(phases_, widths_, size=(n, self._latent_dim))
         z_phi = np.mod(z_phi, 2.0 * np.pi)
 
@@ -93,12 +112,12 @@ class SphericalGaussianSimulator(BaseSimulator):
         z_eps[:, 0] = r - 1
         return z_phi, z_eps
 
-    def _log_density(self, z_phi, z_eps):
+    def _log_density(self, z_phi, z_eps, parameters):
         r = 1. + z_eps[:, 0]
         phases_ = np.empty((z_phi.shape[0], self._latent_dim))
         phases_[:] = self._phases
         widths_ = np.empty((z_phi.shape[0], self._latent_dim))
-        widths_[:] = self._widths
+        widths_[:] = self._widths(parameters)
 
         p_sub = 0.
         individual_shifts = [-1., 0., 1.]

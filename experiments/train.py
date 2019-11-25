@@ -5,92 +5,14 @@ import logging
 import sys
 import torch
 import argparse
-import os
 from torch import optim
 
 sys.path.append("../")
 
-from manifold_flow.flows import ManifoldFlow, Flow, PIE
-from manifold_flow.training import ManifoldFlowTrainer, losses, NumpyDataset
+from manifold_flow.training import ManifoldFlowTrainer, losses
+from experiments.utils import _load_model, _filename, _load_training_data
 
 logger = logging.getLogger(__name__)
-
-
-# def generate_callbacks(args):
-#     # Callbacks: save model after each epoch, and maybe generate a few images
-#     def save_model1(epoch, model, loss_train, loss_val):
-#         torch.save(
-#             model.state_dict(),
-#             "{}/data/flows/{}_phase1_epoch{}.pt".format(
-#                 base_dir, model_filename, epoch
-#             ),
-#         )
-#
-#     def save_model2(epoch, model, loss_train, loss_val):
-#         torch.save(
-#             model.state_dict(),
-#             "{}/data/flows/{}_phase2_epoch{}.pt".format(
-#                 base_dir, model_filename, epoch
-#             ),
-#         )
-#
-#     def sample1(epoch, model, loss_train, loss_val):
-#         if dataset not in ["cifar", "imagenet"]:
-#             return
-#
-#         cols, rows = 4, 4
-#
-#         model.eval()
-#         with torch.no_grad():
-#             preprocess = Preprocess(8)
-#             samples = model.sample(n=cols*rows)
-#             samples = preprocess.inverse(samples)
-#             samples = samples.cpu()
-#         samples = samples.detach().numpy()
-#         samples = np.moveaxis(samples, 1, -1)
-#
-#         plt.figure(figsize=(cols*4, rows*4))
-#         for i, x in enumerate(samples):
-#             plt.subplot(rows, cols, i + 1)
-#             plt.imshow(x)
-#             plt.gca().get_xaxis().set_visible(False)
-#             plt.gca().get_yaxis().set_visible(False)
-#         plt.tight_layout()
-#         plt.savefig(
-#             "{}/figures/training/images_{}_phase1_{}.pdf".format(
-#                 base_dir, model_filename, epoch
-#             )
-#         )
-#         plt.close()
-#
-#     def sample2(epoch, model, loss_train, loss_val):
-#         if dataset not in ["cifar", "imagenet"]:
-#             return
-#
-#         cols, rows = 4, 4
-#
-#         model.eval()
-#         with torch.no_grad():
-#             preprocess = Preprocess(8)
-#             samples = model.sample(n=cols*rows)
-#             samples = preprocess.inverse(samples)
-#             samples = samples.cpu()
-#         samples = samples.detach().numpy()
-#         samples = np.moveaxis(samples, 1, -1)
-#
-#         plt.figure(figsize=(cols*4, rows*4))
-#         for i, x in enumerate(samples):
-#             plt.subplot(rows, cols, i + 1)
-#             plt.imshow(x)
-#             plt.gca().get_xaxis().set_visible(False)
-#             plt.gca().get_yaxis().set_visible(False)
-#         plt.tight_layout()
-#         plt.savefig(
-#             "{}/figures/training/images_{}_phase2_{}.pdf".format(
-#                 base_dir, model_filename, epoch
-#             )
-#         )
-#         plt.close()
 
 
 def train(args):
@@ -110,49 +32,14 @@ def train(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
-    if args.dataset == "spherical_gaussian":
-        x = np.load(
-            "{}/experiments/data/samples/spherical_gaussian/spherical_gaussian_{}_{}_{:.3f}_x_train.npy".format(
-                args.dir, args.truelatentdim, args.datadim, args.epsilon
-            )
-        )
-        y = np.ones(x.shape[0])
-        dataset = NumpyDataset(x, y)
-        logger.info("Loaded spherical Gaussian data")
-    else:
-        raise NotImplementedError("Unknown dataset {}".format(args.dataset))
+    dataset = _load_training_data(args)
 
     # Model
-    if args.algorithm == "flow":
-        logger.info("Creating standard flow with %s layers", args.outerlayers)
-        model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform)
-    elif args.algorithm == "pie":
-        logger.info("Creating PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
-        model = PIE(
-            data_dim=args.datadim,
-            latent_dim=args.modellatentdim,
-            steps_inner=args.innerlayers,
-            steps_outer=args.outerlayers,
-            outer_transform=args.transform,
-            inner_transform=args.transform,
-        )
-    elif args.algorithm == "mf":
-        logger.info("Creating manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
-        model = ManifoldFlow(
-            data_dim=args.datadim,
-            latent_dim=args.modellatentdim,
-            steps_inner=args.innerlayers,
-            steps_outer=args.outerlayers,
-            outer_transform=args.transform,
-            inner_transform=args.transform,
-        )
-    else:
-        raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
-
-    # Trainer
-    trainer = ManifoldFlowTrainer(model)
+    model = _load_model(args)
 
     # Train
+    trainer = ManifoldFlowTrainer(model)
+
     if args.algorithm in ["flow", "pie"]:
         logger.info("Starting training on NLL")
         learning_curves = trainer.train(
@@ -196,13 +83,9 @@ def train(args):
         learning_curves = np.vstack((learning_curves, learning_curves2))
 
     # Save
-    logger.info("Saving model to %s", "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname))
-    os.makedirs("{}/experiments/data/models".format(args.dir), exist_ok=True)
-    torch.save(model.state_dict(), "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname))
-
-    logger.info("Saving learning curve to %s", "{}/experiments/data/learning_curves/{}.pt".format(args.dir, args.modelname))
-    os.makedirs("{}/experiments/data/learning_curves".format(args.dir), exist_ok=True)
-    np.save("{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname), learning_curves)
+    logger.info("Saving model")
+    torch.save(model.state_dict(), _filename("model", None, args))
+    np.save(_filename("learning_curve", None, args), learning_curves)
 
 
 def parse_args():
