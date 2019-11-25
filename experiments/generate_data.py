@@ -21,7 +21,7 @@ def generate(args):
     conditional = simulator.parameter_dim() is not None
 
     parameters_train = simulator.sample_from_prior(args.train) if conditional else None
-    parameters_test = np.vstack([simulator.default_parameters() for _ in range(args.test)]) if conditional else None
+    parameters_test = np.array([simulator.default_parameters() for _ in range(args.test)]).reshape((args.test, -1)) if conditional else None
 
 
     # Sample

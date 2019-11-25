@@ -10,10 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class ConditionalSphericalGaussianSimulator(BaseSimulator):
-    def __init__(self, latent_dim=8, data_dim=9, phases=1.25*np.pi, min_width=0.1, max_width=np.pi, epsilon=0.01):
+    def __init__(self, latent_dim=8, data_dim=9, min_width=0.1, max_width=np.pi, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
-        self._phases = phases * np.ones(latent_dim) if isinstance(phases, float) else phases
+        self._minphase = 0.
+        self._maxphase = 2.*np.pi
         self._minwidth = min_width
         self._maxwidth = max_width
         self._epsilon = epsilon
@@ -29,7 +30,7 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         return self._latent_dim
 
     def parameter_dim(self):
-        return self._latent_dim
+        return 2
 
     def log_density(self, x, parameters=None):
         assert parameters is not None
@@ -53,30 +54,32 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         return np.sum(z_eps**2, axis=1)**0.5
 
     def default_parameters(self):
-        return np.zeros_like(self._latent_dim)
+        return np.zeros(self.parameter_dim())
 
     def sample_from_prior(self, n):
-        return uniform.rvs(loc=-1., scale=2., size=(n, self._latent_dim))
+        return uniform.rvs(loc=-1., scale=2., size=(n, self.parameter_dim()))
 
     def evaluate_log_prior(self, parameters):
         return np.sum(uniform.logpdf(parameters, loc=-1., scale=2.), axis=1)
 
-    def _widths(self, parameters):
-        return self._minwidth + (0.5 + 0.5 * parameters) * (self._maxwidth - self._minwidth)
+    def _parse_parameters(self, n, parameters):
+
+        logger.debug("Parameters: %s", parameters.shape)
+        parameters = parameters.reshape(-1, 2)
+        widths_ = np.empty((self._latent_dim, n))
+        phases_ = np.empty((self._latent_dim, n))
+        widths_[:] = self._minwidth + (0.5 + 0.5 * parameters[:, 0]) * (self._maxwidth - self._minwidth)
+        phases_[:] = self._minphase + (0.5 + 0.5 * parameters[:, 1]) * (self._maxphase - self._minphase)
+        widths_ = widths_.T
+        phases_ = phases_.T
+
+        return phases_, widths_
 
     def _draw_z(self, n, parameters):
+        # Parameters
+        phases_, widths_ = self._parse_parameters(n, parameters)
+
         # Spherical coordinates
-        phases_ = np.empty((n, self._latent_dim))
-        phases_[:] = self._phases
-
-        if parameters.shape == (n, self._latent_dim,):
-            widths_ = self._widths(parameters)
-        elif parameters.shape == (n, ):
-            widths_ = self._widths(parameters)
-        else:
-            widths_ = np.empty((n, self._latent_dim))
-            widths_[:] = self._widths(parameters)
-
         z_phi = np.random.normal(phases_.flatten(), widths_.flatten(), size=(n*self._latent_dim)).reshape((n, self._latent_dim))
         z_phi = np.mod(z_phi, 2.0 * np.pi)
 
@@ -121,10 +124,7 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
 
     def _log_density(self, z_phi, z_eps, parameters):
         r = 1. + z_eps[:, 0]
-        phases_ = np.empty((z_phi.shape[0], self._latent_dim))
-        phases_[:] = self._phases
-        widths_ = np.empty((z_phi.shape[0], self._latent_dim))
-        widths_[:] = self._widths(parameters)
+        phases_, widths_ = self._parse_parameters(z_phi.shape[0], parameters)
 
         p_sub = 0.
         individual_shifts = [-1., 0., 1.]
