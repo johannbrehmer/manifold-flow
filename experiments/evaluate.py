@@ -19,7 +19,7 @@ def evaluate_samples(args):
     # Model name
     _create_modelname(args)
 
-    logger.info("Evaluating model %s on generation tasks")
+    logger.info("Evaluating model %s on generation tasks", args.modelname)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -27,8 +27,12 @@ def evaluate_samples(args):
     # Data
     simulator = _load_simulator(args)
 
+    if simulator.parameter_dim() is not None:
+        logger.info("Data set %s has parameters, skipping generative evaluation", args.dataset)
+        return
+
     # Model
-    model = _create_model(args)
+    model = _create_model(args, context_features=simulator.parameter_dim())
 
     # Generate data
     x_gen = _sample_from_model(args, model)
@@ -41,7 +45,7 @@ def evaluate_inference(args):
     # Model name
     _create_modelname(args)
 
-    logger.info("Evaluating model %s on inference tasks")
+    logger.info("Evaluating model %s on inference tasks", args.modelname)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -54,7 +58,7 @@ def evaluate_inference(args):
         return
 
     # Model
-    model = _create_model(args)
+    model = _create_model(args, context_features=simulator.parameter_dim())
     model.load_state_dict(torch.load(_filename("model", None, args), map_location=torch.device("cpu")))
 
     # Evaluate MMD
@@ -97,7 +101,7 @@ def _mcmc(simulator, model=None, thin=10, n_samples=100, n_mcmc_samples=5000, bu
     if model is None:
         # MCMC based on ground truth likelihood
         def log_posterior(params):
-            log_prob = np.sum(simulator.log_density(x_obs, parameter=params))
+            log_prob = np.sum(simulator.log_density(x_obs, parameters=params))
             log_prob += simulator.evaluate_log_prior(params)
             return log_prob
 
