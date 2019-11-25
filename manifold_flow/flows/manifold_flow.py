@@ -61,6 +61,8 @@ class ManifoldFlow(nn.Module):
         outer_transform="affine-autoregressive",
         steps_inner=5,
         steps_outer=5,
+        context_features=None,
+        apply_context_to_outer=True,
     ):
         super(ManifoldFlow, self).__init__()
 
@@ -70,6 +72,7 @@ class ManifoldFlow(nn.Module):
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
+        self.apply_context_to_outer = apply_context_to_outer
 
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.projection = Projection(self.total_data_dim, self.total_latent_dim)
@@ -77,20 +80,21 @@ class ManifoldFlow(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform)
+                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None)
             else:
                 self.outer_transform = outer_transform
         else:
             c, h, w = data_dim
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for image data")
+                assert context_features is None
                 self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
             else:
                 self.outer_transform = outer_transform
 
         if isinstance(inner_transform, str):
             logger.debug("Creating default inner transform with base type %s", outer_transform)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform, context_features=context_features)
         elif inner_transform is None:
             self.inner_transform = transforms.IdentityTransform()
         else:
@@ -98,49 +102,49 @@ class ManifoldFlow(nn.Module):
 
         self._report_model_parameters()
 
-    def forward(self, x):
+    def forward(self, x, context=None):
         # Encode
-        u, h, log_det_inner, jacobian_outer = self._encode(x)
+        u, h, log_det_inner, jacobian_outer = self._encode(x, context=context)
 
         # Decode
-        x = self.decode(u)
+        x = self.decode(u, context=context)
 
         # Log prob
         log_prob = self._log_prob(u, log_det_inner, jacobian_outer)
 
         return x, log_prob, u
 
-    def encode(self, x):
-        u, _, _, _ = self._encode(x, calculate_jacobian=False)
+    def encode(self, x, context=None):
+        u, _, _, _ = self._encode(x, context=context, calculate_jacobian=False)
         return u
 
-    def decode(self, u):
-        h, _ = self.inner_transform.inverse(u)
+    def decode(self, u, context=None):
+        h, _ = self.inner_transform.inverse(u, context=context)
         h = self.projection.inverse(h)
-        x, _ = self.outer_transform.inverse(h)
+        x, _ = self.outer_transform.inverse(h, context=context if self.apply_context_to_outer else None)
         return x
 
-    def log_prob(self, x):
+    def log_prob(self, x, context=None):
         # Encode
-        u, _, log_det_inner, jacobian_outer = self._encode(x)
+        u, _, log_det_inner, jacobian_outer = self._encode(x, context=context)
 
         # Log prob
         log_prob = self._log_prob(u, log_det_inner, jacobian_outer)
 
         return log_prob
 
-    def sample(self, u=None, n=1):
+    def sample(self, u=None, n=1, context=None):
         if u is None:
             u = self.latent_distribution.sample(n)
-        x = self.decode(u)
+        x = self.decode(u, context=context)
         return x
 
-    def _encode(self, x, calculate_jacobian=True):
+    def _encode(self, x, calculate_jacobian=True, context=None):
         if calculate_jacobian:
             x.requires_grad = True
-        h, jacobian_outer = self.outer_transform(x, full_jacobian=calculate_jacobian)
+        h, jacobian_outer = self.outer_transform(x, full_jacobian=calculate_jacobian, context=context if self.apply_context_to_outer else None)
         h = self.projection(h)
-        u, log_det_inner = self.inner_transform(h)
+        u, log_det_inner = self.inner_transform(h, context=context)
         if calculate_jacobian:
             return u, h, log_det_inner, jacobian_outer
         else:
