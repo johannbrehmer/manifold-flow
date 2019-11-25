@@ -98,14 +98,14 @@ def parse_args():
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
-    parser.add_argument("--truelatentdim", type=int, default=10)
-    parser.add_argument("--datadim", type=int, default=15)
+    parser.add_argument("--truelatentdim", type=int, default=8)
+    parser.add_argument("--datadim", type=int, default=9)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
     parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--modellatentdim", type=int, default=10)
+    parser.add_argument("--modellatentdim", type=int, default=8)
     parser.add_argument("--transform", type=str, default="affine-coupling")
-    parser.add_argument("--outerlayers", type=int, default=5)
+    parser.add_argument("--outerlayers", type=int, default=3)
     parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batchsize", type=int, default=100)

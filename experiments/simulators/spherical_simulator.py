@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class SphericalGaussianSimulator(BaseSimulator):
-    def __init__(self, latent_dim=9, data_dim=10, phases=1.25*np.pi, widths=0.6, epsilon=0.01):
+    def __init__(self, latent_dim=8, data_dim=9, phases=1.25*np.pi, widths=0.6, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
         self._phases = phases * np.ones(latent_dim) if isinstance(phases, float) else phases

@@ -42,7 +42,7 @@ def _load_simulator(args):
 def _create_model(args, context_features):
     if args.algorithm == "flow":
         logger.info("Loading standard flow with %s layers", args.outerlayers)
-        model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform, context_features=context_features)
+        model = Flow(data_dim=args.datadim, steps=args.innerlayers + args.outerlayers, transform=args.transform, context_features=context_features)
     elif args.algorithm == "pie":
         logger.info("Loading PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
         model = PIE(
