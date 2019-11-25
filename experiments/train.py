@@ -110,7 +110,7 @@ def parse_args():
     parser.add_argument("--outerlayers", type=int, default=3)
     parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--batchsize", type=int, default=100)
+    parser.add_argument("--batchsize", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--alpha", type=float, default=100.0)
     parser.add_argument("--beta", type=float, default=1.0e-2)
