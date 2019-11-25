@@ -9,8 +9,8 @@ from torch import optim
 
 sys.path.append("../")
 
-from manifold_flow.training import ManifoldFlowTrainer, losses
-from experiments.utils import _load_model, _filename, _load_training_dataset, _create_modelname
+from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer
+from experiments.utils import _load_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,17 @@ def train(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
+    simulator = _load_simulator(args)
     dataset = _load_training_dataset(args)
 
     # Model
-    model = _load_model(args)
+    model = _load_model(args, context_features=simulator.parameter_dim())
 
     # Train
-    trainer = ManifoldFlowTrainer(model)
+    if simulator.parameter_dim() is None:
+        trainer = ManifoldFlowTrainer(model)
+    else:
+        trainer = ConditionalManifoldFlowTrainer(model)
 
     if args.algorithm in ["flow", "pie"]:
         logger.info("Starting training on NLL")

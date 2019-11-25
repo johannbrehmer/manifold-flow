@@ -503,6 +503,28 @@ class ManifoldFlowTrainer(Trainer):
         return losses
 
 
+class ConditionalManifoldFlowTrainer(Trainer):
+    def forward_pass(self, batch_data, loss_functions):
+        x, params = batch_data
+
+        if len(x.size()) < 2:
+            x = x.view(x.size(0), -1)
+        if len(params.size()) < 2:
+            params = params.view(params.size(0), -1)
+
+        x = x.to(self.device, self.dtype)
+        params = params.to(self.device, self.dtype)
+
+        if self.multi_gpu:
+            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+        else:
+            x_reco, log_prob, _ = self.model(x, context=params)
+
+        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+
+        return losses
+
+
 class ImageManifoldFlowTrainer(ManifoldFlowTrainer):
     def __init__(
         self, model, run_on_gpu=True, double_precision=False, output_filename=None
