@@ -9,7 +9,7 @@ import argparse
 sys.path.append("../")
 
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils import _load_simulator, _load_model, _filename, _create_modelname, _load_training_dataset
+from experiments.utils import _load_simulator, _create_model, _filename, _create_modelname, _load_training_dataset
 from experiments.utils import _load_test_samples
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,8 @@ def evaluate_samples(args):
     # Model name
     _create_modelname(args)
 
+    logger.info("Evaluating model %s on generation tasks")
+
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
 
@@ -26,7 +28,7 @@ def evaluate_samples(args):
     simulator = _load_simulator(args)
 
     # Model
-    model = _load_model(args)
+    model = _create_model(args)
 
     # Generate data
     x_gen = _sample_from_model(args, model)
@@ -39,14 +41,21 @@ def evaluate_inference(args):
     # Model name
     _create_modelname(args)
 
+    logger.info("Evaluating model %s on inference tasks")
+
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
     simulator = _load_simulator(args)
 
+    if simulator.parameter_dim() is None:
+        logger.info("Data set %s has no parameters, skipping inference evaluation", args.dataset)
+        return
+
     # Model
-    model = _load_model(args)
+    model = _create_model(args)
+    model.load_state_dict(torch.load(_filename("model", None, args), map_location=torch.device("cpu")))
 
     # Evaluate MMD
     mmds = []
@@ -111,7 +120,7 @@ def parse_args():
 
     parser.add_argument("--modelname", type=str, default=None, help="Model name.")
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--truelatentdim", type=int, default=10)
@@ -138,4 +147,5 @@ if __name__ == "__main__":
     )
     logger.info("Hi!")
     evaluate_samples(args)
+    evaluate_inference(args)
     logger.info("All done! Have a nice day!")

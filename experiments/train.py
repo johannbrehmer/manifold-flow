@@ -10,7 +10,7 @@ from torch import optim
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer
-from experiments.utils import _load_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
+from experiments.utils import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def train(args):
     dataset = _load_training_dataset(args)
 
     # Model
-    model = _load_model(args, context_features=simulator.parameter_dim())
+    model = _create_model(args, context_features=simulator.parameter_dim())
 
     # Train
     if simulator.parameter_dim() is None:
@@ -96,7 +96,7 @@ def parse_args():
 
     parser.add_argument("--modelname", type=str, default=None, help="Model name.")
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian"])
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
     parser.add_argument("--truelatentdim", type=int, default=10)
     parser.add_argument("--datadim", type=int, default=15)

@@ -39,7 +39,7 @@ def _load_simulator(args):
     return simulator
 
 
-def _load_model(args, context_features):
+def _create_model(args, context_features):
     if args.algorithm == "flow":
         logger.info("Loading standard flow with %s layers", args.outerlayers)
         model = Flow(data_dim=args.datadim, steps=args.outerlayers, transform=args.transform, context_features=context_features)
@@ -69,7 +69,6 @@ def _load_model(args, context_features):
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
-    model.load_state_dict(torch.load(_filename("model", None, args), map_location=torch.device("cpu")))
     return model
 
 
