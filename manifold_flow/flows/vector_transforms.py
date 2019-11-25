@@ -36,6 +36,7 @@ def _create_base_transform(
     num_bins,
     tail_bound,
     apply_unconditional_transform,
+    context_features=None,
 ):
     if base_transform_type == "affine-coupling":
         return transforms.AffineCouplingTransform(
@@ -44,7 +45,7 @@ def _create_base_transform(
                 in_features=in_features,
                 out_features=out_features,
                 hidden_features=hidden_features,
-                context_features=None,
+                context_features=context_features,
                 num_blocks=num_transform_blocks,
                 activation=F.relu,
                 dropout_probability=dropout_probability,
@@ -58,7 +59,7 @@ def _create_base_transform(
                 in_features=in_features,
                 out_features=out_features,
                 hidden_features=hidden_features,
-                context_features=None,
+                context_features=context_features,
                 num_blocks=num_transform_blocks,
                 activation=F.relu,
                 dropout_probability=dropout_probability,
@@ -76,7 +77,7 @@ def _create_base_transform(
                 in_features=in_features,
                 out_features=out_features,
                 hidden_features=hidden_features,
-                context_features=None,
+                context_features=context_features,
                 num_blocks=num_transform_blocks,
                 activation=F.relu,
                 dropout_probability=dropout_probability,
@@ -91,7 +92,7 @@ def _create_base_transform(
         return transforms.MaskedAffineAutoregressiveTransform(
             features=features,
             hidden_features=hidden_features,
-            context_features=None,
+            context_features=context_features,
             num_blocks=num_transform_blocks,
             use_residual_blocks=True,
             random_mask=False,
@@ -103,7 +104,7 @@ def _create_base_transform(
         return transforms.MaskedPiecewiseQuadraticAutoregressiveTransform(
             features=features,
             hidden_features=hidden_features,
-            context_features=None,
+            context_features=context_features,
             num_bins=num_bins,
             tails="linear",
             tail_bound=tail_bound,
@@ -118,7 +119,7 @@ def _create_base_transform(
         return transforms.MaskedPiecewiseRationalQuadraticAutoregressiveTransform(
             features=features,
             hidden_features=hidden_features,
-            context_features=None,
+            context_features=context_features,
             num_bins=num_bins,
             tails="linear",
             tail_bound=tail_bound,
@@ -145,6 +146,7 @@ def create_transform(
     num_bins=8,
     tail_bound=3,
     apply_unconditional_transform=True,
+    context_features=None,
 ):
     transform = transforms.CompositeTransform(
         [
@@ -162,6 +164,7 @@ def create_transform(
                         num_bins,
                         tail_bound,
                         apply_unconditional_transform,
+                        context_features
                     ),
                 ]
             )

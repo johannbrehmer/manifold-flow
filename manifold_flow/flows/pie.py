@@ -63,7 +63,8 @@ class PIE(nn.Module):
         outer_transform="affine-autoregressive",
         steps_inner=5,
         steps_outer=5,
-        epsilon=1.e-3
+        epsilon=1.e-3,
+        context_features=None,
     ):
         super(PIE, self).__init__()
 
@@ -81,13 +82,14 @@ class PIE(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform)
+                self.outer_transform = vector_transforms.create_transform(data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features)
             else:
                 self.outer_transform = outer_transform
         else:
             c, h, w = data_dim
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for image data")
+                assert context_features is None
                 self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
             else:
                 self.outer_transform = outer_transform
@@ -102,12 +104,12 @@ class PIE(nn.Module):
 
         self._report_model_parameters()
 
-    def forward(self, x):
+    def forward(self, x, context=None):
         # Encode
-        u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x)
+        u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
         # Decode
-        x = self.decode(u)
+        x = self.decode(u, context=context)
 
         # Log prob
         log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
@@ -116,19 +118,19 @@ class PIE(nn.Module):
 
         return x, log_prob, u
 
-    def encode(self, x):
-        u, _, _, _, _ = self._encode(x)
+    def encode(self, x, context=None):
+        u, _, _, _, _ = self._encode(x, context=context)
         return u
 
-    def decode(self, u):
-        h, _ = self.inner_transform.inverse(u)
+    def decode(self, u, context=None):
+        h, _ = self.inner_transform.inverse(u, context=context)
         h = self.projection.inverse(h)
-        x, _ = self.outer_transform.inverse(h)
+        x, _ = self.outer_transform.inverse(h, context=context)
         return x
 
-    def log_prob(self, x):
+    def log_prob(self, x, context=None):
         # Encode
-        u, _, h_orthogonal, log_det_inner, log_det_outer = self._encode(x)
+        u, _, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
         # Log prob
         log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
@@ -137,16 +139,16 @@ class PIE(nn.Module):
 
         return log_prob
 
-    def sample(self, u=None, n=1):
+    def sample(self, u=None, n=1, context=None):
         if u is None:
-            u = self.manifold_latent_distribution.sample(n)
+            u = self.manifold_latent_distribution.sample(n, context=context)
         x = self.decode(u)
         return x
 
-    def _encode(self, x):
-        h, log_det_outer = self.outer_transform(x)
+    def _encode(self, x, context=None):
+        h, log_det_outer = self.outer_transform(x, context=context)
         h_manifold, h_orthogonal = self.projection(h)
-        u, log_det_inner = self.inner_transform(h_manifold)
+        u, log_det_inner = self.inner_transform(h_manifold, context=context)
         return u, h_manifold, h_orthogonal, log_det_inner, log_det_outer
 
     def _report_model_parameters(self):

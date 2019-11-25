@@ -15,6 +15,7 @@ class Flow(nn.Module):
         data_dim,
         transform="affine-autoregressive",
         steps=3,
+        context_features=None,
     ):
         super(Flow, self).__init__()
 
@@ -28,25 +29,26 @@ class Flow(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", transform)
-                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform)
+                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform, context_features=context_features)
             else:
                 self.transform = transform
         else:
             c, h, w = data_dim
             if isinstance(transform, str):
                 logger.debug("Creating default outer transform for image data")
+                assert context_features is None
                 self.outer_transform = image_transforms.create_transform(c, h, w, steps)
             else:
                 self.transform = transform
 
         self._report_model_parameters()
 
-    def forward(self, x):
+    def forward(self, x, context=None):
         # Encode
-        u, log_det = self._encode(x)
+        u, log_det = self._encode(x, context=context)
 
         # Decode
-        x = self.decode(u)
+        x = self.decode(u, context=context)
 
         # Log prob
         log_prob = self.latent_distribution._log_prob(u, context=None)
@@ -54,17 +56,17 @@ class Flow(nn.Module):
 
         return x, log_prob, u
 
-    def encode(self, x):
-        u, _ = self._encode(x)
+    def encode(self, x, context=None):
+        u, _ = self._encode(x, context=context)
         return u
 
-    def decode(self, u):
-        x, _ = self.transform.inverse(u)
+    def decode(self, u, context=None):
+        x, _ = self.transform.inverse(u, context=context)
         return x
 
-    def log_prob(self, x):
+    def log_prob(self, x, context=None):
         # Encode
-        u, log_det = self._encode(x)
+        u, log_det = self._encode(x, context)
 
         # Log prob
         log_prob = self.latent_distribution._log_prob(u, context=None)
@@ -72,14 +74,14 @@ class Flow(nn.Module):
 
         return log_prob
 
-    def sample(self, u=None, n=1):
+    def sample(self, u=None, n=1, context=None):
         if u is None:
-            u = self.latent_distribution.sample(n)
-        x = self.decode(u)
+            u = self.latent_distribution.sample(n, context=None)
+        x = self.decode(u, context=context)
         return x
 
-    def _encode(self, x):
-        u, log_det = self.transform(x)
+    def _encode(self, x, context=None):
+        u, log_det = self.transform(x, context=context)
         return u, log_det
 
     def _report_model_parameters(self):
