@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=mf-t-sf-csg
-#SBATCH --output=log_train_flow_csg.log
+#SBATCH --job-name=mf-time
+#SBATCH --output=log_timing.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB

@@ -11,8 +11,8 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --outerconditional --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --outerconditional --datadim 9 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --outerconditional --datadim 9 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --outerconditional --datadim 12 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --outerconditional --datadim 16 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --conditionalouter --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --conditionalouter --datadim 9 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --conditionalouter --datadim 9 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --conditionalouter --datadim 12 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --conditionalouter --datadim 16 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
