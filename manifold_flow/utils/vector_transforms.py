@@ -27,35 +27,38 @@ def _create_base_transform(
     num_bins,
     tail_bound,
     apply_unconditional_transform,
-    context_features=None,
+    context_features,
+    resnet_transform,
 ):
+    if resnet_transform:
+        transform_net_create_fn = lambda in_features, out_features: nn_.ResidualNet(
+            in_features=in_features,
+            out_features=out_features,
+            hidden_features=hidden_features,
+            context_features=context_features,
+            num_blocks=num_transform_blocks,
+            activation=F.relu,
+            dropout_probability=dropout_probability,
+            use_batch_norm=use_batch_norm,
+        )
+    else:
+        transform_net_create_fn = lambda in_features, out_features: nn_.MLP(
+            in_shape=(in_features,),
+            out_shape=(out_features,),
+            hidden_sizes=[hidden_features for _ in range(num_transform_blocks)],
+            context_features=context_features,
+            activation=F.relu,
+        )
+
     if base_transform_type == "affine-coupling":
         return transforms.AffineCouplingTransform(
             mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
-            transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
-                in_features=in_features,
-                out_features=out_features,
-                hidden_features=hidden_features,
-                context_features=context_features,
-                num_blocks=num_transform_blocks,
-                activation=F.relu,
-                dropout_probability=dropout_probability,
-                use_batch_norm=use_batch_norm,
-            ),
+            transform_net_create_fn=transform_net_create_fn,
         )
     elif base_transform_type == "quadratic-coupling":
         return transforms.PiecewiseQuadraticCouplingTransform(
             mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
-            transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
-                in_features=in_features,
-                out_features=out_features,
-                hidden_features=hidden_features,
-                context_features=context_features,
-                num_blocks=num_transform_blocks,
-                activation=F.relu,
-                dropout_probability=dropout_probability,
-                use_batch_norm=use_batch_norm,
-            ),
+            transform_net_create_fn=transform_net_create_fn,
             num_bins=num_bins,
             tails="linear",
             tail_bound=tail_bound,
@@ -64,16 +67,7 @@ def _create_base_transform(
     elif base_transform_type == "rq-coupling":
         return transforms.PiecewiseRationalQuadraticCouplingTransform(
             mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
-            transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
-                in_features=in_features,
-                out_features=out_features,
-                hidden_features=hidden_features,
-                context_features=context_features,
-                num_blocks=num_transform_blocks,
-                activation=F.relu,
-                dropout_probability=dropout_probability,
-                use_batch_norm=use_batch_norm,
-            ),
+            transform_net_create_fn=transform_net_create_fn,
             num_bins=num_bins,
             tails="linear",
             tail_bound=tail_bound,
@@ -131,13 +125,14 @@ def create_transform(
     linear_transform_type="permutation",
     base_transform_type="rq-coupling",
     hidden_features=256,
-    num_transform_blocks=2,
+    num_transform_blocks=3,
     dropout_probability=0.25,
     use_batch_norm=False,
     num_bins=8,
     tail_bound=3,
     apply_unconditional_transform=True,
     context_features=None,
+    resnet_transform=True,
 ):
     transform = transforms.CompositeTransform(
         [
@@ -156,6 +151,7 @@ def create_transform(
                         tail_bound,
                         apply_unconditional_transform,
                         context_features,
+                        resnet_transform
                     ),
                 ]
             )

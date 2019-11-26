@@ -5,22 +5,19 @@ import logging
 import sys
 import torch
 import argparse
-from torch import optim
 import time
 
 sys.path.append("../")
 
-from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer
-from experiments.utils import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
+from experiments.utils import _create_model, _filename
 
 logger = logging.getLogger(__name__)
 
 
 def timing(args):
-    _create_modelname(args)
     logger.info(
         "Timing algorithm %s with %s outer layers with transformation %s and %s inner layers with transformation %s",
-        args.modelname,
+        args.algorithm,
         args.outerlayers,
         args.outertransform,
         args.innerlayers,
@@ -30,22 +27,23 @@ def timing(args):
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
 
-    # Data
     if torch.cuda.is_available():
         torch.set_default_tensor_type('torch.cuda.DoubleTensor')
-
-    # Model
-    model = _create_model(args, context_features=None)
-    if torch.cuda.is_available():
-        model = model.to(torch.device("cuda"))
 
     # Loop over data dims
     all_times = []
     for datadim in args.datadims:
         logger.info("Starting timing for %s-dimensional data", datadim)
+        args.datadim = datadim
 
+        # Data
         data = torch.randn(args.batchsize, datadim)
         data.requires_grad = True
+
+        # Model
+        model = _create_model(args, context_features=None)
+        if torch.cuda.is_available():
+            model = model.to(torch.device("cuda"))
 
         # Time forward pass
         times = []
@@ -59,6 +57,7 @@ def timing(args):
         all_times.append(times)
 
     # Save results
+    logger.info("Saving results")
     np.save(_filename("timing", None, args), all_times)
 
 
@@ -68,13 +67,13 @@ def parse_args():
     parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
 
     parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--modellatentdim", type=int, default=10)
+    parser.add_argument("--modellatentdim", type=int, default=8)
     parser.add_argument("--outertransform", type=str, default="affine-coupling")
     parser.add_argument("--innertransform", type=str, default="affine-coupling")
-    parser.add_argument("--outerlayers", type=int, default=3)
-    parser.add_argument("--innerlayers", type=int, default=5)
+    parser.add_argument("--outerlayers", type=int, default=4)
+    parser.add_argument("--innerlayers", type=int, default=8)
 
-    parser.add_argument("--datadims", nargs="+", type=int, default=[2, 5, 10, 20, 50, 100, 200, 500, 1000])
+    parser.add_argument("--datadims", nargs="+", type=int, default=[10, 20, 50, 100, 200, 500, 1000])
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--repeats", type=int, default=5)
 

@@ -16,6 +16,7 @@ class MLP(nn.Module):
         hidden_sizes,
         activation=F.relu,
         activate_output=False,
+        context_features=None,
     ):
         """
         Args:
@@ -27,6 +28,7 @@ class MLP(nn.Module):
         """
         super().__init__()
         self._in_shape = torch.Size(in_shape)
+        self._context_features = 0 if context_features is None else context_features
         self._out_shape = torch.Size(out_shape)
         self._hidden_sizes = hidden_sizes
         self._activation = activation
@@ -35,7 +37,7 @@ class MLP(nn.Module):
         if len(hidden_sizes) == 0:
             raise ValueError("List of hidden sizes can't be empty.")
 
-        self._input_layer = nn.Linear(np.prod(in_shape), hidden_sizes[0])
+        self._input_layer = nn.Linear(np.prod(in_shape) + self._context_features, hidden_sizes[0])
         self._hidden_layers = nn.ModuleList(
             [
                 nn.Linear(in_size, out_size)
@@ -44,7 +46,10 @@ class MLP(nn.Module):
         )
         self._output_layer = nn.Linear(hidden_sizes[-1], np.prod(out_shape))
 
-    def forward(self, inputs):
+    def forward(self, inputs, context=None):
+        if context is not None:
+            context = torch.cat((inputs, context), dim=1)
+
         if inputs.shape[1:] != self._in_shape:
             raise ValueError(
                 "Expected inputs of shape {}, got {}.".format(
