@@ -21,6 +21,8 @@ def _filename(type, label, args):
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)
     elif type == "results":
         filename = "{}/experiments/data/results/{}_{}.npy".format(args.dir, args.modelname, label)
+    elif type == "timing":
+        filename = "{}/experiments/data/timing/{}.npy".format(args.dir, label)
     else:
         raise NotImplementedError
 
