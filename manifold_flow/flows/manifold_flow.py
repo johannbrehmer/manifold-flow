@@ -73,6 +73,9 @@ class ManifoldFlow(nn.Module):
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.projection = Projection(self.total_data_dim, self.total_latent_dim)
 
+        inner_transform_kwargs = {} if inner_transform_kwargs is None else inner_transform_kwargs
+        outer_transform_kwargs = {} if outer_transform_kwargs is None else outer_transform_kwargs
+
         if isinstance(self.data_dim, int):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)

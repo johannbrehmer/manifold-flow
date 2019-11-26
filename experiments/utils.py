@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import os
 import logging
 
@@ -22,13 +21,33 @@ def _filename(type, label, args):
     elif type == "results":
         filename = "{}/experiments/data/results/{}_{}.npy".format(args.dir, args.modelname, label)
     elif type == "timing":
-        filename = "{}/experiments/data/timing/{}.npy".format(args.dir, label)
+        filename = "{}/experiments/data/timing/{}_{}_{}_{}_{}_{}.npy".format(
+            args.dir,
+            args.algorithm,
+            args.outerlayers,
+            args.outertransform,
+            "mlp" if args.outercouplingmlp else "resnet",
+            args.outercouplinglayers,
+            args.outercouplinghidden,
+        )
     else:
         raise NotImplementedError
 
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     return filename
+
+
+"""
+
+    parser.add_argument("--outertransform", type=str, default="affine-coupling")
+    parser.add_argument("--innertransform", type=str, default="affine-coupling")
+    parser.add_argument("--outerlayers", type=int, default=4)
+    parser.add_argument("--innerlayers", type=int, default=8)
+    parser.add_argument("--outercouplingmlp", action="store_true")
+    parser.add_argument("--outercouplinglayers", type=int, default=3)
+    parser.add_argument("--outercouplinghidden", type=int, default=256)
+    """
 
 
 def _load_simulator(args):
@@ -59,6 +78,17 @@ def _create_model(args, context_features):
         )
     elif args.algorithm == "mf":
         logger.info("Loading manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
+
+        outer_transform_kwargs = {}
+        try:
+            outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
+            outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
+            outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
+
+            logger.info("Additional settings for outer layer: %s", outer_transform_kwargs)
+        except:
+            pass
+
         model = ManifoldFlow(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
@@ -68,6 +98,7 @@ def _create_model(args, context_features):
             inner_transform=args.innertransform,
             context_features=context_features,
             apply_context_to_outer=args.conditionalouter,
+            outer_transform_kwargs=outer_transform_kwargs,
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))

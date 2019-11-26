@@ -23,7 +23,6 @@ def generate(args):
     parameters_train = simulator.sample_from_prior(args.train) if conditional else None
     parameters_test = np.array([simulator.default_parameters() for _ in range(args.test)]).reshape((args.test, -1)) if conditional else None
 
-
     # Sample
     logger.info("Generating %s training samples at parameters %s", args.train, parameters_train)
     x_train = simulator.sample(args.train, parameters=parameters_train)

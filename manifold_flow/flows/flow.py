@@ -20,6 +20,8 @@ class Flow(nn.Module):
 
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
 
+        transform_kwargs = {} if transform_kwargs is None else transform_kwargs
+
         if isinstance(self.data_dim, int):
             if isinstance(transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", transform)

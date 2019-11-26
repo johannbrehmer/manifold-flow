@@ -28,7 +28,7 @@ def timing(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     if torch.cuda.is_available():
-        torch.set_default_tensor_type('torch.cuda.DoubleTensor')
+        torch.set_default_tensor_type("torch.cuda.DoubleTensor")
 
     # Loop over data dims
     all_times = []
@@ -72,6 +72,9 @@ def parse_args():
     parser.add_argument("--innertransform", type=str, default="affine-coupling")
     parser.add_argument("--outerlayers", type=int, default=4)
     parser.add_argument("--innerlayers", type=int, default=8)
+    parser.add_argument("--outercouplingmlp", action="store_true")
+    parser.add_argument("--outercouplinglayers", type=int, default=3)
+    parser.add_argument("--outercouplinghidden", type=int, default=256)
 
     parser.add_argument("--datadims", nargs="+", type=int, default=[10, 20, 50, 100, 200, 500, 1000])
     parser.add_argument("--batchsize", type=int, default=100)
