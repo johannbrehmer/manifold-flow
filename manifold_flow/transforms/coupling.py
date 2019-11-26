@@ -4,9 +4,9 @@ import logging
 import numpy as np
 import torch
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
 from manifold_flow.transforms import splines
-from manifold_flow import timer
+from manifold_flow.utils import timer, various
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class CouplingTransform(transforms.Transform):
 
             timer.timer(start="Jacobian coupling transform")
 
-            jacobian_transform = utils.batch_jacobian(transform_split, inputs)
+            jacobian_transform = various.batch_jacobian(transform_split, inputs)
 
             if self.unconditional_transform is not None:
                 identity_split, jacobian_identity = self.unconditional_transform(identity_split, context)
@@ -160,7 +160,7 @@ class CouplingTransform(transforms.Transform):
                 inputs=transform_split,
                 transform_params=transform_params,
             )
-            jacobian_transform = utils.batch_jacobian(transform_split, inputs)
+            jacobian_transform = various.batch_jacobian(transform_split, inputs)
 
             # Put together full Jacobian\
             batchsize = inputs.size(0)
@@ -229,10 +229,10 @@ class AffineCouplingTransform(CouplingTransform):
         log_scale = torch.log(scale)
         outputs = inputs * scale + shift
         if full_jacobian:
-            jacobian = utils.batch_diagonal(scale)
+            jacobian = various.batch_diagonal(scale)
             return outputs, jacobian
         else:
-            logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
+            logabsdet = various.sum_except_batch(log_scale, num_batch_dims=1)
             return outputs, logabsdet
 
     def _coupling_transform_inverse(self, inputs, transform_params, full_jacobian=False):
@@ -240,10 +240,10 @@ class AffineCouplingTransform(CouplingTransform):
         log_scale = torch.log(scale)
         outputs = (inputs - shift) / scale
         if full_jacobian:
-            jacobian = -utils.batch_diagonal(scale)
+            jacobian = -various.batch_diagonal(scale)
             return outputs, jacobian
         else:
-            logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
+            logabsdet = -various.sum_except_batch(log_scale, num_batch_dims=1)
             return outputs, logabsdet
 
 
@@ -285,7 +285,7 @@ class PiecewiseCouplingTransform(CouplingTransform):
             return outputs, jacobian
         else:
             outputs, logabsdet = self._piecewise_cdf(inputs, transform_params, inverse)
-            return outputs, utils.sum_except_batch(logabsdet)
+            return outputs, various.sum_except_batch(logabsdet)
 
     def _piecewise_cdf(self, inputs, transform_params, inverse=False, full_jacobian=False):
         raise NotImplementedError()

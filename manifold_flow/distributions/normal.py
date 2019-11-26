@@ -3,7 +3,8 @@
 import numpy as np
 import torch
 
-from manifold_flow import utils, distributions
+from manifold_flow import distributions
+from manifold_flow.utils import various
 
 
 class StandardNormal(distributions.Distribution):
@@ -19,7 +20,7 @@ class StandardNormal(distributions.Distribution):
         if inputs.shape[1:] != self._shape:
             raise ValueError('Expected input of shape {}, got {}'.format(
                 self._shape, inputs.shape[1:]))
-        neg_energy = -0.5 * utils.sum_except_batch(inputs ** 2, num_batch_dims=1)
+        neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1)
         return neg_energy - self._log_z
 
     def _sample(self, num_samples, context):
@@ -29,7 +30,7 @@ class StandardNormal(distributions.Distribution):
             # The value of the context is ignored, only its size is taken into account.
             context_size = context.shape[0]
             samples = torch.randn(context_size * num_samples, *self._shape)
-            return utils.split_leading_dim(samples, [context_size, num_samples])
+            return various.split_leading_dim(samples, [context_size, num_samples])
 
     def _mean(self, context):
         if context is None:
@@ -53,7 +54,7 @@ class RescaledNormal(distributions.Distribution):
         if inputs.shape[1:] != self._shape:
             raise ValueError('Expected input of shape {}, got {}'.format(
                 self._shape, inputs.shape[1:]))
-        neg_energy = -0.5 * utils.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std**2
+        neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std ** 2
         return neg_energy - self._log_z
 
     def _sample(self, num_samples, context):
@@ -63,7 +64,7 @@ class RescaledNormal(distributions.Distribution):
             # The value of the context is ignored, only its size is taken into account.
             context_size = context.shape[0]
             samples = self.std * torch.randn(context_size * num_samples, *self._shape)
-            return utils.split_leading_dim(samples, [context_size, num_samples])
+            return various.split_leading_dim(samples, [context_size, num_samples])
 
     def _mean(self, context):
         if context is None:
@@ -121,8 +122,8 @@ class ConditionalDiagonalNormal(distributions.Distribution):
 
         # Compute log prob.
         norm_inputs = (inputs - means) * torch.exp(-log_stds)
-        log_prob = -0.5 * utils.sum_except_batch(norm_inputs ** 2, num_batch_dims=1)
-        log_prob -= utils.sum_except_batch(log_stds, num_batch_dims=1)
+        log_prob = -0.5 * various.sum_except_batch(norm_inputs ** 2, num_batch_dims=1)
+        log_prob -= various.sum_except_batch(log_stds, num_batch_dims=1)
         log_prob -= self._log_z
         return log_prob
 
@@ -130,14 +131,14 @@ class ConditionalDiagonalNormal(distributions.Distribution):
         # Compute parameters.
         means, log_stds = self._compute_params(context)
         stds = torch.exp(log_stds)
-        means = utils.repeat_rows(means, num_samples)
-        stds = utils.repeat_rows(stds, num_samples)
+        means = various.repeat_rows(means, num_samples)
+        stds = various.repeat_rows(stds, num_samples)
 
         # Generate samples.
         context_size = context.shape[0]
         noise = torch.randn(context_size * num_samples, *self._shape)
         samples = means + stds * noise
-        return utils.split_leading_dim(samples, [context_size, num_samples])
+        return various.split_leading_dim(samples, [context_size, num_samples])
 
     def _mean(self, context):
         means, _ = self._compute_params(context)

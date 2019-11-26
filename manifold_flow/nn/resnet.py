@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F, init
 
-from manifold_flow import utils
+from manifold_flow.utils import various
 
 
 class ResidualBlock(nn.Module):
@@ -218,7 +218,7 @@ def main():
         dropout_probability=0.1,
         use_batch_norm=True,
     )
-    print(utils.get_num_parameters(net))
+    print(various.get_num_parameters(net))
     outputs = net(inputs, context)
     print(outputs.shape)
 

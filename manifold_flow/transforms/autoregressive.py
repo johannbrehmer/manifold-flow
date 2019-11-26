@@ -4,7 +4,8 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 from manifold_flow.transforms import made as made_module
 from manifold_flow.transforms import splines
 
@@ -82,7 +83,7 @@ class MaskedAffineAutoregressiveTransform(AutoregressiveTransform):
         if full_jacobian:
             raise NotImplementedError
         else:
-            logabsdet = utils.sum_except_batch(log_scale, num_batch_dims=1)
+            logabsdet = various.sum_except_batch(log_scale, num_batch_dims=1)
             return outputs, logabsdet
 
     def _elementwise_inverse(self, inputs, autoregressive_params, full_jacobian=False):
@@ -93,7 +94,7 @@ class MaskedAffineAutoregressiveTransform(AutoregressiveTransform):
         if full_jacobian:
             raise NotImplementedError
         else:
-            logabsdet = -utils.sum_except_batch(log_scale, num_batch_dims=1)
+            logabsdet = -various.sum_except_batch(log_scale, num_batch_dims=1)
             return outputs, logabsdet
 
     def _unconstrained_scale_and_shift(self, autoregressive_params):
@@ -154,7 +155,7 @@ class MaskedPiecewiseLinearAutoregressiveTransform(AutoregressiveTransform):
                                                    unnormalized_pdf=unnormalized_pdf,
                                                    inverse=inverse)
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
@@ -248,7 +249,7 @@ class MaskedPiecewiseQuadraticAutoregressiveTransform(AutoregressiveTransform):
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
@@ -317,7 +318,7 @@ class MaskedPiecewiseCubicAutoregressiveTransform(AutoregressiveTransform):
             unnorm_derivatives_right=unnorm_derivatives_right,
             inverse=inverse
         )
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)
@@ -419,7 +420,7 @@ class MaskedPiecewiseRationalQuadraticAutoregressiveTransform(AutoregressiveTran
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def _elementwise_forward(self, inputs, autoregressive_params, full_jacobian=False):
         return self._elementwise(inputs, autoregressive_params, full_jacobian=full_jacobian)

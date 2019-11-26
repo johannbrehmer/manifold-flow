@@ -2,7 +2,7 @@
 
 import torch
 from torch import nn
-from manifold_flow import utils
+from manifold_flow.utils import various
 
 
 class NoMeanException(Exception):
@@ -50,7 +50,7 @@ class Distribution(nn.Module):
             A Tensor containing the samples, with shape [num_samples, ...] if context is None, or
             [context_size, num_samples, ...] if context is given.
         """
-        if not utils.is_positive_int(num_samples):
+        if not various.is_positive_int(num_samples):
             raise TypeError('Number of samples must be a positive integer.')
 
         if context is not None:
@@ -60,7 +60,7 @@ class Distribution(nn.Module):
             return self._sample(num_samples, context)
 
         else:
-            if not utils.is_positive_int(batch_size):
+            if not various.is_positive_int(batch_size):
                 raise TypeError('Batch size must be a positive integer.')
 
             num_batches = num_samples // batch_size
@@ -92,16 +92,16 @@ class Distribution(nn.Module):
 
         if context is not None:
             # Merge the context dimension with sample dimension in order to call log_prob.
-            samples = utils.merge_leading_dims(samples, num_dims=2)
-            context = utils.repeat_rows(context, num_reps=num_samples)
+            samples = various.merge_leading_dims(samples, num_dims=2)
+            context = various.repeat_rows(context, num_reps=num_samples)
             assert samples.shape[0] == context.shape[0]
 
         log_prob = self.log_prob(samples, context=context)
 
         if context is not None:
             # Split the context dimension from sample dimension.
-            samples = utils.split_leading_dim(samples, shape=[-1, num_samples])
-            log_prob = utils.split_leading_dim(log_prob, shape=[-1, num_samples])
+            samples = various.split_leading_dim(samples, shape=[-1, num_samples])
+            log_prob = various.split_leading_dim(log_prob, shape=[-1, num_samples])
 
         return samples, log_prob
 

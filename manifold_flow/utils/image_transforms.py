@@ -1,9 +1,9 @@
-import torch
 from torch import nn
 import logging
 
 from manifold_flow.nn import Conv2dSameSize
-from manifold_flow import transforms, utils
+from manifold_flow import transforms
+from manifold_flow.utils import various
 from manifold_flow import nn as nn_
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ def create_transform_step(
         def create_convnet(in_channels, out_channels):
             return ConvNet(in_channels, hidden_channels, out_channels)
 
-    mask = utils.create_mid_split_binary_mask(num_channels)
+    mask = various.create_mid_split_binary_mask(num_channels)
 
     if coupling_layer_type == "cubic_spline":
         coupling_layer = transforms.PiecewiseCubicCouplingTransform(

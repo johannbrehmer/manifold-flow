@@ -1,6 +1,7 @@
 from torch.nn import functional as F
 
-from manifold_flow import transforms, utils
+from manifold_flow import transforms
+from manifold_flow.utils import various
 import manifold_flow.nn as nn_
 
 
@@ -30,7 +31,7 @@ def _create_base_transform(
 ):
     if base_transform_type == "affine-coupling":
         return transforms.AffineCouplingTransform(
-            mask=utils.create_alternating_binary_mask(features, even=(i % 2 == 0)),
+            mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
             transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
                 in_features=in_features,
                 out_features=out_features,
@@ -44,7 +45,7 @@ def _create_base_transform(
         )
     elif base_transform_type == "quadratic-coupling":
         return transforms.PiecewiseQuadraticCouplingTransform(
-            mask=utils.create_alternating_binary_mask(features, even=(i % 2 == 0)),
+            mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
             transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
                 in_features=in_features,
                 out_features=out_features,
@@ -62,7 +63,7 @@ def _create_base_transform(
         )
     elif base_transform_type == "rq-coupling":
         return transforms.PiecewiseRationalQuadraticCouplingTransform(
-            mask=utils.create_alternating_binary_mask(features, even=(i % 2 == 0)),
+            mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),
             transform_net_create_fn=lambda in_features, out_features: nn_.ResidualNet(
                 in_features=in_features,
                 out_features=out_features,

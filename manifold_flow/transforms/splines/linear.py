@@ -3,7 +3,9 @@ import torch
 from torch.nn import functional as F
 import numpy as np
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
+
 
 def unconstrained_linear_spline(inputs, unnormalized_pdf,
                                 inverse=False,
@@ -56,7 +58,7 @@ def linear_spline(inputs, unnormalized_pdf,
     cdf = F.pad(cdf, pad=(1, 0), mode='constant', value=0.0)
 
     if inverse:
-        inv_bin_idx = utils.searchsorted(cdf, inputs)
+        inv_bin_idx = various.searchsorted(cdf, inputs)
 
         bin_boundaries = (torch.linspace(0, 1, num_bins+1)
                           .view([1] * inputs.dim() + [-1])

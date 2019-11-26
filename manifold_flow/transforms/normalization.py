@@ -5,7 +5,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 
 class BatchNorm(transforms.Transform):
@@ -17,7 +18,7 @@ class BatchNorm(transforms.Transform):
     """
 
     def __init__(self, features, eps=1e-5, momentum=0.1, affine=True):
-        if not utils.is_positive_int(features):
+        if not various.is_positive_int(features):
             raise TypeError('Number of features must be a positive integer.')
         super().__init__()
 
@@ -76,7 +77,7 @@ class ActNorm(transforms.Transform):
         Reference:
         > D. Kingma et. al., Glow: Generative flow with invertible 1x1 convolutions, NeurIPS 2018.
         """
-        if not utils.is_positive_int(features):
+        if not various.is_positive_int(features):
             raise TypeError('Number of features must be a positive integer.')
         super().__init__()
 

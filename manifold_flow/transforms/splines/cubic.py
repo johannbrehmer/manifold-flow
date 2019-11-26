@@ -2,7 +2,8 @@ import math
 import torch
 from torch.nn import functional as F
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 DEFAULT_MIN_BIN_WIDTH = 1e-3
 DEFAULT_MIN_BIN_HEIGHT = 1e-3
@@ -120,9 +121,9 @@ def cubic_spline(inputs,
     d = cumheights[..., :-1]
 
     if inverse:
-        bin_idx = utils.searchsorted(cumheights, inputs)[..., None]
+        bin_idx = various.searchsorted(cumheights, inputs)[..., None]
     else:
-        bin_idx = utils.searchsorted(cumwidths, inputs)[..., None]
+        bin_idx = various.searchsorted(cumwidths, inputs)[..., None]
 
     inputs_a = a.gather(-1, bin_idx)[..., 0]
     inputs_b = b.gather(-1, bin_idx)[..., 0]
@@ -154,8 +155,8 @@ def cubic_spline(inputs,
 
         # Deal with one root cases.
 
-        p = utils.cbrt((-depressed_1[one_root_mask] + torch.sqrt(-discriminant[one_root_mask])) / 2.)
-        q = utils.cbrt((-depressed_1[one_root_mask] - torch.sqrt(-discriminant[one_root_mask])) / 2.)
+        p = various.cbrt((-depressed_1[one_root_mask] + torch.sqrt(-discriminant[one_root_mask])) / 2.)
+        q = various.cbrt((-depressed_1[one_root_mask] - torch.sqrt(-discriminant[one_root_mask])) / 2.)
 
         outputs[one_root_mask] = ((p + q)
                                   - inputs_b_[one_root_mask]

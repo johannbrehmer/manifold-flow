@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from manifold_flow import utils
+from manifold_flow.utils import various
 
 
 # A non-local block as used in SA-GAN
@@ -94,7 +94,7 @@ def main():
         hidden_channels=32,
         num_blocks=4,
     )
-    print(utils.get_num_parameters(net))
+    print(various.get_num_parameters(net))
     outputs = net(inputs)
     print(outputs.shape)
 

@@ -2,7 +2,7 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 
-from manifold_flow import utils
+from manifold_flow.utils import various
 
 
 class UNet(nn.Module):
@@ -16,7 +16,7 @@ class UNet(nn.Module):
     ):
         super().__init__()
 
-        assert utils.is_power_of_two(
+        assert various.is_power_of_two(
             max_hidden_features
         ), "'max_hidden_features' must be a power of two."
         assert (

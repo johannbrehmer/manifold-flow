@@ -6,7 +6,8 @@ from torch import nn
 from torch.nn import functional as F
 import logging
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 from manifold_flow.transforms import splines
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class Tanh(transforms.Transform):
     def forward(self, inputs, context=None):
         outputs = torch.tanh(inputs)
         logabsdet = torch.log(1 - outputs ** 2)
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
@@ -24,7 +25,7 @@ class Tanh(transforms.Transform):
             raise transforms.InputOutsideDomain()
         outputs = 0.5 * torch.log((1 + inputs) / (1 - inputs))
         logabsdet = - torch.log(1 - inputs ** 2)
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
 
@@ -60,7 +61,7 @@ class LogTanh(transforms.Transform):
         logabsdet[mask_middle] = torch.log(1 - outputs[mask_middle] ** 2)
         logabsdet[mask_right] = torch.log(self.alpha / inputs[mask_right])
         logabsdet[mask_left] = torch.log(-self.alpha / inputs[mask_left])
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
 
         return outputs, logabsdet
 
@@ -80,7 +81,7 @@ class LogTanh(transforms.Transform):
         logabsdet[mask_middle] = -torch.log(1 - inputs[mask_middle] ** 2)
         logabsdet[mask_right] = -np.log(self.alpha * self.beta) + inputs[mask_right] / self.alpha
         logabsdet[mask_left] = -np.log(self.alpha * self.beta) - inputs[mask_left] / self.alpha
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
 
         return outputs, logabsdet
 
@@ -97,14 +98,14 @@ class LeakyReLU(transforms.Transform):
         outputs = F.leaky_relu(inputs, negative_slope=self.negative_slope)
         mask = (inputs < 0).type(torch.Tensor)
         logabsdet = self.log_negative_slope * mask
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
         outputs = F.leaky_relu(inputs, negative_slope=(1 / self.negative_slope))
         mask = (inputs < 0).type(torch.Tensor)
         logabsdet = -self.log_negative_slope * mask
-        logabsdet = utils.sum_except_batch(logabsdet, num_batch_dims=1)
+        logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
 
@@ -117,7 +118,7 @@ class Sigmoid(transforms.Transform):
     def forward(self, inputs, context=None):
         inputs = self.temperature * inputs
         outputs = torch.sigmoid(inputs)
-        logabsdet = utils.sum_except_batch(
+        logabsdet = various.sum_except_batch(
             torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs)
         )
         return outputs, logabsdet
@@ -129,7 +130,7 @@ class Sigmoid(transforms.Transform):
         inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
 
         outputs = (1 / self.temperature) * (torch.log(inputs) - torch.log1p(-inputs))
-        logabsdet = - utils.sum_except_batch(
+        logabsdet = - various.sum_except_batch(
             torch.log(self.temperature) - F.softplus(
                 -self.temperature * outputs) - F.softplus(self.temperature * outputs)
         )
@@ -147,7 +148,7 @@ class CauchyCDF(transforms.Transform):
 
     def forward(self, inputs, context=None):
         outputs = (1 / np.pi) * torch.atan(inputs) + 0.5
-        logabsdet = utils.sum_except_batch(
+        logabsdet = various.sum_except_batch(
             - np.log(np.pi) - torch.log(1 + inputs ** 2)
         )
         return outputs, logabsdet
@@ -157,7 +158,7 @@ class CauchyCDF(transforms.Transform):
             raise transforms.InputOutsideDomain()
 
         outputs = torch.tan(np.pi * (inputs - 0.5))
-        logabsdet = - utils.sum_except_batch(
+        logabsdet = - various.sum_except_batch(
             - np.log(np.pi) - torch.log(1 + outputs ** 2)
         )
         return outputs, logabsdet
@@ -216,7 +217,7 @@ class PiecewiseLinearCDF(transforms.Transform):
                 tail_bound=self.tail_bound
             )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def forward(self, inputs, context=None):
         return self._spline(inputs, inverse=False)
@@ -269,7 +270,7 @@ class PiecewiseQuadraticCDF(transforms.Transform):
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def forward(self, inputs, context=None):
         return self._spline(inputs, inverse=False)
@@ -327,7 +328,7 @@ class PiecewiseCubicCDF(transforms.Transform):
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def forward(self, inputs, context=None):
         return self._spline(inputs, inverse=False)
@@ -398,7 +399,7 @@ class PiecewiseRationalQuadraticCDF(transforms.Transform):
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def forward(self, inputs, context=None):
         return self._spline(inputs, inverse=False)

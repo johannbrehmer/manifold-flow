@@ -42,7 +42,7 @@ def _load_simulator(args):
 def _create_model(args, context_features):
     if args.algorithm == "flow":
         logger.info("Loading standard flow with %s layers", args.outerlayers)
-        model = Flow(data_dim=args.datadim, steps=args.innerlayers + args.outerlayers, transform=args.transform, context_features=context_features)
+        model = Flow(data_dim=args.datadim, steps=args.innerlayers + args.outerlayers, transform=args.outertransform, context_features=context_features)
     elif args.algorithm == "pie":
         logger.info("Loading PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
         model = PIE(
@@ -50,8 +50,8 @@ def _create_model(args, context_features):
             latent_dim=args.modellatentdim,
             steps_inner=args.innerlayers,
             steps_outer=args.outerlayers,
-            outer_transform=args.transform,
-            inner_transform=args.transform,
+            outer_transform=args.outertransform,
+            inner_transform=args.innertransform,
             context_features=context_features,
             apply_context_to_outer=args.conditionalouter,
         )
@@ -62,8 +62,8 @@ def _create_model(args, context_features):
             latent_dim=args.modellatentdim,
             steps_inner=args.innerlayers,
             steps_outer=args.outerlayers,
-            outer_transform=args.transform,
-            inner_transform=args.transform,
+            outer_transform=args.outertransform,
+            inner_transform=args.innertransform,
             context_features=context_features,
             apply_context_to_outer=args.conditionalouter,
         )

@@ -1,8 +1,8 @@
 from torch import nn
 import logging
 
-from manifold_flow.flows import vector_transforms, image_transforms
-from manifold_flow.utils import product
+from manifold_flow.utils import vector_transforms, image_transforms
+from manifold_flow.utils.various import product
 from manifold_flow import distributions
 
 

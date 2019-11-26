@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import torch
 
-from manifold_flow import timer
+from manifold_flow.utils import timer
 
 logger = logging.getLogger(__name__)
 

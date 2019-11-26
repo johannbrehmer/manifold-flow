@@ -106,7 +106,8 @@ def parse_args():
 
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--modellatentdim", type=int, default=8)
-    parser.add_argument("--transform", type=str, default="affine-coupling")
+    parser.add_argument("--outertransform", type=str, default="affine-coupling")
+    parser.add_argument("--innertransform", type=str, default="affine-coupling")
     parser.add_argument("--outerlayers", type=int, default=3)
     parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=20)

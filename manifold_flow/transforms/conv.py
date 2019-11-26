@@ -1,4 +1,6 @@
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
+
 
 class OneByOneConvolution(transforms.LULinear):
     """An invertible 1x1 convolution with a fixed permutation, as introduced in the Glow paper.
@@ -25,7 +27,7 @@ class OneByOneConvolution(transforms.LULinear):
         outputs = outputs.reshape(b, h, w, c).permute(0, 3, 1, 2)
         logabsdet = logabsdet.reshape(b, h, w)
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def forward(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 4:

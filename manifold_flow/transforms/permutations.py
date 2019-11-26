@@ -3,7 +3,8 @@
 import torch
 import numpy as np
 
-from manifold_flow import utils, transforms, timer
+from manifold_flow import transforms
+from manifold_flow.utils import timer, various
 
 
 class Permutation(transforms.Transform):
@@ -12,7 +13,7 @@ class Permutation(transforms.Transform):
     def __init__(self, permutation, dim=1):
         if permutation.ndimension() != 1:
             raise ValueError('Permutation must be a 1D tensor.')
-        if not utils.is_positive_int(dim):
+        if not various.is_positive_int(dim):
             raise ValueError('dim must be a positive integer.')
 
         super().__init__()
@@ -80,7 +81,7 @@ class RandomPermutation(Permutation):
     """Permutes using a random, but fixed, permutation. Only works with 1D inputs."""
 
     def __init__(self, features, dim=1):
-        if not utils.is_positive_int(features):
+        if not various.is_positive_int(features):
             raise ValueError('Number of features must be a positive integer.')
         super().__init__(torch.randperm(features), dim)
 
@@ -89,6 +90,6 @@ class ReversePermutation(Permutation):
     """Reverses the elements of the input. Only works with 1D inputs."""
 
     def __init__(self, features, dim=1):
-        if not utils.is_positive_int(features):
+        if not various.is_positive_int(features):
             raise ValueError('Number of features must be a positive integer.')
         super().__init__(torch.arange(features - 1, -1, -1), dim)

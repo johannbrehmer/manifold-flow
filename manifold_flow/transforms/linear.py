@@ -6,7 +6,8 @@ from torch import nn
 from torch.nn import functional as F, init
 import logging
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class Linear(transforms.Transform):
     """Abstract base class for linear transforms that parameterize a weight matrix."""
 
     def __init__(self, features, using_cache=False):
-        if not utils.is_positive_int(features):
+        if not various.is_positive_int(features):
             raise TypeError('Number of features must be a positive integer.')
         super().__init__()
 
@@ -96,7 +97,7 @@ class Linear(transforms.Transform):
         return super().train(mode)
 
     def use_cache(self, mode=True):
-        if not utils.is_bool(mode):
+        if not various.is_bool(mode):
             raise TypeError('Mode must be boolean.')
         self.using_cache = mode
 
@@ -155,7 +156,7 @@ class NaiveLinear(Linear):
         super().__init__(features, using_cache)
 
         if orthogonal_initialization:
-            self._weight = nn.Parameter(utils.random_orthogonal(features))
+            self._weight = nn.Parameter(various.random_orthogonal(features))
         else:
             self._weight = nn.Parameter(torch.empty(features, features))
             stdv = 1.0 / np.sqrt(features)
@@ -175,7 +176,7 @@ class NaiveLinear(Linear):
             jacobian = torch.ones(outputs.shape[0]) * self._weight.unsqueeze(0)
             return outputs, jacobian
         else:
-            logabsdet = utils.logabsdet(self._weight)
+            logabsdet = various.logabsdet(self._weight)
             logabsdet = logabsdet * torch.ones(batch_size)
             return outputs, logabsdet
 
@@ -235,4 +236,4 @@ class NaiveLinear(Linear):
         where:
             D = num of features
         """
-        return utils.logabsdet(self._weight)
+        return various.logabsdet(self._weight)

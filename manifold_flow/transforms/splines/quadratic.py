@@ -2,7 +2,8 @@ import math
 import torch
 from torch.nn import functional as F
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 DEFAULT_MIN_BIN_WIDTH = 1e-3
 DEFAULT_MIN_BIN_HEIGHT = 1e-3
@@ -98,9 +99,9 @@ def quadratic_spline(inputs,
     bin_locations = F.pad(bin_locations, pad=(1, 0), mode='constant', value=0.0)
 
     if inverse:
-        bin_idx = utils.searchsorted(bin_left_cdf, inputs)[..., None]
+        bin_idx = various.searchsorted(bin_left_cdf, inputs)[..., None]
     else:
-        bin_idx = utils.searchsorted(bin_locations, inputs)[..., None]
+        bin_idx = various.searchsorted(bin_locations, inputs)[..., None]
 
     input_bin_locations = bin_locations.gather(-1, bin_idx)[..., 0]
     input_bin_widths = widths.gather(-1, bin_idx)[..., 0]

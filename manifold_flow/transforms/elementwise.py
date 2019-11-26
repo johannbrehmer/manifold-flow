@@ -2,7 +2,8 @@ import torch
 import numpy as np
 import logging
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 from manifold_flow.transforms import splines
 
 
@@ -149,7 +150,7 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
             **spline_kwargs
         )
 
-        return outputs, utils.sum_except_batch(logabsdet)
+        return outputs, various.sum_except_batch(logabsdet)
 
     def _elementwise_forward(self, inputs, params, full_jacobian=False):
         return self._elementwise(inputs, params, full_jacobian=full_jacobian)

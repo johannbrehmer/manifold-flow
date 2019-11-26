@@ -1,6 +1,7 @@
 import torch
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 
 class SqueezeTransform(transforms.Transform):
@@ -16,7 +17,7 @@ class SqueezeTransform(transforms.Transform):
     def __init__(self, factor=2):
         super(SqueezeTransform, self).__init__()
 
-        if not utils.is_int(factor) or factor <= 1:
+        if not various.is_int(factor) or factor <= 1:
             raise ValueError('Factor must be an integer > 1.')
 
         self.factor = factor

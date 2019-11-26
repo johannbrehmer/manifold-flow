@@ -3,7 +3,8 @@
 import torch
 from torch.nn import functional as F
 
-from manifold_flow import utils, distributions
+from manifold_flow import distributions
+from manifold_flow.utils import various
 
 
 class ConditionalIndependentBernoulli(distributions.Distribution):
@@ -47,20 +48,20 @@ class ConditionalIndependentBernoulli(distributions.Distribution):
 
         # Compute log prob.
         log_prob = -inputs * F.softplus(-logits) - (1.0 - inputs) * F.softplus(logits)
-        log_prob = utils.sum_except_batch(log_prob, num_batch_dims=1)
+        log_prob = various.sum_except_batch(log_prob, num_batch_dims=1)
         return log_prob
 
     def _sample(self, num_samples, context):
         # Compute parameters.
         logits = self._compute_params(context)
         probs = torch.sigmoid(logits)
-        probs = utils.repeat_rows(probs, num_samples)
+        probs = various.repeat_rows(probs, num_samples)
 
         # Generate samples.
         context_size = context.shape[0]
         noise = torch.rand(context_size * num_samples, *self._shape)
         samples = (noise < probs).float()
-        return utils.split_leading_dim(samples, [context_size, num_samples])
+        return various.split_leading_dim(samples, [context_size, num_samples])
 
     def _mean(self, context):
         logits = self._compute_params(context)

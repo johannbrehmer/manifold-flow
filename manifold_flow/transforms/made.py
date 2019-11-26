@@ -3,7 +3,7 @@
 
 import torch
 
-from manifold_flow import utils
+from manifold_flow.utils import various
 
 from torch import nn
 from torch.nn import functional as F, init
@@ -45,7 +45,7 @@ class MaskedLinear(nn.Linear):
                               random_mask,
                               is_output):
         if is_output:
-            out_degrees = utils.tile(
+            out_degrees = various.tile(
                 _get_input_degrees(autoregressive_features),
                 out_features // autoregressive_features
             )

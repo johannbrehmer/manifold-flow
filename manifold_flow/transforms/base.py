@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import logging
 
-from manifold_flow import utils, timer
+from manifold_flow.utils import timer, various
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ class MultiscaleCompositeTransform(Transform):
             num_transforms: int, total number of transforms to be added.
             split_dim: dimension along which to split.
         """
-        if not utils.is_positive_int(split_dim):
+        if not various.is_positive_int(split_dim):
             raise TypeError('Split dimension must be a positive integer.')
 
         super().__init__()

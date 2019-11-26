@@ -3,7 +3,8 @@ from torch.nn import functional as F
 import logging
 import numpy as np
 
-from manifold_flow import utils, transforms
+from manifold_flow import transforms
+from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +102,9 @@ def rational_quadratic_spline(inputs,
     heights = cumheights[..., 1:] - cumheights[..., :-1]
 
     if inverse:
-        bin_idx = utils.searchsorted(cumheights, inputs)[..., None]
+        bin_idx = various.searchsorted(cumheights, inputs)[..., None]
     else:
-        bin_idx = utils.searchsorted(cumwidths, inputs)[..., None]
+        bin_idx = various.searchsorted(cumwidths, inputs)[..., None]
 
     input_cumwidths = cumwidths.gather(-1, bin_idx)[..., 0]
     input_bin_widths = widths.gather(-1, bin_idx)[..., 0]
