@@ -57,6 +57,8 @@ class ManifoldFlow(nn.Module):
         steps_outer=5,
         context_features=None,
         apply_context_to_outer=True,
+        inner_transform_kwargs=None,
+        outer_transform_kwargs=None,
     ):
         super(ManifoldFlow, self).__init__()
 
@@ -75,7 +77,7 @@ class ManifoldFlow(nn.Module):
             if isinstance(outer_transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
                 self.outer_transform = vector_transforms.create_transform(
-                    data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None
+                    data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None, **outer_transform_kwargs
                 )
             else:
                 self.outer_transform = outer_transform
@@ -90,7 +92,7 @@ class ManifoldFlow(nn.Module):
 
         if isinstance(inner_transform, str):
             logger.debug("Creating default inner transform with base type %s", outer_transform)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform, context_features=context_features)
+            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform, context_features=context_features, **inner_transform_kwargs)
         elif inner_transform is None:
             self.inner_transform = transforms.IdentityTransform()
         else:

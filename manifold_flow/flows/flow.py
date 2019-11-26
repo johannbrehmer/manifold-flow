@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Flow(nn.Module):
-    def __init__(self, data_dim, transform="affine-autoregressive", steps=3, context_features=None):
+    def __init__(self, data_dim, transform="affine-autoregressive", steps=3, context_features=None, transform_kwargs=None,):
         super(Flow, self).__init__()
 
         self.data_dim = data_dim
@@ -23,7 +23,7 @@ class Flow(nn.Module):
         if isinstance(self.data_dim, int):
             if isinstance(transform, str):
                 logger.debug("Creating default outer transform for scalar data with base type %s", transform)
-                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform, context_features=context_features)
+                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform, context_features=context_features, **transform_kwargs)
             else:
                 self.transform = transform
         else:

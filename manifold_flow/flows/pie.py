@@ -60,6 +60,8 @@ class PIE(nn.Module):
         epsilon=1.0e-3,
         context_features=None,
         apply_context_to_outer=True,
+        inner_transform_kwargs=None,
+        outer_transform_kwargs=None,
     ):
         super(PIE, self).__init__()
 
