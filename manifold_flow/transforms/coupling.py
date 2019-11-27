@@ -90,7 +90,7 @@ class CouplingTransform(transforms.Transform):
             # logger.debug("Jacobian: %s", utils.calculate_jacobian(transform_split, inputs))
             # logger.debug("Batch Jacobian: %s", utils.batch_jacobian(transform_split, inputs))
 
-            timer.timer(start="Jacobian coupling transform")
+            # timer.timer(start="Jacobian coupling transform")
 
             jacobian_transform = various.batch_jacobian(transform_split, inputs)
 
@@ -109,7 +109,7 @@ class CouplingTransform(transforms.Transform):
             outputs[:, self.identity_features, ...] = identity_split
             outputs[:, self.transform_features, ...] = transform_split
 
-            timer.timer(stop="Jacobian coupling transform")
+            # timer.timer(stop="Jacobian coupling transform")
 
             return outputs, jacobian
 
@@ -144,7 +144,7 @@ class CouplingTransform(transforms.Transform):
         transform_split = inputs[:, self.transform_features, ...]
 
         if full_jacobian:
-            timer.timer(start="Jacobian inverse coupling transform")
+            # timer.timer(start="Jacobian inverse coupling transform")
 
             if self.unconditional_transform is not None:
                 identity_split_after_unconditional_transform, jacobian_identity = self.unconditional_transform.inverse(
@@ -172,7 +172,7 @@ class CouplingTransform(transforms.Transform):
             outputs[:, self.identity_features] = identity_split_after_unconditional_transform
             outputs[:, self.transform_features] = transform_split
 
-            timer.timer(stop="Jacobian inverse coupling transform")
+            # timer.timer(stop="Jacobian inverse coupling transform")
 
             return outputs, jacobian
 

@@ -38,18 +38,6 @@ def _filename(type, label, args):
     return filename
 
 
-"""
-
-    parser.add_argument("--outertransform", type=str, default="affine-coupling")
-    parser.add_argument("--innertransform", type=str, default="affine-coupling")
-    parser.add_argument("--outerlayers", type=int, default=4)
-    parser.add_argument("--innerlayers", type=int, default=8)
-    parser.add_argument("--outercouplingmlp", action="store_true")
-    parser.add_argument("--outercouplinglayers", type=int, default=3)
-    parser.add_argument("--outercouplinghidden", type=int, default=256)
-    """
-
-
 def _load_simulator(args):
     if args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
