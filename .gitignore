@@ -114,5 +114,4 @@ venv.bak/
 
 # Data
 experiments/data/
-experiments/figures/
 log/
