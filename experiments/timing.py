@@ -76,7 +76,7 @@ def parse_args():
     parser.add_argument("--outercouplinglayers", type=int, default=3)
     parser.add_argument("--outercouplinghidden", type=int, default=256)
 
-    parser.add_argument("--datadims", nargs="+", type=int, default=[10, 20, 50, 100, 200, 500, 1000])
+    parser.add_argument("--datadims", nargs="+", type=int, default=[2, 5, 10, 20, 50, 100, 200])
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--repeats", type=int, default=5)
 
