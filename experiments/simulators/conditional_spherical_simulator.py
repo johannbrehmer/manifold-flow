@@ -125,18 +125,9 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         r = 1. + z_eps[:, 0]
         phases_, widths_ = self._parse_parameters(z_phi.shape[0], parameters)
 
-        if precise:
-            # TODO: Double cover
-            p_sub = 0.
-            individual_shifts = [0.]  #[-1., 0., 1.]
-            for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
-        else:
-            p_sub = 0.
-            shift = np.zeros(self._latent_dim)
-            for shift_ in [-1., 0., 1.]:
-                shift[-1] = shift_
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2. * np.pi * shift)
+        p_sub = 0.
+        for shifted_z_phi in self._generate_equivalent_coordinates(z_phi, precise):
+            p_sub += norm(loc=phases_, scale=widths_).pdf(shifted_z_phi)
 
         logp_sub = np.log(p_sub)
         logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
@@ -151,3 +142,30 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         logp = np.sum(logp, axis=1) + log_det
 
         return logp
+
+    def _generate_equivalent_coordinates(self, z_phi, precise):
+        # Restrict z to canonical range: [0, pi) for polar angles, and [0., 2pi) for azimuthal angle
+        z_phi = z_phi % (2. * np.pi)
+        z_phi[:,:-1] = np.where(z_phi[:,:-1] > np.pi, 2. * np.pi - z_phi[:,:-1], z_phi[:,:-1])
+
+        # Yield this one
+        yield z_phi
+
+        # Variations of polar angles
+        for dim in range(self._latent_dim - 1):
+            z = np.copy(z_phi)
+            z[:, dim] = - z_phi[:, dim]
+            yield z
+
+            z = np.copy(z_phi)
+            z[:, dim] = 2.*np.pi - z_phi[:, dim]
+            yield z
+
+        # Variations of aximuthal angle
+        z = np.copy(z_phi)
+        z[:, -1] = - 2.*np.pi + z_phi[:, -1]
+        yield z
+
+        z = np.copy(z_phi)
+        z[:, -1] = 2.*np.pi + z_phi[:, -1]
+        yield z

@@ -116,29 +116,10 @@ class SphericalGaussianSimulator(BaseSimulator):
         logp = np.sum(logp_sub, axis=1) + np.sum(logp_eps, axis=1) + log_det
         return logp
 
-    def _log_density_latent_space(self, z_phi, z_eps, precise=False):
-        r = 1. + z_eps[:, 0]
-        phases_ = np.empty((z_phi.shape[0], self._latent_dim))
-        phases_[:] = self._phases
-        widths_ = np.empty((z_phi.shape[0], self._latent_dim))
-        widths_[:] = self._widths
-
-        p_sub = 0.
-        for shifted_z_phi in self._generate_equivalent_coordinates(z_phi, precise):
-            p_sub += norm(loc=phases_, scale=widths_).pdf(shifted_z_phi)
-
-        logp_sub = np.log(p_sub)
-        logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
-
-        logp = np.sum(logp_sub, axis=1) + np.sum(logp_eps, axis=1)
-        return logp
-
     def _generate_equivalent_coordinates(self, z_phi, precise):
         # Restrict z to canonical range: [0, pi) for polar angles, and [0., 2pi) for azimuthal angle
         z_phi = z_phi % (2. * np.pi)
         z_phi[:,:-1] = np.where(z_phi[:,:-1] > np.pi, 2. * np.pi - z_phi[:,:-1], z_phi[:,:-1])
-
-        logger.debug("Beginning iteration")
 
         # Yield this one
         yield z_phi
