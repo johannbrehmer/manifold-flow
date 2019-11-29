@@ -50,10 +50,10 @@ def _load_simulator(args):
 
 def _create_model(args, context_features):
     if args.algorithm == "flow":
-        logger.info("Loading standard flow with %s layers", args.outerlayers)
+        logger.info("Creating standard flow with %s layers, transform %s, %s context features", args.innerlayers + args.outerlayers, args.outertransform, context_features)
         model = Flow(data_dim=args.datadim, steps=args.innerlayers + args.outerlayers, transform=args.outertransform, context_features=context_features)
     elif args.algorithm == "pie":
-        logger.info("Loading PIE with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
+        logger.info("Creating PIE with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
         model = PIE(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
@@ -65,7 +65,7 @@ def _create_model(args, context_features):
             apply_context_to_outer=args.conditionalouter,
         )
     elif args.algorithm == "mf":
-        logger.info("Loading manifold flow with %s latent dimensions and %s + %s layers", args.modellatentdim, args.outerlayers, args.innerlayers)
+        logger.info("Creating manifold flow with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
 
         outer_transform_kwargs = {}
         try:
@@ -73,7 +73,7 @@ def _create_model(args, context_features):
             outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
             outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
 
-            logger.info("Additional settings for outer layer: %s", outer_transform_kwargs)
+            logger.info("Additional settings for outer transform: %s", outer_transform_kwargs)
         except:
             pass
 
@@ -114,6 +114,3 @@ def _load_test_samples(args):
 def _create_modelname(args):
     if args.modelname is None:
         args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
-    logger.info(
-        "Evaluating inference for model %s on data set %s (data dim %s, true latent dim %s)", args.modelname, args.dataset, args.datadim, args.truelatentdim
-    )

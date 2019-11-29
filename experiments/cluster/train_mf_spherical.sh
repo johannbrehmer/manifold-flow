@@ -12,7 +12,7 @@ source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
 case ${SLURM_ARRAY_TASK_ID} in
-0) python -u train.py --dataset spherical_gaussian --algorithm mf --outercouplingmlp --outercouplinglayers 1 --outercouplinghidden 100 --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow ;;
+0) python -u train.py --dataset spherical_gaussian --algorithm mf --outercouplingmlp --outercouplinglayers 1 --outercouplinghidden 100 --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow  --debug ;;
 1) python -u train.py --dataset spherical_gaussian --algorithm mf --outercouplingmlp --outercouplinglayers 1 --outercouplinghidden 100 --datadim 9 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow ;;
 2) python -u train.py --dataset spherical_gaussian --algorithm mf --outercouplingmlp --outercouplinglayers 1 --outercouplinghidden 100 --datadim 9 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow ;;
 3) python -u train.py --dataset spherical_gaussian --algorithm mf --outercouplingmlp --outercouplinglayers 1 --outercouplinghidden 100 --datadim 12 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow ;;

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def train(args):
     _create_modelname(args)
     logger.info(
-        "Training model %s algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
+        "Training model %s with algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
         args.modelname,
         args.algorithm,
         args.modellatentdim,
