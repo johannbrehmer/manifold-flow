@@ -121,6 +121,9 @@ class Trainer(object):
         opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
 
         logger.debug("Setting up LR scheduler")
+        if epochs < 2:
+            scheduler = None
+            logger.debug("Deactivating scheduler for only %s epoch", epochs)
         scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
         sched = None
         epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
