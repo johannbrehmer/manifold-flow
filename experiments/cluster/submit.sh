@@ -9,9 +9,9 @@
 # sbatch --array=0-4 train_mf_spherical.sh
 sbatch train_flow_csg.sh
 sbatch train_pie_csg.sh
-sbatch --array=0-4 train_mf_csg.sh  # STILL MISSING
+# sbatch --array=0-4 train_mf_csg.sh  # STILL MISSING
 sbatch train_opie_csg.sh
-sbatch --array=0-4 train_omf_csg.sh  # STILL MISSING
+# sbatch --array=0-4 train_omf_csg.sh  # STILL MISSING
 
 # sbatch evaluate_flow_spherical.sh
 # sbatch evaluate_pie_spherical.sh
