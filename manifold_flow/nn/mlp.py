@@ -47,9 +47,6 @@ class MLP(nn.Module):
         self._output_layer = nn.Linear(hidden_sizes[-1], np.prod(out_shape))
 
     def forward(self, inputs, context=None):
-        if context is not None:
-            context = torch.cat((inputs, context), dim=1)
-
         if inputs.shape[1:] != self._in_shape:
             raise ValueError(
                 "Expected inputs of shape {}, got {}.".format(
@@ -57,7 +54,10 @@ class MLP(nn.Module):
                 )
             )
 
-        inputs = inputs.reshape(-1, np.prod(self._in_shape))
+        if context is not None:
+            inputs = torch.cat((inputs, context), dim=1)
+        inputs = inputs.reshape(-1, np.prod(self._in_shape) + self._context_features)
+
         outputs = self._input_layer(inputs)
         outputs = self._activation(outputs)
 
