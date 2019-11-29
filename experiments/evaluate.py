@@ -150,7 +150,7 @@ def _mcmc(simulator, model=None, n_samples=1, n_mcmc_samples=1000, slice_samplin
         logger.info("Starting burn in")
         sampler.gen(burnin)  # burn in
     logger.info("Burn in done, starting main chain")
-    posterior_samples = sampler.gen(n_mcmc_samples, show_info=True)
+    posterior_samples = sampler.gen(n_mcmc_samples)
     logger.info("MCMC done")
 
     # timer.timer(stop="mcmc")

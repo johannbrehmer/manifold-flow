@@ -29,11 +29,11 @@ class SphericalGaussianSimulator(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def log_density(self, x, parameters=None):
+    def log_density(self, x, parameters=None, precise=False):
         logger.debug("Evaluating true log density for x = %s", x[0])
         z_phi, z_eps = self._transform_x_to_z(x)
         logger.debug("Latent variables: z_phi = %s, z_eps = %s", z_phi[0], z_eps[0])
-        logp = self._log_density(z_phi, z_eps)
+        logp = self._log_density(z_phi, z_eps, precise=precise)
         return logp
 
     def sample(self, n, parameters=None):
@@ -93,21 +93,28 @@ class SphericalGaussianSimulator(BaseSimulator):
         z_eps[:, 0] = r - 1
         return z_phi, z_eps
 
-    def _log_density(self, z_phi, z_eps):
+    def _log_density(self, z_phi, z_eps, precise=False):
         r = 1. + z_eps[:, 0]
         phases_ = np.empty((z_phi.shape[0], self._latent_dim))
         phases_[:] = self._phases
         widths_ = np.empty((z_phi.shape[0], self._latent_dim))
         widths_[:] = self._widths
 
-        p_sub = 0.
-        individual_shifts = [-1., 0., 1.]
-        for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
-            p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
+        if precise:
+            p_sub = 0.
+            individual_shifts = [0.]  #[-1., 0., 1.]
+            for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
+                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
+        else:
+            p_sub = norm(loc=phases_, scale=widths_).pdf(z_phi)
+            for axis in range(self._latent_dim):
+                shift = np.zeros(self._latent_dim)
+                shift[axis] = 1.
+                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi - 2. * np.pi * shift)
+                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2. * np.pi * shift)
+
         logp_sub = np.log(p_sub)
         logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
-
-        logger.debug("log density in z space: %s", np.sum(np.concatenate((logp_sub, logp_eps), axis=1), axis=1)[0])
 
         log_det = self._latent_dim * np.abs(r)
         log_det += np.sum(
