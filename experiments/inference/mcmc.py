@@ -91,12 +91,18 @@ class GaussianMetropolis(MCMC_Sampler):
 
             # acceptance rate
             acc_rate = n_acc / float(self.thin * (n+1))
-            logger.debug('MCMC: sample = {0}, acc rate = {1:.2%}, log prob = {2:.2}\n'.format(n+1, acc_rate, self.L))
+
+            if (n+1) % 100 == 0:
+                logger.info('MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
+            else:
+                logger.debug('MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
 
             # record traces
             if show_info:
                 L_trace.append(self.L)
                 acc_rate_trace.append(acc_rate)
+
+        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
 
         # show plot with the traces
         if show_info:
@@ -138,6 +144,8 @@ class SliceSampler(MCMC_Sampler):
         :return: numpy array of samples
         """
 
+        logger.debug("Generating %s MCMC samples", n_samples)
+
         assert n_samples >= 0, 'number of samples can''t be negative'
 
         order = range(self.n_dims)
@@ -147,6 +155,7 @@ class SliceSampler(MCMC_Sampler):
         if self.width is None:
             logger.debug('Tuning bracket width')
             self._tune_bracket_width(rng)
+        logger.debug("Bracket width: %s", self.width)
 
         for n in range(n_samples):
 
@@ -160,10 +169,16 @@ class SliceSampler(MCMC_Sampler):
             samples[n] = self.x.copy()
 
             self.L = self.lp_f(self.x)
-            logger.debug('MCMC: sample = {0}, log prob = {1:.2}\n'.format(n+1, self.L))
+
+            if (n+1) % 100 == 0:
+                logger.info('MCMC after sample {0}: log likelihood = {2:.2f}'.format(n+1, self.L))
+            else:
+                logger.debug('MCMC after sample {0}: log likelihood = {2:.2f}'.format(n+1, self.L))
 
             if show_info:
                 L_trace.append(self.L)
+
+        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
 
         # show trace plot
         if show_info:
