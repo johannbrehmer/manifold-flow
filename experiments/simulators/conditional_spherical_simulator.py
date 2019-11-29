@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class ConditionalSphericalGaussianSimulator(BaseSimulator):
-    def __init__(self, latent_dim=8, data_dim=9, min_width=0.1, max_width=np.pi, epsilon=0.01):
+    def __init__(self, latent_dim=8, data_dim=9, min_width=0.1*np.pi, max_width=0.4*np.pi, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
-        self._minphase = 0.
-        self._maxphase = 2.*np.pi
+        self._minphase = 0.5*np.pi
+        self._maxphase = 1.5*np.pi
         self._minwidth = min_width
         self._maxwidth = max_width
         self._epsilon = epsilon
@@ -67,7 +67,8 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         widths_ = np.empty((self._latent_dim, n))
         phases_ = np.empty((self._latent_dim, n))
         widths_[:] = self._minwidth + (0.5 + 0.5 * parameters[:, 0]) * (self._maxwidth - self._minwidth)
-        phases_[:] = self._minphase + (0.5 + 0.5 * parameters[:, 1]) * (self._maxphase - self._minphase)
+        phases_[:-1, :] = 0.5 * np.pi
+        phases_[-1, :] = self._minphase + (0.5 + 0.5 * parameters[:, 1]) * (self._maxphase - self._minphase)
         widths_ = widths_.T
         phases_ = phases_.T
 
@@ -125,16 +126,16 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         phases_, widths_ = self._parse_parameters(z_phi.shape[0], parameters)
 
         if precise:
+            # TODO: Double cover
             p_sub = 0.
             individual_shifts = [0.]  #[-1., 0., 1.]
             for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
                 p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
         else:
-            p_sub = norm(loc=phases_, scale=widths_).pdf(z_phi)
-            for axis in range(self._latent_dim):
-                shift = np.zeros(self._latent_dim)
-                shift[axis] = 1.
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi - 2. * np.pi * shift)
+            p_sub = 0.
+            shift = np.zeros(self._latent_dim)
+            for shift_ in [-1., 0., 1.]:
+                shift[-1] = shift_
                 p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2. * np.pi * shift)
 
         logp_sub = np.log(p_sub)

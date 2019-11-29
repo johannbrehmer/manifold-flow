@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class SphericalGaussianSimulator(BaseSimulator):
-    def __init__(self, latent_dim=8, data_dim=9, phases=1.25*np.pi, widths=0.6, epsilon=0.01):
+    def __init__(self, latent_dim=8, data_dim=9, phases=0.5*np.pi, widths=0.25*np.pi, epsilon=0.01):
         self._latent_dim = latent_dim
         self._data_dim = data_dim
         self._phases = phases * np.ones(latent_dim) if isinstance(phases, float) else phases
@@ -101,16 +101,16 @@ class SphericalGaussianSimulator(BaseSimulator):
         widths_[:] = self._widths
 
         if precise:
+            # TODO: Double cover
             p_sub = 0.
             individual_shifts = [0.]  #[-1., 0., 1.]
             for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
                 p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
         else:
-            p_sub = norm(loc=phases_, scale=widths_).pdf(z_phi)
-            for axis in range(self._latent_dim):
-                shift = np.zeros(self._latent_dim)
-                shift[axis] = 1.
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi - 2. * np.pi * shift)
+            p_sub = 0.
+            shift = np.zeros(self._latent_dim)
+            for shift_ in [-1., 0., 1.]:
+                shift[-1] = shift_
                 p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2. * np.pi * shift)
 
         logp_sub = np.log(p_sub)
