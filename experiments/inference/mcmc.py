@@ -4,6 +4,9 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MCMC_Sampler:
@@ -55,10 +58,9 @@ class GaussianMetropolis(MCMC_Sampler):
         MCMC_Sampler.__init__(self, x, lp_f, thin)
         self.step = step
 
-    def gen(self, n_samples, logger=sys.stdout, show_info=False, rng=np.random):
+    def gen(self, n_samples, show_info=False, rng=np.random):
         """
         :param n_samples: number of samples
-        :param logger: logger for logging messages. If None, no logging takes place
         :param show_info: whether to plot info at the end of sampling
         :param rng: random number generator to use
         :return: numpy array of samples
@@ -70,7 +72,6 @@ class GaussianMetropolis(MCMC_Sampler):
         L_trace = []
         acc_rate_trace = []
         samples = np.empty([n_samples, self.n_dims])
-        logger = open(os.devnull, 'w') if logger is None else logger
 
         for n in range(n_samples):
 
@@ -90,7 +91,7 @@ class GaussianMetropolis(MCMC_Sampler):
 
             # acceptance rate
             acc_rate = n_acc / float(self.thin * (n+1))
-            logger.write('sample = {0}, acc rate = {1:.2%}, log prob = {2:.2}\n'.format(n+1, acc_rate, self.L))
+            logger.debug('MCMC: sample = {0}, acc rate = {1:.2%}, log prob = {2:.2}\n'.format(n+1, acc_rate, self.L))
 
             # record traces
             if show_info:
@@ -129,10 +130,9 @@ class SliceSampler(MCMC_Sampler):
         self.max_width = max_width
         self.width = None
 
-    def gen(self, n_samples, logger=sys.stdout, show_info=False, rng=np.random):
+    def gen(self, n_samples, show_info=False, rng=np.random):
         """
         :param n_samples: number of samples
-        :param logger: logger for logging messages. If None, no logging takes place
         :param show_info: whether to plot info at the end of sampling
         :param rng: random number generator to use
         :return: numpy array of samples
@@ -143,10 +143,9 @@ class SliceSampler(MCMC_Sampler):
         order = range(self.n_dims)
         L_trace = []
         samples = np.empty([n_samples, self.n_dims])
-        logger = open(os.devnull, 'w') if logger is None else logger
 
         if self.width is None:
-            logger.write('tuning bracket width...\n')
+            logger.debug('Tuning bracket width')
             self._tune_bracket_width(rng)
 
         for n in range(n_samples):
@@ -161,7 +160,7 @@ class SliceSampler(MCMC_Sampler):
             samples[n] = self.x.copy()
 
             self.L = self.lp_f(self.x)
-            logger.write('sample = {0}, log prob = {1:.2}\n'.format(n+1, self.L))
+            logger.debug('MCMC: sample = {0}, log prob = {1:.2}\n'.format(n+1, self.L))
 
             if show_info:
                 L_trace.append(self.L)
@@ -184,7 +183,7 @@ class SliceSampler(MCMC_Sampler):
         """
 
         n_samples = 50
-        order = range(self.n_dims)
+        order = list(range(self.n_dims))
         x = self.x.copy()
         self.width = np.full(self.n_dims, 0.01)
 

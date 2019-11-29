@@ -94,6 +94,8 @@ def _evaluate_model_samples(args, simulator, x_gen):
 
 
 def _mcmc(simulator, model=None, thin=10, n_samples=100, n_mcmc_samples=5000, burnin=100):
+    logger.info("Starting MCMC based on %s", "true simulator likelihood" if model is None else "neural likelihood estimate")
+
     # Data
     true_parameters = simulator.default_parameters()
     x_obs = _load_test_samples(args)[:n_samples]
@@ -112,9 +114,13 @@ def _mcmc(simulator, model=None, thin=10, n_samples=100, n_mcmc_samples=5000, bu
             log_prob += simulator.evaluate_log_prior(params)
             return log_prob
 
+    logger.debug("Initializing slice sampler")
     sampler = mcmc.SliceSampler(true_parameters, log_posterior, thin=thin)
+    logger.debug("Starting burn in")
     sampler.gen(burnin)  # burn in
+    logger.debug("Starting main chain")
     posterior_samples = sampler.gen(n_mcmc_samples)
+    logger.debug("MCMC done")
 
     return posterior_samples
 

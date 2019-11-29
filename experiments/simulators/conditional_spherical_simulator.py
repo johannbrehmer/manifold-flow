@@ -36,7 +36,6 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         assert parameters is not None
 
         z_phi, z_eps = self._transform_x_to_z(x)
-        logger.debug("Latent variables: z_phi = %s, z_eps = %s", z_phi[0], z_eps[0])
         logp = self._log_density(z_phi, z_eps, parameters=parameters)
 
         return logp
@@ -60,11 +59,10 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         return uniform.rvs(loc=-1., scale=2., size=(n, self.parameter_dim()))
 
     def evaluate_log_prior(self, parameters):
+        parameters = parameters.reshape((-1, self.parameter_dim()))
         return np.sum(uniform.logpdf(parameters, loc=-1., scale=2.), axis=1)
 
     def _parse_parameters(self, n, parameters):
-
-        logger.debug("Parameters: %s", parameters.shape)
         parameters = parameters.reshape(-1, 2)
         widths_ = np.empty((self._latent_dim, n))
         phases_ = np.empty((self._latent_dim, n))
@@ -133,18 +131,13 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         logp_sub = np.log(p_sub)
         logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
 
-        logger.debug("log density in z space: %s", np.sum(np.concatenate((logp_sub, logp_eps), axis=1), axis=1)[0])
-
         log_det = self._latent_dim * np.abs(r)
         log_det += np.sum(
             np.arange(self._latent_dim - 1, -1, -1)[np.newaxis, :] * np.log(np.abs(np.sin(z_phi))),
             axis=1,
         )
 
-        logger.debug("log det Jacobian: %s", log_det[0])
-
         logp = np.concatenate((logp_sub, logp_eps), axis=1)
         logp = np.sum(logp, axis=1) + log_det
 
-        logger.debug("Output shape: %s", logp.shape)
         return logp
