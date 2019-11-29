@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Flow(nn.Module):
-    def __init__(self, data_dim, transform="affine-autoregressive", steps=3, context_features=None, transform_kwargs=None,):
+    def __init__(self, data_dim, transform="affine-coupling", steps=8, context_features=None, transform_kwargs=None,):
         super(Flow, self).__init__()
 
         self.data_dim = data_dim

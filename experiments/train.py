@@ -72,7 +72,7 @@ def train(args):
         )
         learning_curves = np.vstack(learning_curves).T
 
-        logger.info("Starting training on NLL")
+        logger.info("Starting training only inner flow on NLL")
         learning_curves2 = trainer.train(
             dataset=dataset,
             loss_functions=[losses.mse, losses.nll],
@@ -82,6 +82,7 @@ def train(args):
             epochs=args.epochs // 2,
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
+            parameters=model.inner_transform.parameters()
         )
 
         learning_curves2 = np.vstack(learning_curves2).T
