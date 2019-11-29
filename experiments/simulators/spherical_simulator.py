@@ -100,32 +100,64 @@ class SphericalGaussianSimulator(BaseSimulator):
         widths_ = np.empty((z_phi.shape[0], self._latent_dim))
         widths_[:] = self._widths
 
-        if precise:
-            # TODO: Double cover
-            p_sub = 0.
-            individual_shifts = [0.]  #[-1., 0., 1.]
-            for shift in itertools.product(individual_shifts, repeat=self._latent_dim):
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2.*np.pi*np.array(shift))
-        else:
-            p_sub = 0.
-            shift = np.zeros(self._latent_dim)
-            for shift_ in [-1., 0., 1.]:
-                shift[-1] = shift_
-                p_sub += norm(loc=phases_, scale=widths_).pdf(z_phi + 2. * np.pi * shift)
+        p_sub = 0.
+        for shifted_z_phi in self._generate_equivalent_coordinates(z_phi, precise):
+            p_sub += norm(loc=phases_, scale=widths_).pdf(shifted_z_phi)
 
         logp_sub = np.log(p_sub)
         logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
 
-        log_det = self._latent_dim * np.abs(r)
+        log_det = self._latent_dim * np.log(np.abs(r))
         log_det += np.sum(
             np.arange(self._latent_dim - 1, -1, -1)[np.newaxis, :] * np.log(np.abs(np.sin(z_phi))),
             axis=1,
         )
 
-        logger.debug("log det Jacobian: %s", log_det[0])
-
-        logp = np.concatenate((logp_sub, logp_eps), axis=1)
-        logp = np.sum(logp, axis=1) + log_det
-
-        logger.debug("Output shape: %s", logp.shape)
+        logp = np.sum(logp_sub, axis=1) + np.sum(logp_eps, axis=1) + log_det
         return logp
+
+    def _log_density_latent_space(self, z_phi, z_eps, precise=False):
+        r = 1. + z_eps[:, 0]
+        phases_ = np.empty((z_phi.shape[0], self._latent_dim))
+        phases_[:] = self._phases
+        widths_ = np.empty((z_phi.shape[0], self._latent_dim))
+        widths_[:] = self._widths
+
+        p_sub = 0.
+        for shifted_z_phi in self._generate_equivalent_coordinates(z_phi, precise):
+            p_sub += norm(loc=phases_, scale=widths_).pdf(shifted_z_phi)
+
+        logp_sub = np.log(p_sub)
+        logp_eps = np.log(norm(loc=0.0, scale=self._epsilon).pdf(z_eps))
+
+        logp = np.sum(logp_sub, axis=1) + np.sum(logp_eps, axis=1)
+        return logp
+
+    def _generate_equivalent_coordinates(self, z_phi, precise):
+        # Restrict z to canonical range: [0, pi) for polar angles, and [0., 2pi) for azimuthal angle
+        z_phi = z_phi % (2. * np.pi)
+        z_phi[:,:-1] = np.where(z_phi[:,:-1] > np.pi, 2. * np.pi - z_phi[:,:-1], z_phi[:,:-1])
+
+        logger.debug("Beginning iteration")
+
+        # Yield this one
+        yield z_phi
+
+        # Variations of polar angles
+        for dim in range(self._latent_dim - 1):
+            z = np.copy(z_phi)
+            z[:, dim] = - z_phi[:, dim]
+            yield z
+
+            z = np.copy(z_phi)
+            z[:, dim] = 2.*np.pi - z_phi[:, dim]
+            yield z
+
+        # Variations of aximuthal angle
+        z = np.copy(z_phi)
+        z[:, -1] = - 2.*np.pi + z_phi[:, -1]
+        yield z
+
+        z = np.copy(z_phi)
+        z[:, -1] = 2.*np.pi + z_phi[:, -1]
+        yield z
