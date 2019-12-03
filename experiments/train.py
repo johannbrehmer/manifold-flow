@@ -9,7 +9,7 @@ from torch import optim
 
 sys.path.append("../")
 
-from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer
+from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks
 from experiments.utils import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ def train(args):
             epochs=args.epochs,
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         )
         learning_curves = np.vstack(learning_curves).T
     else:
@@ -69,6 +70,7 @@ def train(args):
             epochs=args.epochs // 2,
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_mse_{}.pt")],
         )
         learning_curves = np.vstack(learning_curves).T
 
@@ -82,7 +84,8 @@ def train(args):
             epochs=args.epochs // 2,
             initial_lr=args.lr,
             scheduler=optim.lr_scheduler.CosineAnnealingLR,
-            parameters=model.inner_transform.parameters()
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_nll_{}.pt")],
         )
 
         learning_curves2 = np.vstack(learning_curves2).T
