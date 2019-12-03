@@ -6,7 +6,7 @@ import torch
 
 from manifold_flow import transforms
 from manifold_flow.transforms import splines
-from manifold_flow.utils import timer, various
+from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
 

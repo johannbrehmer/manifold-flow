@@ -3,7 +3,7 @@ from torch import nn
 import logging
 
 from manifold_flow.utils.various import product
-from manifold_flow.utils import vector_transforms, image_transforms
+from experiments.utils import image_transforms, vector_transforms
 from manifold_flow import distributions, transforms
 
 logger = logging.getLogger(__name__)
@@ -52,16 +52,11 @@ class PIE(nn.Module):
     def __init__(
         self,
         data_dim,
-        latent_dim=10,
-        inner_transform="affine-coupling",
-        outer_transform="affine-coupling",
-        steps_inner=5,
-        steps_outer=3,
+        latent_dim,
+        outer_transform,
+        inner_transform=None,
         epsilon=1.0e-3,
-        context_features=None,
         apply_context_to_outer=True,
-        inner_transform_kwargs=None,
-        outer_transform_kwargs=None,
     ):
         super(PIE, self).__init__()
 
@@ -77,30 +72,8 @@ class PIE(nn.Module):
         self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=epsilon)
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
-        inner_transform_kwargs = {} if inner_transform_kwargs is None else inner_transform_kwargs
-        outer_transform_kwargs = {} if outer_transform_kwargs is None else outer_transform_kwargs
-
-        if isinstance(self.data_dim, int):
-            if isinstance(outer_transform, str):
-                logger.debug("Creating default outer transform for scalar data with base type %s", outer_transform)
-                self.outer_transform = vector_transforms.create_transform(
-                    data_dim, steps_outer, base_transform_type=outer_transform, context_features=context_features if apply_context_to_outer else None
-                )
-            else:
-                self.outer_transform = outer_transform
-        else:
-            c, h, w = data_dim
-            if isinstance(outer_transform, str):
-                logger.debug("Creating default outer transform for image data")
-                assert context_features is None
-                self.outer_transform = image_transforms.create_transform(c, h, w, steps_outer)
-            else:
-                self.outer_transform = outer_transform
-
-        if isinstance(inner_transform, str):
-            logger.debug("Creating default inner transform with base type %s", outer_transform)
-            self.inner_transform = vector_transforms.create_transform(latent_dim, steps_inner, base_transform_type=inner_transform, context_features=context_features)
-        elif inner_transform is None:
+        self.outer_transform = outer_transform
+        if inner_transform is None:
             self.inner_transform = transforms.IdentityTransform()
         else:
             self.inner_transform = inner_transform

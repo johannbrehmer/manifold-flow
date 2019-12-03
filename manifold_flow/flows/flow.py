@@ -1,7 +1,7 @@
 from torch import nn
 import logging
 
-from manifold_flow.utils import vector_transforms, image_transforms
+from experiments.utils import image_transforms, vector_transforms
 from manifold_flow.utils.various import product
 from manifold_flow import distributions
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Flow(nn.Module):
-    def __init__(self, data_dim, transform="affine-coupling", steps=8, context_features=None, transform_kwargs=None,):
+    def __init__(self, data_dim, transform):
         super(Flow, self).__init__()
 
         self.data_dim = data_dim
@@ -19,23 +19,7 @@ class Flow(nn.Module):
         self.total_latent_dim = product(self.latent_dim)
 
         self.latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
-
-        transform_kwargs = {} if transform_kwargs is None else transform_kwargs
-
-        if isinstance(self.data_dim, int):
-            if isinstance(transform, str):
-                logger.debug("Creating default outer transform for scalar data with base type %s", transform)
-                self.transform = vector_transforms.create_transform(data_dim, steps, base_transform_type=transform, context_features=context_features, **transform_kwargs)
-            else:
-                self.transform = transform
-        else:
-            c, h, w = data_dim
-            if isinstance(transform, str):
-                logger.debug("Creating default outer transform for image data")
-                assert context_features is None
-                self.outer_transform = image_transforms.create_transform(c, h, w, steps)
-            else:
-                self.transform = transform
+        self.transform = transform
 
         self._report_model_parameters()
 

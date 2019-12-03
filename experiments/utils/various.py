@@ -3,6 +3,7 @@ import os
 import logging
 
 from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator
+from experiments.utils import vector_transforms
 from manifold_flow.flows import Flow, PIE, ManifoldFlow
 from manifold_flow.training import NumpyDataset
 
@@ -49,44 +50,42 @@ def _load_simulator(args):
 
 
 def _create_model(args, context_features):
+
+
     if args.algorithm == "flow":
         logger.info("Creating standard flow with %s layers, transform %s, %s context features", args.innerlayers + args.outerlayers, args.outertransform, context_features)
-        model = Flow(data_dim=args.datadim, steps=args.innerlayers + args.outerlayers, transform=args.outertransform, context_features=context_features)
+        transform = vector_transforms.create_transform(args.datadim, args.innerlayers + args.outerlayers, base_transform_type=args.outertransform, context_features=context_features)
+        model = Flow(data_dim=args.datadim, transform=transform)
+
     elif args.algorithm == "pie":
         logger.info("Creating PIE with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
-        model = PIE(
-            data_dim=args.datadim,
-            latent_dim=args.modellatentdim,
-            steps_inner=args.innerlayers,
-            steps_outer=args.outerlayers,
-            outer_transform=args.outertransform,
-            inner_transform=args.innertransform,
-            context_features=context_features,
-            apply_context_to_outer=args.conditionalouter,
+
+        outer_transform = vector_transforms.create_transform(
+            args.datadim, args.outerlayers, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None
         )
+        inner_transform = vector_transforms.create_transform(args.modellatentdim, args.innerlayers, base_transform_type=args.innertransform, context_features=context_features)
+        model = PIE(data_dim = args.datadim, latent_dim = args.modellatentdim, outer_transform=outer_transform, inner_transform=inner_transform, apply_context_to_outer=args.conditionalouter)
+
     elif args.algorithm == "mf":
         logger.info("Creating manifold flow with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
-
         outer_transform_kwargs = {}
         try:
             outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
             outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
             outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
-
             logger.info("Additional settings for outer transform: %s", outer_transform_kwargs)
         except:
             pass
-
+        outer_transform = vector_transforms.create_transform(
+            args.datadim, args.outerlayers, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None, **outer_transform_kwargs
+        )
+        inner_transform = vector_transforms.create_transform(args.modellatentdim, args.innerlayers, base_transform_type=args.innertransform, context_features=context_features)
         model = ManifoldFlow(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
-            steps_inner=args.innerlayers,
-            steps_outer=args.outerlayers,
-            outer_transform=args.outertransform,
-            inner_transform=args.innertransform,
-            context_features=context_features,
+            outer_transform=outer_transform,
+            inner_transform=inner_transform,
             apply_context_to_outer=args.conditionalouter,
-            outer_transform_kwargs=outer_transform_kwargs,
         )
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))

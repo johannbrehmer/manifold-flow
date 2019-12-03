@@ -1,14 +1,13 @@
 #! /usr/bin/env python
 
 import argparse
-import os
 import sys
 import numpy as np
 import logging
 
 sys.path.append("../")
 
-from experiments.utils import _load_simulator, _filename
+from experiments.utils.various import _load_simulator, _filename
 
 logger = logging.getLogger(__name__)
 

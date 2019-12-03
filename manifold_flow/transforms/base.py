@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import logging
 
-from manifold_flow.utils import timer, various
+from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +58,9 @@ class CompositeTransform(Transform):
                 # _, logabsdet_from_jacobian = torch.slogdet(jacobian)
                 # logger.debug("Transformation %s has Jacobian\n%s\nwith log abs det %s (ground truth %s)", type(func).__name__, jacobian.detach().numpy()[0], logabsdet_from_jacobian[0].item(), logabsdet[0].item())
 
-                timer.timer(start="Jacobian multiplication")
+                # timer.timer(start="Jacobian multiplication")
                 total_jacobian = jacobian if total_jacobian is None else torch.bmm(jacobian, total_jacobian)
-                timer.timer(stop="Jacobian multiplication")
+                # timer.timer(stop="Jacobian multiplication")
 
             return outputs, total_jacobian
 

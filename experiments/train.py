@@ -10,7 +10,7 @@ from torch import optim
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks
-from experiments.utils import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
+from experiments.utils.various import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ import time
 
 sys.path.append("../")
 
-from experiments.utils import _create_model, _filename
+from experiments.utils.various import _create_model, _filename
 
 logger = logging.getLogger(__name__)
 

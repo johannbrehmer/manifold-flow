@@ -9,10 +9,8 @@ import argparse
 sys.path.append("../")
 
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils import _load_simulator, _create_model, _filename, _create_modelname, _load_training_dataset
-from experiments.utils import _load_test_samples
-from manifold_flow.utils import timer
-
+from experiments.utils.various import _load_simulator, _create_model, _filename, _create_modelname
+from experiments.utils.various import _load_test_samples
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,8 @@ import torch
 import numpy as np
 
 from manifold_flow import transforms
-from manifold_flow.utils import timer, various
+from manifold_flow.utils import various
+from experiments.utils import timer
 
 
 class Permutation(transforms.Transform):
