@@ -40,12 +40,17 @@ class PIE(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, context=None):
+    def forward(self, x, slice_of_pie=False, context=None):
+        # Project to the manifold
+        if slice_of_pie:
+            x = self.project(x, context=context)
+
         # Encode
         u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
         # Decode
-        x = self.decode(u, context=context)
+        if not slice_of_pie:
+            x = self.decode(u, context=context)
 
         # Log prob
         log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
@@ -67,7 +72,11 @@ class PIE(BaseFlow):
         x, _ = self.outer_transform.inverse(h, context=context if self.apply_context_to_outer else None)
         return x
 
-    def log_prob(self, x, context=None):
+    def log_prob(self, x, slice_of_pie=False, context=None):
+        # Project to the manifold
+        if slice_of_pie:
+            x = self.project(x, context=context)
+
         # Encode
         u, _, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
@@ -79,6 +88,8 @@ class PIE(BaseFlow):
         return log_prob
 
     def sample(self, u=None, n=1, context=None, sample_orthogonal=False):
+        # Note: cannot sample from the sliced density!
+
         if u is None:
             u = self.manifold_latent_distribution.sample(n, context=context)
         u_orthogonal = self.orthogonal_latent_distribution.sample(n, context=context) if sample_orthogonal else None
@@ -90,9 +101,3 @@ class PIE(BaseFlow):
         h_manifold, h_orthogonal = self.projection(h)
         u, log_det_inner = self.inner_transform(h_manifold, context=context)
         return u, h_manifold, h_orthogonal, log_det_inner, log_det_outer
-
-    def _report_model_parameters(self):
-        all_params = sum(p.numel() for p in self.parameters())
-        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        size = all_params * (32 / 8)  # Bytes
-        logger.debug("Created PIE with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

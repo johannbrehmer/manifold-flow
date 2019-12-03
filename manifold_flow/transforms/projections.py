@@ -1,9 +1,10 @@
 import torch
+import logging
 
 from manifold_flow import transforms
-from manifold_flow.flows.manifold_flow import logger
-from manifold_flow.flows.pie import logger
 from manifold_flow.utils.various import product
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectionSplit(transforms.Transform):

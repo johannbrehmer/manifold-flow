@@ -104,7 +104,8 @@ class Trainer(object):
         clip_gradient=100.0,
         verbose="some",
         parameters=None,
-        callbacks=None
+        callbacks=None,
+        forward_kwargs=None,
     ):
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
@@ -182,6 +183,7 @@ class Trainer(object):
                     loss_functions,
                     loss_weights,
                     clip_gradient,
+                    forward_kwargs=forward_kwargs
                 )
                 losses_train.append(loss_train)
                 losses_val.append(loss_val)
@@ -292,6 +294,7 @@ class Trainer(object):
         loss_functions,
         loss_weights,
         clip_gradient=None,
+        forward_kwargs=None,
     ):
         n_losses = len(loss_functions)
 
@@ -303,7 +306,7 @@ class Trainer(object):
             if i_batch == 0 and i_epoch == 0:
                 self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
-                batch_data, loss_functions, loss_weights, optimizer, clip_gradient
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs
             )
             loss_train += batch_loss
             for i, batch_loss_contribution in enumerate(batch_loss_contributions):
@@ -321,7 +324,7 @@ class Trainer(object):
 
             for i_batch, batch_data in enumerate(val_loader):
                 batch_loss, batch_loss_contributions = self.batch_val(
-                    batch_data, loss_functions, loss_weights
+                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs
                 )
                 loss_val += batch_loss
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions):
@@ -342,9 +345,9 @@ class Trainer(object):
         pass
 
     def batch_train(
-        self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None
+        self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None, forward_kwargs=None
     ):
-        loss_contributions = self.forward_pass(batch_data, loss_functions)
+        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
         self.optimizer_step(optimizer, loss, clip_gradient)
@@ -353,15 +356,15 @@ class Trainer(object):
         loss_contributions = [contrib.item() for contrib in loss_contributions]
         return loss, loss_contributions
 
-    def batch_val(self, batch_data, loss_functions, loss_weights):
-        loss_contributions = self.forward_pass(batch_data, loss_functions)
+    def batch_val(self, batch_data, loss_functions, loss_weights, forward_kwargs=None):
+        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
         loss = loss.item()
         loss_contributions = [contrib.item() for contrib in loss_contributions]
         return loss, loss_contributions
 
-    def forward_pass(self, batch_data, loss_functions):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
         """
         Forward pass of the model. Needs to be implemented by any subclass.
 
@@ -493,7 +496,10 @@ class ManifoldFlowTrainer(Trainer):
             x = x.to(self.device, self.dtype)
             self.model(x[:x.shape[0] // torch.cuda.device_count(), ...])
 
-    def forward_pass(self, batch_data, loss_functions):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+        if forward_kwargs is None:
+            forward_kwargs = {}
+
         x, y = batch_data
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
@@ -501,13 +507,16 @@ class ManifoldFlowTrainer(Trainer):
         if self.multi_gpu:
             x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x)
         else:
-            x_reco, log_prob, _ = self.model(x)
+            x_reco, log_prob, _ = self.model(x, **forward_kwargs)
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         return losses
 
 
 class ConditionalManifoldFlowTrainer(Trainer):
-    def forward_pass(self, batch_data, loss_functions):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+        if forward_kwargs is None:
+            forward_kwargs = {}
+
         x, params = batch_data
 
         if len(x.size()) < 2:
@@ -521,7 +530,7 @@ class ConditionalManifoldFlowTrainer(Trainer):
         if self.multi_gpu:
             x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
         else:
-            x_reco, log_prob, _ = self.model(x, context=params)
+            x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
 
