@@ -16,12 +16,26 @@ class ConditionalAffineScalarTransform(transforms.Transform):
     param_net takes as input the context with shape (batchsize, context_features) or None,
     its output has to have shape (batchsize, 2). """
 
-    def __init__(self, param_net):
+    def __init__(self, param_net=None, features=None):
         super().__init__()
 
-        self.param_net = param_net
+        if param_net is not None:
+            self.param_net = param_net
+            self.scale, self.shift = None, None
+        elif features is not None:
+            self.scale = torch.zeros(features)
+            self.shift = torch.zeros(features)
+            torch.nn.init.normal_(self.scale)
+            torch.nn.init.normal_(self.shift)
+            self.scale = torch.nn.Parameter(self.scale)
+            self.shift = torch.nn.Parameter(self.shift)
+            self.param_net = None
+        else:
+            raise ValueError("Either param_net or features has to be different from None")
 
     def get_scale_and_shift(self, context):
+        if self.param_net is None:
+            return self.scale, self.shift
         scale_and_shift = self.param_net(context)
         scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
         shift = scale_and_shift[:, 1].unsqueeze(1)
@@ -31,11 +45,12 @@ class ConditionalAffineScalarTransform(transforms.Transform):
         return scale, shift, logabsdet
 
     def forward(self, inputs, context=None):
-        scale_and_shift = self.param_net(context)
-        scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
-        shift = scale_and_shift[:, 1].unsqueeze(1)
-
-        # logger.debug("context: %s, scale: %s, shift: %s", context[0], scale[0], shift[0])
+        if self.param_net is None:
+            scale, shift = self.scale, self.shift
+        else:
+            scale_and_shift = self.param_net(context)
+            scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
+            shift = scale_and_shift[:, 1].unsqueeze(1)
 
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = inputs * scale + shift
@@ -44,9 +59,12 @@ class ConditionalAffineScalarTransform(transforms.Transform):
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
-        scale_and_shift = self.param_net(context)
-        scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
-        shift = scale_and_shift[:, 1].unsqueeze(1)
+        if self.param_net is None:
+            scale, shift = self.scale, self.shift
+        else:
+            scale_and_shift = self.param_net(context)
+            scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
+            shift = scale_and_shift[:, 1].unsqueeze(1)
 
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = (inputs - shift) / scale
