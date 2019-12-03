@@ -1,52 +1,15 @@
 import torch
-from torch import nn
 import logging
 
+from manifold_flow.transforms import Projection
 from manifold_flow.utils.various import product
-from experiments.utils import image_transforms, vector_transforms
 from manifold_flow import distributions, transforms
+from manifold_flow.flows import BaseFlow
 
 logger = logging.getLogger(__name__)
 
 
-class Projection(transforms.Transform):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.input_dim_total = product(input_dim)
-        self.output_dim_total = product(output_dim)
-        self.mode_in = "vector" if isinstance(input_dim, int) else "image"
-        self.mode_out = "vector" if isinstance(input_dim, int) else "image"
-
-        logger.debug("Set up projection from %s with dimension %s to %s with dimension %s", self.mode_in, self.input_dim, self.mode_out, self.output_dim)
-
-        assert self.input_dim_total >= self.output_dim_total, "Input dimension has to be larger than output dimension"
-
-    def forward(self, inputs, **kwargs):
-        if self.mode_in == "vector" and self.mode_out == "vector":
-            u = inputs[:, : self.output_dim]
-        elif self.mode_in == "image" and self.mode_out == "vector":
-            u = inputs.view(inputs.size(0), -1)
-            u = u[:, : self.output_dim]
-        else:
-            raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
-        return u
-
-    def inverse(self, inputs, **kwargs):
-        if self.mode_in == "vector" and self.mode_out == "vector":
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
-        elif self.mode_in == "image" and self.mode_out == "vector":
-            c, h, w = self.input_dim
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)), dim=1)
-            x = x.view(inputs.size(0), c, h, w)
-        else:
-            raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
-        return x
-
-
-class ManifoldFlow(nn.Module):
+class ManifoldFlow(BaseFlow):
     def __init__(
         self,
         data_dim,
@@ -132,9 +95,3 @@ class ManifoldFlow(nn.Module):
         log_prob = log_prob + log_det_outer + log_det_inner
 
         return log_prob
-
-    def _report_model_parameters(self):
-        all_params = sum(p.numel() for p in self.parameters())
-        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        size = all_params * (32 / 8)  # Bytes
-        logger.debug("Created manifold flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

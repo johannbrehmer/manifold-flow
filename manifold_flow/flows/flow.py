@@ -1,15 +1,13 @@
-from torch import nn
 import logging
 
-from experiments.utils import image_transforms, vector_transforms
 from manifold_flow.utils.various import product
 from manifold_flow import distributions
-
+from manifold_flow.flows import BaseFlow
 
 logger = logging.getLogger(__name__)
 
 
-class Flow(nn.Module):
+class Flow(BaseFlow):
     def __init__(self, data_dim, transform):
         super(Flow, self).__init__()
 
@@ -63,9 +61,3 @@ class Flow(nn.Module):
     def _encode(self, x, context=None):
         u, log_det = self.transform(x, context=context)
         return u, log_det
-
-    def _report_model_parameters(self):
-        all_params = sum(p.numel() for p in self.parameters())
-        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        size = all_params * (32 / 8)  # Bytes
-        logger.debug("Created standard flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f GB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e9)

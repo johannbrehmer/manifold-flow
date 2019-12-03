@@ -1,14 +1,15 @@
 import logging
 
-from manifold_flow.transforms import ProjectionSplit
 from manifold_flow.utils.various import product
 from manifold_flow import distributions, transforms
+from manifold_flow.transforms import ProjectionSplit
 from manifold_flow.flows import BaseFlow
+
 
 logger = logging.getLogger(__name__)
 
 
-class PIE(BaseFlow):
+class SliceOfPIE(BaseFlow):
     def __init__(
         self,
         data_dim,
@@ -18,7 +19,7 @@ class PIE(BaseFlow):
         epsilon=1.0e-3,
         apply_context_to_outer=True,
     ):
-        super(PIE, self).__init__()
+        super(SliceOfPIE, self).__init__()
 
         assert latent_dim < data_dim
 
@@ -41,11 +42,11 @@ class PIE(BaseFlow):
         self._report_model_parameters()
 
     def forward(self, x, context=None):
-        # Encode
-        u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
+        # Project to the manifold
+        x = self.project(x, context=context)
 
-        # Decode
-        x = self.decode(u, context=context)
+        # Encode (again, since the projection will probably affect log_det_outer)
+        u, h, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
         # Log prob
         log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
@@ -53,6 +54,9 @@ class PIE(BaseFlow):
         log_prob = log_prob + log_det_outer + log_det_inner
 
         return x, log_prob, u
+
+    def project(self, x, context=None):
+        return self.decode(self.encode(x, context), context)
 
     def encode(self, x, context=None):
         u, _, _, _, _ = self._encode(x, context=context)
@@ -68,7 +72,10 @@ class PIE(BaseFlow):
         return x
 
     def log_prob(self, x, context=None):
-        # Encode
+        # Project to the manifold
+        x = self.project(x, context=context)
+
+        # Encode (again, since the projection will probably affect log_det_outer)
         u, _, h_orthogonal, log_det_inner, log_det_outer = self._encode(x, context=context)
 
         # Log prob
