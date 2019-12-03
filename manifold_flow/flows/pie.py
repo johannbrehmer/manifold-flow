@@ -37,11 +37,12 @@ class ProjectionSplit(transforms.Transform):
         return u, rest
 
     def inverse(self, inputs, **kwargs):
+        orthogonal_inputs = kwargs.get("orthogonal_inputs", torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim))
         if self.mode_in == "vector" and self.mode_out == "vector":
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim - self.output_dim)), dim=1)
+            x = torch.cat((inputs, orthogonal_inputs), dim=1)
         elif self.mode_in == "image" and self.mode_out == "vector":
             c, h, w = self.input_dim
-            x = torch.cat((inputs, torch.zeros(inputs.size(0), self.input_dim_total - self.output_dim)), dim=1)
+            x = torch.cat((inputs, orthogonal_inputs), dim=1)
             x = x.view(inputs.size(0), c, h, w)
         else:
             raise NotImplementedError("Unsuppoorted projection modes {}, {}".format(self.mode_in, self.mode_out))
@@ -98,9 +99,12 @@ class PIE(nn.Module):
         u, _, _, _, _ = self._encode(x, context=context)
         return u
 
-    def decode(self, u, context=None):
+    def decode(self, u, u_orthogonal=None, context=None):
         h, _ = self.inner_transform.inverse(u, context=context)
-        h = self.projection.inverse(h)
+        if u_orthogonal is not None:
+            h = self.projection.inverse(h, orthogonal_inputs=u_orthogonal)
+        else:
+            h = self.projection.inverse(h)
         x, _ = self.outer_transform.inverse(h, context=context if self.apply_context_to_outer else None)
         return x
 
@@ -115,10 +119,11 @@ class PIE(nn.Module):
 
         return log_prob
 
-    def sample(self, u=None, n=1, context=None):
+    def sample(self, u=None, n=1, context=None, sample_orthogonal=False):
         if u is None:
             u = self.manifold_latent_distribution.sample(n, context=context)
-        x = self.decode(u)
+        u_orthogonal = self.orthogonal_latent_distribution.sample(n, context=context) if sample_orthogonal else None
+        x = self.decode(u, u_orthogonal=u_orthogonal)
         return x
 
     def _encode(self, x, context=None):
