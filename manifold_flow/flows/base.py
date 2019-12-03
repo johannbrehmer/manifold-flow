@@ -23,10 +23,6 @@ class BaseFlow(nn.Module):
     def sample(self, u=None, n=1, context=None):
         raise NotImplementedError
 
-    def _encode(self, x, context=None):
-        u, log_det = self.transform(x, context=context)
-        return u, log_det
-
     def _report_model_parameters(self):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
