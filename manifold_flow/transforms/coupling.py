@@ -150,12 +150,13 @@ class CouplingTransform(transforms.Transform):
             # timer.timer(start="Jacobian inverse coupling transform")
 
             if self.unconditional_transform is not None:
-                identity_split_after_unconditional_transform, jacobian_identity = self.unconditional_transform.inverse(
-                    identity_split, context, full_jacobian=True
-                )
+                # identity_split_after_unconditional_transform, jacobian_identity = self.unconditional_transform.inverse(
+                #     identity_split, context, full_jacobian=True
+                # )
+                raise NotImplementedError()
             else:
                 identity_split_after_unconditional_transform = identity_split
-                jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
+            #     jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
 
             transform_params = self.transform_net(identity_split, context)
 
@@ -165,10 +166,10 @@ class CouplingTransform(transforms.Transform):
             )
             jacobian_transform = various.batch_jacobian(transform_split, inputs)
 
-            # Put together full Jacobian\
+            # Put together full Jacobian
             batchsize = inputs.size(0)
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
-            (jacobian[:,self.identity_features, :])[:,:, self.identity_features] = jacobian_identity
+            jacobian[:,self.identity_features, self.identity_features] = 1.
             jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
