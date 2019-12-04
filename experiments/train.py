@@ -77,7 +77,7 @@ def train(args):
         learning_curves = trainer.train(
             loss_functions=[losses.mse],
             loss_labels=["MSE"],
-            loss_weights=[1.0],
+            loss_weights=[100.0],
             epochs=args.epochs // 3,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
             forward_kwargs={"mode": "projection"},
@@ -89,7 +89,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[1.0, 0.001],
+            loss_weights=[100.0, 0.01],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -103,7 +103,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[0.0, 1.0],
+            loss_weights=[1.0, 1.0],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
@@ -118,7 +118,7 @@ def train(args):
         learning_curves = trainer.train(
             loss_functions=[losses.mse],
             loss_labels=["MSE"],
-            loss_weights=[1.0],
+            loss_weights=[100.0],
             epochs=args.epochs // 3,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
             forward_kwargs={"mode": "projection"},
@@ -130,7 +130,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[1.0, 0.001],
+            loss_weights=[100.0, 0.01],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -144,7 +144,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[0.0, 1.0],
+            loss_weights=[1.0, 1.0],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
