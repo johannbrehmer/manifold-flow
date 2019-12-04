@@ -124,7 +124,11 @@ class ManifoldFlow(BaseFlow):
             log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
             log_prob = log_prob + log_det_outer + log_det_inner
         elif mode == "mf":
+            # The Jacobian calculated so far is du / dx, need to invert this to get to dx / du
+            jacobian_outer = torch.inverse(jacobian_outer)
+            # Next, have to restrict the u space to the manifold direction
             jacobian_outer = jacobian_outer[:, :, : self.latent_dim]
+            # And finally calculate log det (J^T J)
             jtj = torch.bmm(torch.transpose(jacobian_outer, -2, -1), jacobian_outer)
             log_det_outer = -0.5 * torch.slogdet(jtj)[1]
 

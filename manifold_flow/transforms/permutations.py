@@ -2,10 +2,13 @@
 
 import torch
 import numpy as np
+import logging
 
 from manifold_flow import transforms
 from manifold_flow.utils import various
-from experiments.utils import timer
+
+
+logger = logging.getLogger(__name__)
 
 
 class Permutation(transforms.Transform):
@@ -40,7 +43,7 @@ class Permutation(transforms.Transform):
             # The brute force way does not seem to work, not sure why, maybe index_select breaks autodiff
             # jacobian = utils.batch_jacobian(outputs, inputs)
 
-            timer.timer(start="Jacobian permutation")
+            # timer.timer(start="Jacobian permutation")
 
             # First build the Jacobian as a 2D matrix
             jacobian = torch.zeros((outputs.size()[dim], inputs.size()[dim]))
@@ -63,7 +66,8 @@ class Permutation(transforms.Transform):
             # Finally, view it as a (batch, n, n) Jacobian
             jacobian = jacobian.view((inputs.size()[0], np.prod(inputs.size()[1:]), np.prod(inputs.size()[1:])))
 
-            timer.timer(stop="Jacobian permutation")
+            # logger.debug("Jacobian from permutation: \n %s", jacobian[0])
+            # timer.timer(stop="Jacobian permutation")
 
             return outputs, jacobian
         else:

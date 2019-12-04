@@ -96,19 +96,22 @@ class CouplingTransform(transforms.Transform):
 
             if self.unconditional_transform is not None:
                 identity_split, jacobian_identity = self.unconditional_transform(identity_split, context)
-            else:
-                jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
+                raise NotImplementedError()
+            # else:
+            #     jacobian_identity = torch.eye(self.num_identity_features).unsqueeze(0)  # (1, n, n)
+            #     logger.debug("Identity Jacobian: %s", jacobian_identity[0])
 
             # Put together full Jacobian
             batchsize = inputs.size(0)
             jacobian = torch.zeros((batchsize,) + inputs.size()[1:] + inputs.size()[1:])
-            (jacobian[:,self.identity_features, :])[:,:, self.identity_features] = jacobian_identity
+            jacobian[:,self.identity_features, self.identity_features] = 1.
             jacobian[:,self.transform_features, :] = jacobian_transform
 
             outputs = torch.empty_like(inputs)
             outputs[:, self.identity_features, ...] = identity_split
             outputs[:, self.transform_features, ...] = transform_split
 
+            # logger.debug("Jacobian from coupling layer (identity features = %s): \n %s", self.identity_features, jacobian[0])
             # timer.timer(stop="Jacobian coupling transform")
 
             return outputs, jacobian

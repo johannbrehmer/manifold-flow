@@ -89,7 +89,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[1.0, 0.01],
+            loss_weights=[1.0, 0.001],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -130,7 +130,7 @@ def train(args):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
-            loss_weights=[1.0, 0.01],
+            loss_weights=[1.0, 0.001],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],

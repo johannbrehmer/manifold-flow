@@ -62,6 +62,8 @@ class CompositeTransform(Transform):
                 total_jacobian = jacobian if total_jacobian is None else torch.bmm(jacobian, total_jacobian)
                 # timer.timer(stop="Jacobian multiplication")
 
+            # logger.debug("Composite Jacobians \n %s", total_jacobian[0])
+
             return outputs, total_jacobian
 
         else:
