@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=mf-e-mf-csg
+#SBATCH --job-name=e-mf-csg
 #SBATCH --output=log_evaluate_mf_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
@@ -11,8 +11,6 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --datadim 9 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --datadim 9 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --datadim 12 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --datadim 16 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm mf --epsilon 0.1 --dir /scratch/jb6504/manifold-flow

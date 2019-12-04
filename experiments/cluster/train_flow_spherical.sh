@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=mf-t-sf-sg
+#SBATCH --job-name=t-sf-sg
 #SBATCH --output=log_train_flow_spherical.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
@@ -11,8 +11,6 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --dataset spherical_gaussian --algorithm flow --datadim 9 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --datadim 9 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --datadim 9 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --datadim 12 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --datadim 16 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.1 --dir /scratch/jb6504/manifold-flow

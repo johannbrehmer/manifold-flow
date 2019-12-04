@@ -45,51 +45,104 @@ def train(args):
     else:
         trainer = ConditionalManifoldFlowTrainer(model)
 
-    if args.algorithm in ["flow", "pie"]:
-        logger.info("Starting training on NLL")
+    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr":args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+
+    if args.algorithm == "pie":
+        logger.info("Starting training PIE on NLL")
         learning_curves = trainer.train(
-            dataset=dataset,
             loss_functions=[losses.nll],
             loss_labels=["NLL"],
             loss_weights=[1.0],
-            batch_size=args.batchsize,
-            epochs=args.epochs,
-            initial_lr=args.lr,
-            scheduler=optim.lr_scheduler.CosineAnnealingLR,
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+            forward_kwargs={"mode": "pie"},
+        )
+        learning_curves = np.vstack(learning_curves).T
+
+    elif args.algorithm == "flow":
+        logger.info("Starting training standard flow on NLL")
+        learning_curves = trainer.train(
+            loss_functions=[losses.nll],
+            loss_labels=["NLL"],
+            loss_weights=[1.0],
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         )
         learning_curves = np.vstack(learning_curves).T
-    else:
-        logger.info("Starting training on MSE")
+
+    elif args.algorithm == "slice":
+        logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
         learning_curves = trainer.train(
-            dataset=dataset,
             loss_functions=[losses.mse, losses.nll],
-            loss_labels=["MSE", "NLL"],
-            loss_weights=[args.alpha, args.beta],
-            batch_size=args.batchsize,
-            epochs=args.epochs // 2,
-            initial_lr=args.lr,
-            scheduler=optim.lr_scheduler.CosineAnnealingLR,
-            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_mse_{}.pt")],
+            loss_labels=["MSE"],
+            loss_weights=[1.0],
+            epochs=args.epochs // 3,
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
         )
         learning_curves = np.vstack(learning_curves).T
 
-        logger.info("Starting training only inner flow on NLL")
-        learning_curves2 = trainer.train(
-            dataset=dataset,
+        logger.info("Starting training slice of PIE, phase 2: mixed training")
+        learning_curves_ = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[1.0, 0.01],
+            epochs=args.epochs // 3,
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+            forward_kwargs={"mode": "slice"},
+        )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
+
+        logger.info("Starting training slice of PIE, phase 3: training only inner flow on NLL")
+        learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
             loss_weights=[0.0, 1.0],
-            batch_size=args.batchsize,
-            epochs=args.epochs // 2,
-            initial_lr=args.lr,
-            scheduler=optim.lr_scheduler.CosineAnnealingLR,
+            epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_nll_{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+            forward_kwargs={"mode": "slice"},
         )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
 
-        learning_curves2 = np.vstack(learning_curves2).T
-        learning_curves = np.vstack((learning_curves, learning_curves2))
+    else:
+        logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
+        learning_curves = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE"],
+            loss_weights=[1.0],
+            epochs=args.epochs // 3,
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
+        )
+        learning_curves = np.vstack(learning_curves).T
+
+        logger.info("Starting training MF, phase 2: mixed training")
+        learning_curves_ = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[1.0, 0.01],
+            epochs=args.epochs // 3,
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+            forward_kwargs={"mode": "mf"},
+        )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
+
+        logger.info("Starting training MF, phase 3: training only inner flow on NLL")
+        learning_curves_ = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[0.0, 1.0],
+            epochs=args.epochs // 3,
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+            forward_kwargs={"mode": "mf"},
+        )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
 
     # Save
     logger.info("Saving model")
@@ -101,29 +154,27 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--modelname", type=str, default=None, help="Model name.")
-    parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
+    parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf", "slice"])
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
-    parser.add_argument("--truelatentdim", type=int, default=8)
-    parser.add_argument("--datadim", type=int, default=9)
+    parser.add_argument("--truelatentdim", type=int, default=2)
+    parser.add_argument("--datadim", type=int, default=3)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
-    parser.add_argument("--modellatentdim", type=int, default=8)
+    parser.add_argument("--modellatentdim", type=int, default=2)
     parser.add_argument("--outertransform", type=str, default="affine-coupling")
     parser.add_argument("--innertransform", type=str, default="affine-coupling")
     parser.add_argument("--lineartransform", type=str, default="permutation")
-    parser.add_argument("--outerlayers", type=int, default=3)
+    parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--outercouplingmlp", action="store_true")
     parser.add_argument("--outercouplinglayers", type=int, default=3)
     parser.add_argument("--outercouplinghidden", type=int, default=256)
 
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=60)
     parser.add_argument("--batchsize", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1.0e-3)
-    parser.add_argument("--alpha", type=float, default=100.0)
-    parser.add_argument("--beta", type=float, default=1.0e-2)
 
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")

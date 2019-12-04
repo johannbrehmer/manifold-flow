@@ -42,10 +42,10 @@ def parse_args():
 
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
 
-    parser.add_argument("--truelatentdim", type=int, default=8)
-    parser.add_argument("--datadim", type=int, default=9)
+    parser.add_argument("--truelatentdim", type=int, default=2)
+    parser.add_argument("--datadim", type=int, default=3)
     parser.add_argument("--epsilon", type=float, default=0.01)
-    parser.add_argument("--train", type=int, default=1000000)
+    parser.add_argument("--train", type=int, default=100000)
     parser.add_argument("--test", type=int, default=1000)
 
     parser.add_argument("--dir", type=str, default="../")

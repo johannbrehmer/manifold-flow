@@ -55,17 +55,9 @@ def _create_model(args, context_features):
         transform = vector_transforms.create_transform(args.datadim, args.innerlayers + args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features)
         model = Flow(data_dim=args.datadim, transform=transform)
 
-    elif args.algorithm == "pie":
-        logger.info("Creating PIE with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
-
-        outer_transform = vector_transforms.create_transform(
-            args.datadim, args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None
-        )
-        inner_transform = vector_transforms.create_transform(args.modellatentdim, args.innerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.innertransform, context_features=context_features)
-        model = PIE(data_dim = args.datadim, latent_dim = args.modellatentdim, outer_transform=outer_transform, inner_transform=inner_transform, apply_context_to_outer=args.conditionalouter)
-
-    elif args.algorithm == "mf":
+    elif args.algorithm in ["pie", "mf", "slice"]:
         logger.info("Creating manifold flow with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
+
         outer_transform_kwargs = {}
         try:
             outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
@@ -75,9 +67,10 @@ def _create_model(args, context_features):
         except:
             pass
         outer_transform = vector_transforms.create_transform(
-            args.datadim, args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None, **outer_transform_kwargs
+            args.datadim, args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None
         )
         inner_transform = vector_transforms.create_transform(args.modellatentdim, args.innerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.innertransform, context_features=context_features)
+
         model = ManifoldFlow(
             data_dim=args.datadim,
             latent_dim=args.modellatentdim,
@@ -85,8 +78,10 @@ def _create_model(args, context_features):
             inner_transform=inner_transform,
             apply_context_to_outer=args.conditionalouter,
         )
+
     else:
         raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
+
     return model
 
 

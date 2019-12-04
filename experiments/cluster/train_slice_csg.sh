@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-pie-csg
-#SBATCH --output=log_train_pie_csg.log
+#SBATCH --job-name=t-sl-csg
+#SBATCH --output=log_train_slice_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
