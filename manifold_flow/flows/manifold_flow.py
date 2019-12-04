@@ -45,51 +45,29 @@ class ManifoldFlow(BaseFlow):
         """ mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
         (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all). """
 
-        assert mode in ["mf", "pie", "slice", "projection"]
-
-        # Project to the manifold
-        if mode == "slice":
-            x = self.project(x, context=context)
+        assert mode in ["mf", "pie", "slice", "projection", "pie-inv"]
 
         # Encode
-        u, h_manifold, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer = self._encode(x, mode, context)
+        u, h_manifold, h_orthogonal, log_det_outer, log_det_inner = self._encode(x, context)
 
         # Decode
-        if not mode == "slice":
-            x = self.decode(u, context=context)
+        x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self.decode(u, context=context)
 
         # Log prob
-        log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer)
+        log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
         return x, log_prob, u
 
     def encode(self, x, context=None):
-        u, _, _, _, _, _ = self._encode(x, mode="projection", context=context)
+        u, _, _, _, _ = self._encode(x, context=context)
         return u
 
     def decode(self, u, u_orthogonal=None, context=None):
-        h, _ = self.inner_transform.inverse(u, context=context)
-        if u_orthogonal is not None:
-            h = self.projection.inverse(h, orthogonal_inputs=u_orthogonal)
-        else:
-            h = self.projection.inverse(h)
-        x, _ = self.outer_transform.inverse(h, context=context if self.apply_context_to_outer else None)
+        x, _, _, _ = self._decode(u, u_orthogonal=u_orthogonal, context=context, mode="projection")
         return x
 
     def log_prob(self, x, mode="mf", context=None):
-        assert mode in ["mf", "pie", "slice", "projection"]
-
-        # Project to the manifold
-        if mode == "slice":
-            x = self.project(x, context=context)
-
-        # Encode
-        u, _, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer = self._encode(x, mode, context)
-
-        # Log prob
-        log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer)
-
-        return log_prob
+        return self.forward(x, mode, context)[1]
 
     def sample(self, u=None, n=1, context=None, sample_orthogonal=False):
         """ Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently."""
@@ -100,40 +78,59 @@ class ManifoldFlow(BaseFlow):
         x = self.decode(u, u_orthogonal=u_orthogonal)
         return x
 
-    def _encode(self, x, mode, context=None):
-        assert mode in ["mf", "pie", "slice", "projection"]
-
+    def _encode(self, x, context=None):
         # Encode
-        if mode in ["pie", "slice", "projection"]:
-            h, log_det_outer = self.outer_transform(x, context=context if self.apply_context_to_outer else None)
-            jacobian_outer = None
-        else:
-            x.requires_grad = True
-            h, jacobian_outer = self.outer_transform(x, full_jacobian=True, context=context if self.apply_context_to_outer else None)
-            log_det_outer = None
+        h, log_det_outer = self.outer_transform(x, full_jacobian=False, context=context if self.apply_context_to_outer else None)
         h_manifold, h_orthogonal = self.projection(h)
         u, log_det_inner = self.inner_transform(h_manifold, context=context)
 
-        return u, h_manifold, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer
+        return u, h_manifold, h_orthogonal, log_det_outer, log_det_inner
 
-    def _log_prob(self, mode, u, h_orthogonal, log_det_inner, log_det_outer, jacobian_outer):
-        assert mode in ["mf", "pie", "slice", "projection"]
+    def _decode(self, u, mode, u_orthogonal=None, context=None):
+        if mode == "mf":
+            u.requires_grad = True
 
-        if mode in ["pie", "slice"]:
+        h, inv_log_det_inner = self.inner_transform.inverse(u, full_jacobian=False, context=context)
+
+        if u_orthogonal is not None:
+            h = self.projection.inverse(h, orthogonal_inputs=u_orthogonal)
+        else:
+            h = self.projection.inverse(h)
+
+        if mode in ["pie", "slice", "projection"]:
+            x, inv_log_det_outer = self.outer_transform.inverse(h, full_jacobian=False, context=context if self.apply_context_to_outer else None)
+            inv_jacobian_outer = None
+        else:
+            x, inv_jacobian_outer = self.outer_transform.inverse(h, full_jacobian=True, context=context if self.apply_context_to_outer else None)
+            inv_log_det_outer = None
+
+        return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer
+
+    def _log_prob(self, mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
+        if mode == "pie":
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
             log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
             log_prob = log_prob + log_det_outer + log_det_inner
+
+        elif mode == "pie-inv":
+            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+            log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
+            log_prob = log_prob - inv_log_det_outer - inv_log_det_inner
+
+        elif mode == "slice":
+            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+            log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(torch.zeros_like(h_orthogonal), context=None)
+            log_prob = log_prob - inv_log_det_outer - inv_log_det_inner
+
         elif mode == "mf":
-            # The Jacobian calculated so far is du / dx, need to invert this to get to dx / du
-            jacobian_outer = torch.inverse(jacobian_outer)
-            # Next, have to restrict the u space to the manifold direction
-            jacobian_outer = jacobian_outer[:, :, : self.latent_dim]
+            # inv_jacobian_outer is dx / du, but still need to restrict this to the manifold latents
+            inv_jacobian_outer = inv_jacobian_outer[:, :, : self.latent_dim]
             # And finally calculate log det (J^T J)
-            jtj = torch.bmm(torch.transpose(jacobian_outer, -2, -1), jacobian_outer)
-            log_det_outer = -0.5 * torch.slogdet(jtj)[1]
+            jtj = torch.bmm(torch.transpose(inv_jacobian_outer, -2, -1), inv_jacobian_outer)
 
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
-            log_prob = log_prob + log_det_outer + log_det_inner
+            log_prob = log_prob - 0.5 * torch.slogdet(jtj)[1] - inv_log_det_inner
+
         else:
             log_prob = None
 
