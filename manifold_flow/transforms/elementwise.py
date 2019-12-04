@@ -44,7 +44,10 @@ class ConditionalAffineScalarTransform(transforms.Transform):
         logabsdet = torch.log(torch.abs(scale.squeeze()) + 1.e-6) * num_dims
         return scale, shift, logabsdet
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         if self.param_net is None:
             scale, shift = self.scale, self.shift
         else:
@@ -58,7 +61,10 @@ class ConditionalAffineScalarTransform(transforms.Transform):
 
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         if self.param_net is None:
             scale, shift = self.scale, self.shift
         else:

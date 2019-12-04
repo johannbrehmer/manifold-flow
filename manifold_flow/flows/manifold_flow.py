@@ -47,11 +47,14 @@ class ManifoldFlow(BaseFlow):
 
         assert mode in ["mf", "pie", "slice", "projection", "pie-inv"]
 
+        if mode == "mf":
+            x.requires_grad = True
+
         # Encode
         u, h_manifold, h_orthogonal, log_det_outer, log_det_inner = self._encode(x, context)
 
         # Decode
-        x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self.decode(u, context=context)
+        x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self._decode(u, mode=mode, context=context)
 
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
@@ -63,7 +66,7 @@ class ManifoldFlow(BaseFlow):
         return u
 
     def decode(self, u, u_orthogonal=None, context=None):
-        x, _, _, _ = self._decode(u, u_orthogonal=u_orthogonal, context=context, mode="projection")
+        x, _, _, _ = self._decode(u, mode="projection", u_orthogonal=u_orthogonal, context=context)
         return x
 
     def log_prob(self, x, mode="mf", context=None):
@@ -82,12 +85,12 @@ class ManifoldFlow(BaseFlow):
         # Encode
         h, log_det_outer = self.outer_transform(x, full_jacobian=False, context=context if self.apply_context_to_outer else None)
         h_manifold, h_orthogonal = self.projection(h)
-        u, log_det_inner = self.inner_transform(h_manifold, context=context)
+        u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
 
         return u, h_manifold, h_orthogonal, log_det_outer, log_det_inner
 
     def _decode(self, u, mode, u_orthogonal=None, context=None):
-        if mode == "mf":
+        if mode == "mf" and not u.requires_grad:
             u.requires_grad = True
 
         h, inv_log_det_inner = self.inner_transform.inverse(u, full_jacobian=False, context=context)
