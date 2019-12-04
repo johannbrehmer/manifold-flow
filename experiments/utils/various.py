@@ -4,7 +4,7 @@ import logging
 
 from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator
 from experiments.utils import vector_transforms
-from manifold_flow.flows import Flow, PIE, ManifoldFlow
+from manifold_flow.flows import Flow, ManifoldFlow
 from manifold_flow.training import NumpyDataset
 
 logger = logging.getLogger(__name__)

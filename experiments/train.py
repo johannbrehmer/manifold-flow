@@ -53,8 +53,10 @@ def train(args):
             loss_functions=[losses.nll],
             loss_labels=["NLL"],
             loss_weights=[1.0],
+            epochs=args.epochs,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
             forward_kwargs={"mode": "pie"},
+            **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
 
@@ -64,19 +66,22 @@ def train(args):
             loss_functions=[losses.nll],
             loss_labels=["NLL"],
             loss_weights=[1.0],
+            epochs=args.epochs,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+            **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
 
     elif args.algorithm == "slice":
         logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
         learning_curves = trainer.train(
-            loss_functions=[losses.mse, losses.nll],
+            loss_functions=[losses.mse],
             loss_labels=["MSE"],
             loss_weights=[1.0],
             epochs=args.epochs // 3,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
             forward_kwargs={"mode": "projection"},
+            **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
 
@@ -89,6 +94,7 @@ def train(args):
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "slice"},
+            **common_kwargs,
         )
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = np.vstack((learning_curves, learning_curves_))
@@ -102,6 +108,7 @@ def train(args):
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
             forward_kwargs={"mode": "slice"},
+            **common_kwargs,
         )
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = np.vstack((learning_curves, learning_curves_))
@@ -109,12 +116,13 @@ def train(args):
     else:
         logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
         learning_curves = trainer.train(
-            loss_functions=[losses.mse, losses.nll],
+            loss_functions=[losses.mse],
             loss_labels=["MSE"],
             loss_weights=[1.0],
             epochs=args.epochs // 3,
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
             forward_kwargs={"mode": "projection"},
+            **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
 
@@ -127,6 +135,7 @@ def train(args):
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "mf"},
+            **common_kwargs,
         )
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = np.vstack((learning_curves, learning_curves_))
@@ -140,6 +149,7 @@ def train(args):
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
             forward_kwargs={"mode": "mf"},
+            **common_kwargs,
         )
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = np.vstack((learning_curves, learning_curves_))

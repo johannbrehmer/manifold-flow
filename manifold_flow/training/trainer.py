@@ -171,8 +171,10 @@ class Trainer(object):
         # Loop over epochs
         for i_epoch in range(epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
+
+            # LR schedule
             if sched is not None:
-                logger.debug("  Learning rate: %s", sched.get_lr())
+                logger.debug("  Learning rate: %s", sched.get_lr()[0])
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
@@ -225,7 +227,7 @@ class Trainer(object):
                 for callback in callbacks:
                     callback(i_epoch, self.model, loss_train, loss_val)
 
-            # LR schedule
+            # LR scheduler
             if sched is not None:
                 sched.step(i_epoch)
                 if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
