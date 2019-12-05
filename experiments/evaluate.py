@@ -96,7 +96,7 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
-def _mcmc(simulator, model=None, n_samples=1, n_mcmc_samples=1000, slice_sampling=False, step=0.5, thin=1, burnin=100):
+def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.5, thin=10, burnin=100):
     # George's settings: thin = 10, n_mcmc_samples = 5000, burnin = 100
 
     logger.info(

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=mf-t-sf-csg
+#SBATCH --job-name=t-sf-csg
 #SBATCH --output=log_train_flow_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
