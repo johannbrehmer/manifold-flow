@@ -7,7 +7,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
-from tqdm import tqdm
+# from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,8 @@ class Trainer(object):
         losses_train, losses_val = [], []
 
         # Loop over epochs
-        for i_epoch in tqdm(range(epochs)):
+        #for i_epoch in tqdm(range(epochs)):
+        for i_epoch in range(epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
             # LR schedule
