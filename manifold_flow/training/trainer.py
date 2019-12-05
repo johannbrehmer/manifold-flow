@@ -5,8 +5,8 @@ from torch import optim, nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-from matplotlib import pyplot as plt
-from sklearn.manifold import TSNE
+# from matplotlib import pyplot as plt
+# from sklearn.manifold import TSNE
 # from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ class Trainer(object):
         losses_train, losses_val = [], []
 
         # Loop over epochs
-        #for i_epoch in tqdm(range(epochs)):
+        # for i_epoch in tqdm(range(epochs)):
         for i_epoch in range(epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
@@ -487,11 +487,6 @@ class Trainer(object):
 
 
 class ManifoldFlowTrainer(Trainer):
-    def __init__(
-        self, model, run_on_gpu=True, double_precision=False
-    ):
-        super().__init__(model, run_on_gpu, double_precision)
-
     def first_batch(self, batch_data):
         if self.multi_gpu:
             x, y = batch_data
@@ -509,7 +504,7 @@ class ManifoldFlowTrainer(Trainer):
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
         if self.multi_gpu:
-            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x)
+            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
             x_reco, log_prob, _ = self.model(x, **forward_kwargs)
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
@@ -541,69 +536,108 @@ class ConditionalManifoldFlowTrainer(Trainer):
         return losses
 
 
-class ImageManifoldFlowTrainer(ManifoldFlowTrainer):
-    def __init__(
-        self, model, run_on_gpu=True, double_precision=False, output_filename=None
-    ):
-        super().__init__(model, run_on_gpu, double_precision)
-        self.output_filename = output_filename
-
-    def report_batch(self, i_epoch, i_batch, train, batch_data):
-        if i_batch > 0 or (not train) or self.output_filename is None:
-            return
+class GenerativeTrainer(Trainer):
+    # TODO: multi-GPU support
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+        if forward_kwargs is None:
+            forward_kwargs = {}
 
         x, y = batch_data
-        resolution = x.size()[1]
-        x = x.view(x.size(0), -1)
+        batch_size = x.size(0)
+        if len(x.size()) < 2:
+            x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)
-        x_out, _, u = self.model(x)
 
-        x = x.detach().numpy().reshape(-1, resolution, resolution)
-        x_out = x_out.detach().numpy().reshape(-1, resolution, resolution)
-        u = u.detach().numpy().reshape(x_out.shape[0], -1)
-        y = y.detach().numpy().astype(np.int).reshape(-1)
-        tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u)
+        x_gen = self.model.sample(n=batch_size, **forward_kwargs)
+        losses = [loss_fn(x_gen, x, None) for loss_fn in loss_functions]
+        return losses
 
-        plt.figure(figsize=(5, 5))
-        for i in range(10):
-            plt.scatter(
-                u[y == i][:, 0],
-                u[y == i][:, 1],
-                s=15.0,
-                alpha=1.0,
-                label="{}".format(i + 1),
-            )
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
-        plt.close()
 
-        plt.figure(figsize=(5, 5))
-        for i in range(10):
-            plt.scatter(
-                tsne[y == i][:, 0],
-                tsne[y == i][:, 1],
-                s=15.0,
-                alpha=1.0,
-                label="{}".format(i + 1),
-            )
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
-        plt.close()
+class ConditionalGenerativeTrainer(GenerativeTrainer):
+    # TODO: multi-GPU support
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+        if forward_kwargs is None:
+            forward_kwargs = {}
 
-        plt.figure(figsize=(10, 10))
-        for i in range(8):
-            plt.subplot(4, 4, 2 * i + 1)
-            plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-            plt.subplot(4, 4, 2 * i + 2)
-            plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-        plt.tight_layout()
-        plt.savefig(
-            "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
-        )
-        plt.close()
+        x, params = batch_data
+        batch_size = x.size(0)
+
+        if len(x.size()) < 2:
+            x = x.view(batch_size, -1)
+        if len(params.size()) < 2:
+            params = params.view(batch_size, -1)
+
+        x = x.to(self.device, self.dtype)
+        params = params.to(self.device, self.dtype)
+
+        x_gen = self.model.sample(x, n=batch_size, context=params, **forward_kwargs)
+        losses = [loss_fn(x_gen, x, None) for loss_fn in loss_functions]
+        return losses
+
+
+# class ImageManifoldFlowTrainer(ManifoldFlowTrainer):
+#     def __init__(
+#         self, model, run_on_gpu=True, double_precision=False, output_filename=None
+#     ):
+#         super().__init__(model, run_on_gpu, double_precision)
+#         self.output_filename = output_filename
+#
+#     def report_batch(self, i_epoch, i_batch, train, batch_data):
+#         if i_batch > 0 or (not train) or self.output_filename is None:
+#             return
+#
+#         x, y = batch_data
+#         resolution = x.size()[1]
+#         x = x.view(x.size(0), -1)
+#         x = x.to(self.device, self.dtype)
+#         x_out, _, u = self.model(x)
+#
+#         x = x.detach().numpy().reshape(-1, resolution, resolution)
+#         x_out = x_out.detach().numpy().reshape(-1, resolution, resolution)
+#         u = u.detach().numpy().reshape(x_out.shape[0], -1)
+#         y = y.detach().numpy().astype(np.int).reshape(-1)
+#         tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300).fit_transform(u)
+#
+#         plt.figure(figsize=(5, 5))
+#         for i in range(10):
+#             plt.scatter(
+#                 u[y == i][:, 0],
+#                 u[y == i][:, 1],
+#                 s=15.0,
+#                 alpha=1.0,
+#                 label="{}".format(i + 1),
+#             )
+#         plt.legend()
+#         plt.tight_layout()
+#         plt.savefig("{}_latent_epoch{}.pdf".format(self.output_filename, i_epoch))
+#         plt.close()
+#
+#         plt.figure(figsize=(5, 5))
+#         for i in range(10):
+#             plt.scatter(
+#                 tsne[y == i][:, 0],
+#                 tsne[y == i][:, 1],
+#                 s=15.0,
+#                 alpha=1.0,
+#                 label="{}".format(i + 1),
+#             )
+#         plt.legend()
+#         plt.tight_layout()
+#         plt.savefig("{}_latent_tsne_epoch{}.pdf".format(self.output_filename, i_epoch))
+#         plt.close()
+#
+#         plt.figure(figsize=(10, 10))
+#         for i in range(8):
+#             plt.subplot(4, 4, 2 * i + 1)
+#             plt.imshow(x[i, :, :], vmin=-1.1, vmax=1.1)
+#             plt.gca().get_xaxis().set_visible(False)
+#             plt.gca().get_yaxis().set_visible(False)
+#             plt.subplot(4, 4, 2 * i + 2)
+#             plt.imshow(x_out[i, :, :], vmin=-1.1, vmax=1.1)
+#             plt.gca().get_xaxis().set_visible(False)
+#             plt.gca().get_yaxis().set_visible(False)
+#         plt.tight_layout()
+#         plt.savefig(
+#             "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
+#         )
+#         plt.close()
