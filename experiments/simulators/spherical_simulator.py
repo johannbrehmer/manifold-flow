@@ -30,9 +30,7 @@ class SphericalGaussianSimulator(BaseSimulator):
         return None
 
     def log_density(self, x, parameters=None, precise=False):
-        logger.debug("Evaluating true log density for x = %s", x[0])
         z_phi, z_eps = self._transform_x_to_z(x)
-        logger.debug("Latent variables: z_phi = %s, z_eps = %s", z_phi[0], z_eps[0])
         logp = self._log_density(z_phi, z_eps, precise=precise)
         return logp
 

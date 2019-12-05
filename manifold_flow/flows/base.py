@@ -27,4 +27,4 @@ class BaseFlow(nn.Module):
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes
-        logger.debug("Created standard flow with %.1f M parameters (%.1f M trainable) with an estimated size of %.1f <B", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e6)
+        logger.debug("Flow has %.1f M parameters (%.1f M trainable) with an estimated size of %.1f MB", all_params / 1e6, trainable_params / 1.0e6, size / 1.0e6)
