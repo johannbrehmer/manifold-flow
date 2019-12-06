@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-hybrid-csg
+#SBATCH --job-name=t-hy-csg
 #SBATCH --output=log_train_hybrid_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
