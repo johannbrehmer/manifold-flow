@@ -12,6 +12,23 @@ from experiments.utils.various import _load_simulator, _filename
 logger = logging.getLogger(__name__)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
+
+    parser.add_argument("--truelatentdim", type=int, default=2)
+    parser.add_argument("--datadim", type=int, default=3)
+    parser.add_argument("--epsilon", type=float, default=0.01)
+    parser.add_argument("--train", type=int, default=100000)
+    parser.add_argument("--test", type=int, default=1000)
+
+    parser.add_argument("--dir", type=str, default="../")
+    parser.add_argument("--debug", action="store_true")
+
+    return parser.parse_args()
+
+
 def generate(args):
     # Simulator
     simulator = _load_simulator(args)
@@ -35,23 +52,6 @@ def generate(args):
     if conditional:
         np.save(_filename("sample", "parameters_train", args), parameters_train)
         np.save(_filename("sample", "parameters_test", args), parameters_test)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
-
-    parser.add_argument("--truelatentdim", type=int, default=2)
-    parser.add_argument("--datadim", type=int, default=3)
-    parser.add_argument("--epsilon", type=float, default=0.01)
-    parser.add_argument("--train", type=int, default=100000)
-    parser.add_argument("--test", type=int, default=1000)
-
-    parser.add_argument("--dir", type=str, default="../")
-    parser.add_argument("--debug", action="store_true")
-
-    return parser.parse_args()
 
 
 if __name__ == "__main__":

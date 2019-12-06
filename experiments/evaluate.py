@@ -11,8 +11,36 @@ sys.path.append("../")
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
 from experiments.utils.various import _load_simulator, _create_model, _filename, _create_modelname
 from experiments.utils.various import _load_test_samples
+from experiments import utils
 
 logger = logging.getLogger(__name__)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--modelname", type=str, default=None, help="Model name.")
+    parser.add_argument("--algorithm", type=str, default="mf", choices=utils.ALGORITHMS)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=utils.SIMULATORS)
+
+    parser.add_argument("--conditionalouter", action="store_true")
+    parser.add_argument("--truelatentdim", type=int, default=2)
+    parser.add_argument("--datadim", type=int, default=3)
+    parser.add_argument("--epsilon", type=float, default=0.01)
+
+    parser.add_argument("--modellatentdim", type=int, default=2)
+    parser.add_argument("--outertransform", type=str, default="affine-coupling")
+    parser.add_argument("--innertransform", type=str, default="affine-coupling")
+    parser.add_argument("--lineartransform", type=str, default="permutation")
+    parser.add_argument("--outerlayers", type=int, default=5)
+    parser.add_argument("--innerlayers", type=int, default=5)
+
+    parser.add_argument("--generate", type=int, default=1000)
+    parser.add_argument("--observedsamples", type=int, default=10)
+    parser.add_argument("--dir", type=str, default="../")
+    parser.add_argument("--debug", action="store_true")
+
+    return parser.parse_args()
 
 
 def evaluate_samples(args):
@@ -155,33 +183,6 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
     # timer.report()
 
     return posterior_samples
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--modelname", type=str, default=None, help="Model name.")
-    parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
-
-    parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--truelatentdim", type=int, default=8)
-    parser.add_argument("--datadim", type=int, default=9)
-    parser.add_argument("--epsilon", type=float, default=0.01)
-
-    parser.add_argument("--modellatentdim", type=int, default=8)
-    parser.add_argument("--outertransform", type=str, default="affine-coupling")
-    parser.add_argument("--innertransform", type=str, default="affine-coupling")
-    parser.add_argument("--lineartransform", type=str, default="permutation")
-    parser.add_argument("--outerlayers", type=int, default=3)
-    parser.add_argument("--innerlayers", type=int, default=5)
-
-    parser.add_argument("--generate", type=int, default=1000)
-    parser.add_argument("--observedsamples", type=int, default=10)
-    parser.add_argument("--dir", type=str, default="../")
-    parser.add_argument("--debug", action="store_true")
-
-    return parser.parse_args()
 
 
 if __name__ == "__main__":

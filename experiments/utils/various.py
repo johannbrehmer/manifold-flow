@@ -10,6 +10,10 @@ from manifold_flow.training import NumpyDataset
 logger = logging.getLogger(__name__)
 
 
+SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian"]
+ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid"]
+
+
 def _filename(type, label, args):
     if type == "sample":
         filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
@@ -39,7 +43,13 @@ def _filename(type, label, args):
     return filename
 
 
+def _create_modelname(args):
+    if args.modelname is None:
+        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
+
+
 def _load_simulator(args):
+    assert args.dataset in SIMULATORS
     if args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
@@ -50,12 +60,14 @@ def _load_simulator(args):
 
 
 def _create_model(args, context_features):
+    assert args.algorithm in ALGORITHMS
+
     if args.algorithm == "flow":
         logger.info("Creating standard flow with %s layers, transform %s, %s context features", args.innerlayers + args.outerlayers, args.outertransform, context_features)
         transform = vector_transforms.create_transform(args.datadim, args.innerlayers + args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features)
         model = Flow(data_dim=args.datadim, transform=transform)
 
-    elif args.algorithm in ["pie", "mf", "slice"]:
+    else:
         logger.info("Creating manifold flow with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
 
         outer_transform_kwargs = {}
@@ -79,13 +91,11 @@ def _create_model(args, context_features):
             apply_context_to_outer=args.conditionalouter,
         )
 
-    else:
-        raise NotImplementedError("Unknown algorithm {}".format(args.algorithm))
-
     return model
 
 
 def _load_training_dataset(args):
+    assert args.dataset in SIMULATORS
     if args.dataset == "spherical_gaussian":
         x = np.load(_filename("sample", "x_train", args))
         params = np.ones(x.shape[0])
@@ -101,8 +111,3 @@ def _load_training_dataset(args):
 
 def _load_test_samples(args):
     return np.load(_filename("sample", "x_test", args))
-
-
-def _create_modelname(args):
-    if args.modelname is None:
-        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
