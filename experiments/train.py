@@ -241,7 +241,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
 
 def _train_slice_of_pie(args, dataset, model, simulator):
     logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
-    trainer = ManifoldFlowTrainer(model)
+    trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     learning_curves = trainer.train(
         loss_functions=[losses.mse],
@@ -283,7 +283,7 @@ def _train_slice_of_pie(args, dataset, model, simulator):
 
 
 def _train_flow(args, dataset, model, simulator):
-    trainer = ManifoldFlowTrainer(model)
+    trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     learning_curves = trainer.train(
@@ -299,7 +299,7 @@ def _train_flow(args, dataset, model, simulator):
 
 
 def _train_pie(args, dataset, model, simulator):
-    trainer = ManifoldFlowTrainer(model)
+    trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training PIE on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     learning_curves = trainer.train(
