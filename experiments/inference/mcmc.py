@@ -171,14 +171,14 @@ class SliceSampler(MCMC_Sampler):
             self.L = self.lp_f(self.x)
 
             if (n+1) % 100 == 0:
-                logger.info('MCMC after sample {0}: log likelihood = {2:.2f}'.format(n+1, self.L))
+                logger.info('MCMC after sample {0}: log likelihood = {1:.2f}'.format(n+1, self.L))
             else:
-                logger.debug('MCMC after sample {0}: log likelihood = {2:.2f}'.format(n+1, self.L))
+                logger.debug('MCMC after sample {0}: log likelihood = {1:.2f}'.format(n+1, self.L))
 
             if show_info:
                 L_trace.append(self.L)
 
-        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
+        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {1:.2f}'.format(n+1, self.L))
 
         # show trace plot
         if show_info:

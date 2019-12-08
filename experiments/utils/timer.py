@@ -16,7 +16,7 @@ def reset():
 
 
 def timer(start=None, stop=None):
-    global timer, time_started
+    global _timer, _time_started
 
     if start is not None:
         _time_started[start] = time.time()
