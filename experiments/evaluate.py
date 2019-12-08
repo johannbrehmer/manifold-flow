@@ -9,8 +9,9 @@ import argparse
 sys.path.append("../")
 
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils.various import _load_simulator, _create_model, _filename, _create_modelname
-from experiments.utils.various import _load_test_samples
+from experiments.utils.various import load_simulator, create_filename, create_modelname
+from experiments.utils.models import create_model
+from experiments.utils.various import load_test_samples
 from experiments import utils
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ def parse_args():
 
 def evaluate_samples(args):
     # Model name
-    _create_modelname(args)
+    create_modelname(args)
 
     logger.info("Evaluating model %s on generation tasks", args.modelname)
 
@@ -53,14 +54,14 @@ def evaluate_samples(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
-    simulator = _load_simulator(args)
+    simulator = load_simulator(args)
 
     if simulator.parameter_dim() is not None:
         logger.info("Data set %s has parameters, skipping generative evaluation", args.dataset)
         return
 
     # Model
-    model = _create_model(args, context_features=simulator.parameter_dim())
+    model = create_model(args, simulator)
 
     # Generate data
     x_gen = _sample_from_model(args, model)
@@ -71,7 +72,7 @@ def evaluate_samples(args):
 
 def evaluate_inference(args):
     # Model name
-    _create_modelname(args)
+    create_modelname(args)
 
     logger.info("Evaluating model %s on inference tasks", args.modelname)
 
@@ -79,32 +80,32 @@ def evaluate_inference(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
-    simulator = _load_simulator(args)
+    simulator = load_simulator(args)
 
     if simulator.parameter_dim() is None:
         logger.info("Data set %s has no parameters, skipping inference evaluation", args.dataset)
         return
 
     # Model
-    model = _create_model(args, context_features=simulator.parameter_dim())
-    model.load_state_dict(torch.load(_filename("model", None, args), map_location=torch.device("cpu")))
+    model = create_model(args, context_features=simulator.parameter_dim())
+    model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
 
     # Evaluate MMD
     model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples)
-    np.save(_filename("results", "model_posterior_samples", args), model_posterior_samples)
+    np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
     true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples)
-    np.save(_filename("results", "true_posterior_samples", args), true_posterior_samples)
+    np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
     mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-    np.save(_filename("results", "mmd", args), mmd)
+    np.save(create_filename("results", "mmd", args), mmd)
     logger.info("MMD between model and true posterior samples: %s", mmd)
 
 
 def _sample_from_model(args, model):
     logger.info("Sampling from model")
     x_gen = model.sample(n=args.generate).detach().numpy()
-    np.save(_filename("results", "samples", args), x_gen)
+    np.save(create_filename("results", "samples", args), x_gen)
     return x_gen
 
 
@@ -113,13 +114,13 @@ def _evaluate_model_samples(args, simulator, x_gen):
     logger.info("Calculating likelihood of generated samples")
     log_likelihood_gen = simulator.log_density(x_gen)
     log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.0e-12
-    np.save(_filename("results", "samples_likelihood", args), log_likelihood_gen)
+    np.save(create_filename("results", "samples_likelihood", args), log_likelihood_gen)
 
     # Distance from manifold
     try:
         logger.info("Calculating distance from manifold of generated samples")
         distances_gen = simulator.distance_from_manifold(x_gen)
-        np.save(_filename("results", "samples_manifold_distance", args), distances_gen)
+        np.save(create_filename("results", "samples_manifold_distance", args), distances_gen)
     except NotImplementedError:
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
@@ -137,7 +138,7 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
 
     # Data
     true_parameters = simulator.default_parameters()
-    x_obs = _load_test_samples(args)[:n_samples]
+    x_obs = load_test_samples(args)[:n_samples]
     x_obs_ = torch.tensor(x_obs, dtype=torch.float)
 
     if model is None:
@@ -154,7 +155,7 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
         # MCMC based on neural likelihood estimator
         def log_posterior(params):
             # timer.timer(start="nde likelihood")
-            params_ = np.broadcast_to(params.reshape((-1,  params.shape[-1])), (x_obs.shape[0], params.shape[-1]))
+            params_ = np.broadcast_to(params.reshape((-1, params.shape[-1])), (x_obs.shape[0], params.shape[-1]))
             params_ = torch.tensor(params_, dtype=torch.float)
             log_prob = np.sum(model.log_prob(torch.tensor(x_obs_), context=params_).detach().numpy())
             # timer.timer(stop="nde likelihood", start="nde prior")

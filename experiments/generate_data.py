@@ -7,7 +7,7 @@ import logging
 
 sys.path.append("../")
 
-from experiments.utils.various import _load_simulator, _filename
+from experiments.utils.various import load_simulator, create_filename
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def parse_args():
 
 def generate(args):
     # Simulator
-    simulator = _load_simulator(args)
+    simulator = load_simulator(args)
 
     # Parameters?
     conditional = simulator.parameter_dim() is not None
@@ -47,11 +47,11 @@ def generate(args):
     x_test = simulator.sample(args.test, parameters=parameters_test)
 
     # Save
-    np.save(_filename("sample", "x_train", args), x_train)
-    np.save(_filename("sample", "x_test", args), x_test)
+    np.save(create_filename("sample", "x_train", args), x_train)
+    np.save(create_filename("sample", "x_test", args), x_test)
     if conditional:
-        np.save(_filename("sample", "parameters_train", args), parameters_train)
-        np.save(_filename("sample", "parameters_test", args), parameters_test)
+        np.save(create_filename("sample", "parameters_train", args), parameters_train)
+        np.save(create_filename("sample", "parameters_test", args), parameters_test)
 
 
 if __name__ == "__main__":

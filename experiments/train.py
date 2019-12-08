@@ -10,7 +10,8 @@ from torch import optim
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks, GenerativeTrainer, ConditionalGenerativeTrainer
-from experiments.utils.various import _create_model, _filename, _load_training_dataset, _create_modelname, _load_simulator
+from experiments.utils.various import create_filename, load_training_dataset, create_modelname, load_simulator
+from experiments.utils.models import create_model
 from experiments import utils
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ def parse_args():
 
 
 def train(args):
-    _create_modelname(args)
+    create_modelname(args)
     logger.info(
         "Training model %s with algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
         args.modelname,
@@ -65,13 +66,13 @@ def train(args):
     torch.multiprocessing.set_start_method("spawn", force=True)
 
     # Data
-    simulator = _load_simulator(args)
-    dataset = _load_training_dataset(args)
+    simulator = load_simulator(args)
+    dataset = load_training_dataset(simulator, args)
 
     logger.info("Parameters: %s", simulator.parameter_dim())
 
     # Model
-    model = _create_model(args, context_features=simulator.parameter_dim())
+    model = create_model(args, simulator)
 
     # Train
     if args.algorithm == "pie":
@@ -91,8 +92,8 @@ def train(args):
 
     # Save
     logger.info("Saving model")
-    torch.save(model.state_dict(), _filename("model", None, args))
-    np.save(_filename("learning_curve", None, args), learning_curves)
+    torch.save(model.state_dict(), create_filename("model", None, args))
+    np.save(create_filename("learning_curve", None, args), learning_curves)
 
 
 def _train_manifold_flow(args, dataset, model, simulator):
@@ -105,7 +106,7 @@ def _train_manifold_flow(args, dataset, model, simulator):
         loss_labels=["MSE"],
         loss_weights=[100.0],
         epochs=args.epochs // 3,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         **common_kwargs,
     )
@@ -118,7 +119,7 @@ def _train_manifold_flow(args, dataset, model, simulator):
         loss_weights=[100.0, 0.01],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -132,7 +133,7 @@ def _train_manifold_flow(args, dataset, model, simulator):
         loss_weights=[1.0, 1.0],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -152,7 +153,7 @@ def _train_hybrid(args, dataset, model, simulator):
         loss_labels=["MSE"],
         loss_weights=[100.0],
         epochs=args.epochs // 4,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         batch_size=args.batchsize,
         **common_kwargs,
@@ -163,10 +164,10 @@ def _train_hybrid(args, dataset, model, simulator):
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[100.],
+        loss_weights=[100.0],
         epochs=args.epochs - args.epochs // 4,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "mf"},
         batch_size=args.genbatchsize,
         **common_kwargs,
@@ -187,7 +188,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
         loss_labels=["MSE"],
         loss_weights=[100.0],
         epochs=args.epochs // 4,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         batch_size=args.batchsize,
         **common_kwargs,
@@ -198,10 +199,10 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[100.],
+        loss_weights=[100.0],
         epochs=args.epochs - 3 * (args.epochs // 6),
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "mf"},
         batch_size=args.genbatchsize,
         **common_kwargs,
@@ -216,7 +217,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
         loss_weights=[100.0, 0.01],
         epochs=args.epochs // 6,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -230,7 +231,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
         loss_weights=[1.0, 1.0],
         epochs=args.epochs // 6,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -248,7 +249,7 @@ def _train_slice_of_pie(args, dataset, model, simulator):
         loss_labels=["MSE"],
         loss_weights=[100.0],
         epochs=args.epochs // 3,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         **common_kwargs,
     )
@@ -260,7 +261,7 @@ def _train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[100.0, 0.01],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -273,7 +274,7 @@ def _train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[1.0, 1.0],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -291,7 +292,7 @@ def _train_flow(args, dataset, model, simulator):
         loss_labels=["NLL"],
         loss_weights=[1.0],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
@@ -307,7 +308,7 @@ def _train_pie(args, dataset, model, simulator):
         loss_labels=["NLL"],
         loss_weights=[1.0],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         forward_kwargs={"mode": "pie"},
         **common_kwargs,
     )

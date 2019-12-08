@@ -1,6 +1,15 @@
+import numpy as np
+
+
 class BaseSimulator:
+    def is_image(self):
+        raise NotImplementedError
+
     def data_dim(self):
         raise NotImplementedError
+
+    def full_data_dim(self):
+        return np.prod(self.data_dim())
 
     def latent_dim(self):
         raise NotImplementedError

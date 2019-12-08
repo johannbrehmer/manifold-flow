@@ -9,7 +9,8 @@ import time
 
 sys.path.append("../")
 
-from experiments.utils.various import _create_model, _filename
+from experiments.utils.various import create_filename
+from experiments.utils.models import create_model
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ def timing(args):
         data.requires_grad = True
 
         # Model
-        model = _create_model(args, context_features=None)
+        model = create_model(args, context_features=None)
         if torch.cuda.is_available():
             model = model.to(torch.device("cuda"))
 
@@ -58,7 +59,7 @@ def timing(args):
 
     # Save results
     logger.info("Saving results")
-    np.save(_filename("timing", None, args), all_times)
+    np.save(create_filename("timing", None, args), all_times)
 
 
 def parse_args():

@@ -2,20 +2,20 @@ import numpy as np
 import os
 import logging
 
-from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator
-from experiments.utils import vector_transforms
-from manifold_flow.flows import Flow, ManifoldFlow
+from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader
 from manifold_flow.training import NumpyDataset
 
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian"]
+SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian", "cifar10", "imagenet"]
 ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid"]
 
 
-def _filename(type, label, args):
-    if type == "sample":
+def create_filename(type, label, args):
+    if type == "dataset":
+        filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
+    elif type == "sample":
         filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
             args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
         )
@@ -43,71 +43,43 @@ def _filename(type, label, args):
     return filename
 
 
-def _create_modelname(args):
+def create_modelname(args):
     if args.modelname is None:
         args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
 
 
-def _load_simulator(args):
+def load_simulator(args):
     assert args.dataset in SIMULATORS
     if args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
+    elif args.dataset == "cifar10":
+        simulator = CIFAR10Loader()
+        args.datadim = simulator.data_dim()
+    elif args.dataset == "imagenet":
+        simulator = ImageNetLoader()
+        args.datadim = simulator.data_dim()
     else:
         raise NotImplementedError("Unknown dataset {}".format(args.dataset))
     return simulator
 
 
-def _create_model(args, context_features):
-    assert args.algorithm in ALGORITHMS
+def load_training_dataset(simulator, args):
+    try:
+        return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args))
+    except:
+        pass
 
-    if args.algorithm == "flow":
-        logger.info("Creating standard flow with %s layers, transform %s, %s context features", args.innerlayers + args.outerlayers, args.outertransform, context_features)
-        transform = vector_transforms.create_transform(args.datadim, args.innerlayers + args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features)
-        model = Flow(data_dim=args.datadim, transform=transform)
-
-    else:
-        logger.info("Creating manifold flow with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features", args.modellatentdim, args.outerlayers, args.innerlayers, args.outertransform, args.innertransform, context_features)
-
-        outer_transform_kwargs = {}
-        try:
-            outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
-            outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
-            outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
-            logger.info("Additional settings for outer transform: %s", outer_transform_kwargs)
-        except:
-            pass
-        outer_transform = vector_transforms.create_transform(
-            args.datadim, args.outerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.outertransform, context_features=context_features if args.conditionalouter else None
-        )
-        inner_transform = vector_transforms.create_transform(args.modellatentdim, args.innerlayers, linear_transform_type=args.lineartransform, base_transform_type=args.innertransform, context_features=context_features)
-
-        model = ManifoldFlow(
-            data_dim=args.datadim,
-            latent_dim=args.modellatentdim,
-            outer_transform=outer_transform,
-            inner_transform=inner_transform,
-            apply_context_to_outer=args.conditionalouter,
-        )
-
-    return model
-
-
-def _load_training_dataset(args):
-    assert args.dataset in SIMULATORS
     if args.dataset == "spherical_gaussian":
-        x = np.load(_filename("sample", "x_train", args))
+        x = np.load(create_filename("sample", "x_train", args))
+    try:
+        params = np.load(create_filename("sample", "parameters_train", args))
+    except:
         params = np.ones(x.shape[0])
-        dataset = NumpyDataset(x, params)
-    elif args.dataset == "conditional_spherical_gaussian":
-        x = np.load(_filename("sample", "x_train", args))
-        params = np.load(_filename("sample", "parameters_train", args))
-        dataset = NumpyDataset(x, params)
-    else:
-        raise NotImplementedError("Unknown dataset {}".format(args.dataset))
-    return dataset
+
+    return NumpyDataset(x, params)
 
 
-def _load_test_samples(args):
-    return np.load(_filename("sample", "x_test", args))
+def load_test_samples(args):
+    return np.load(create_filename("sample", "x_test", args))

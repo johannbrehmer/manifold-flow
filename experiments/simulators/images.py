@@ -44,9 +44,7 @@ class UnlabelledImageFolder(Dataset):
 
 
 class CIFAR10Fast(datasets.CIFAR10):
-    def __init__(
-        self, root, train=True, transform=None, target_transform=None, download=False
-    ):
+    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         super().__init__(root, train, transform, target_transform, download)
 
         self.data = self.data.transpose((0, 3, 1, 2))  # HWC -> CHW.
@@ -78,9 +76,7 @@ class ImageNet32(UnlabelledImageFolder):
             self._download(root)
 
         img_dir = "train" if train else "val"
-        super(ImageNet32, self).__init__(
-            os.path.join(root, img_dir), transform=transform
-        )
+        super(ImageNet32, self).__init__(os.path.join(root, img_dir), transform=transform)
 
     def _download(self, root):
         if os.path.isdir(os.path.join(root, "train")):
@@ -98,14 +94,8 @@ class ImageNet32(UnlabelledImageFolder):
             fp.extractall(root)
         os.remove(zip_file)
 
-        os.rename(
-            os.path.join(root, self.UNZIPPED_DIR_NAME, self.UNZIPPED_TRAIN_SUBDIR),
-            os.path.join(root, "train"),
-        )
-        os.rename(
-            os.path.join(root, self.UNZIPPED_DIR_NAME, self.UNZIPPED_VAL_SUBDIR),
-            os.path.join(root, "val"),
-        )
+        os.rename(os.path.join(root, self.UNZIPPED_DIR_NAME, self.UNZIPPED_TRAIN_SUBDIR), os.path.join(root, "train"))
+        os.rename(os.path.join(root, self.UNZIPPED_DIR_NAME, self.UNZIPPED_VAL_SUBDIR), os.path.join(root, "val"))
         os.rmdir(os.path.join(root, self.UNZIPPED_DIR_NAME))
 
 
@@ -117,10 +107,7 @@ class ImageNet64(ImageNet32):
 
 
 class ImageNet64Fast(Dataset):
-    GOOGLE_DRIVE_FILE_ID = {
-        "train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D",
-        "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC",
-    }
+    GOOGLE_DRIVE_FILE_ID = {"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"}
 
     NPY_NAME = {"train": "train_64x64.npy", "valid": "valid_64x64.npy"}
 
@@ -169,9 +156,7 @@ class Preprocess:
             img = img * 255.0  # [0,1] -> [0,255]
 
         if self.num_bits != 8:
-            img = torch.floor(
-                img / 2 ** (8 - self.num_bits)
-            )  # [0, 255] -> [0, num_bins - 1]
+            img = torch.floor(img / 2 ** (8 - self.num_bits))  # [0, 255] -> [0, num_bins - 1]
 
         # Uniform dequantization.
         img = img + torch.rand_like(img)
@@ -332,6 +317,9 @@ class RandomHorizontalFlipTensor(object):
 
 
 class CIFAR10Loader(BaseSimulator):
+    def is_image(self):
+        return True
+
     def data_dim(self):
         return (3, 32, 32)
 
@@ -348,6 +336,9 @@ class CIFAR10Loader(BaseSimulator):
 class ImageNetLoader(BaseSimulator):
     def data_dim(self):
         return (3, 64, 64)
+
+    def is_image(self):
+        return True
 
     def parameter_dim(self):
         return None

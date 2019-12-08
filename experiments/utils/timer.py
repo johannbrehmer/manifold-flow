@@ -41,6 +41,6 @@ def report():
     logger.info("Timer:")
     for key, value in six.iteritems(_timer):
         h = int(value) // 3600
-        m = int(value - h *  3600) // 60
-        s = value - h *  3600 - m * 60
+        m = int(value - h * 3600) // 60
+        s = value - h * 3600 - m * 60
         logger.info("  {:>32s}: {:3d}:{:02d}:{:05.2f}".format(key, h, m, s))
