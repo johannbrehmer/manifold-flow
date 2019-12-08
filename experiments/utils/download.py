@@ -12,21 +12,6 @@ def download_file(url, dest):
                     f.write(chunk)
 
 
-def download_file_from_google_drive(id, dest):
-    URL = "https://docs.google.com/uc?export=download"
-
-    session = requests.Session()
-
-    response = session.get(URL, params={"id": id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {"id": id, "confirm": token}
-        response = session.get(URL, params=params, stream=True)
-
-    save_response_content(response, dest)
-
-
 def get_confirm_token(response):
     for key, value in response.cookies.items():
         if key.startswith("download_warning"):
@@ -42,3 +27,18 @@ def save_response_content(response, destination):
         for chunk in response.iter_content(CHUNK_SIZE):
             if chunk:  # Filter out keep-alive new chunks.
                 f.write(chunk)
+
+
+def download_file_from_google_drive(id, dest):
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params={"id": id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {"id": id, "confirm": token}
+        response = session.get(URL, params=params, stream=True)
+
+    save_response_content(response, dest)
