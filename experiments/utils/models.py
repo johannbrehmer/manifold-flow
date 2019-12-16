@@ -390,7 +390,7 @@ def create_model(args, simulator):
             args.innerlayers,
             args.outertransform,
             args.innertransform,
-            context_features=simulator.parameter_dim(),
+            simulator.parameter_dim(),
         )
 
         outer_transform_kwargs = {}
