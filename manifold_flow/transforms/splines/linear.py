@@ -7,34 +7,33 @@ from manifold_flow import transforms
 from manifold_flow.utils import various
 
 
-def unconstrained_linear_spline(inputs, unnormalized_pdf,
-                                inverse=False,
-                                tail_bound=1.,
-                                tails='linear'):
+def unconstrained_linear_spline(inputs, unnormalized_pdf, inverse=False, tail_bound=1.0, tails="linear"):
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_interval_mask
 
     outputs = torch.zeros_like(inputs)
     logabsdet = torch.zeros_like(inputs)
 
-    if tails == 'linear':
+    if tails == "linear":
         outputs[outside_interval_mask] = inputs[outside_interval_mask]
         logabsdet[outside_interval_mask] = 0
     else:
-        raise RuntimeError('{} tails are not implemented.'.format(tails))
+        raise RuntimeError("{} tails are not implemented.".format(tails))
 
     outputs[inside_interval_mask], logabsdet[inside_interval_mask] = linear_spline(
         inputs=inputs[inside_interval_mask],
         unnormalized_pdf=unnormalized_pdf[inside_interval_mask, :],
         inverse=inverse,
-        left=-tail_bound, right=tail_bound, bottom=-tail_bound, top=tail_bound
+        left=-tail_bound,
+        right=tail_bound,
+        bottom=-tail_bound,
+        top=tail_bound,
     )
 
     return outputs, logabsdet
 
-def linear_spline(inputs, unnormalized_pdf,
-                  inverse=False,
-                  left=0., right=1., bottom=0., top=1.):
+
+def linear_spline(inputs, unnormalized_pdf, inverse=False, left=0.0, right=1.0, bottom=0.0, top=1.0):
     """
     Reference:
     > Müller et al., Neural Importance Sampling, arXiv:1808.03856, 2018.
@@ -54,18 +53,15 @@ def linear_spline(inputs, unnormalized_pdf,
     pdf = F.softmax(unnormalized_pdf, dim=-1)
 
     cdf = torch.cumsum(pdf, dim=-1)
-    cdf[..., -1] = 1.
-    cdf = F.pad(cdf, pad=(1, 0), mode='constant', value=0.0)
+    cdf[..., -1] = 1.0
+    cdf = F.pad(cdf, pad=(1, 0), mode="constant", value=0.0)
 
     if inverse:
         inv_bin_idx = various.searchsorted(cdf, inputs)
 
-        bin_boundaries = (torch.linspace(0, 1, num_bins+1)
-                          .view([1] * inputs.dim() + [-1])
-                          .expand(*inputs.shape, -1))
+        bin_boundaries = torch.linspace(0, 1, num_bins + 1).view([1] * inputs.dim() + [-1]).expand(*inputs.shape, -1)
 
-        slopes = ((cdf[..., 1:] - cdf[..., :-1])
-                  / (bin_boundaries[..., 1:] - bin_boundaries[..., :-1]))
+        slopes = (cdf[..., 1:] - cdf[..., :-1]) / (bin_boundaries[..., 1:] - bin_boundaries[..., :-1])
         offsets = cdf[..., 1:] - slopes * bin_boundaries[..., 1:]
 
         inv_bin_idx = inv_bin_idx.unsqueeze(-1)

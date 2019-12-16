@@ -22,8 +22,7 @@ class QRLinear(Linear):
         self.log_upper_diag = nn.Parameter(torch.zeros(features))
 
         # Parameterization for Q
-        self.orthogonal = transforms.HouseholderSequence(
-            features=features, num_transforms=num_householder)
+        self.orthogonal = transforms.HouseholderSequence(features=features, num_transforms=num_householder)
 
         self._initialize()
 

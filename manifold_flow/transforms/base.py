@@ -12,11 +12,13 @@ logger = logging.getLogger(__name__)
 
 class InverseNotAvailable(Exception):
     """Exception to be thrown when a transform does not have an inverse."""
+
     pass
 
 
 class InputOutsideDomain(Exception):
     """Exception to be thrown when the input to a transform is not within its domain."""
+
     pass
 
 
@@ -102,7 +104,7 @@ class MultiscaleCompositeTransform(Transform):
             split_dim: dimension along which to split.
         """
         if not various.is_positive_int(split_dim):
-            raise TypeError('Split dimension must be a positive integer.')
+            raise TypeError("Split dimension must be a positive integer.")
 
         super().__init__()
         self._transforms = nn.ModuleList()
@@ -124,14 +126,13 @@ class MultiscaleCompositeTransform(Transform):
         assert len(self._transforms) <= self._num_transforms
 
         if len(self._transforms) == self._num_transforms:
-            raise RuntimeError(
-                'Adding more than {} transforms is not allowed.'.format(self._num_transforms))
+            raise RuntimeError("Adding more than {} transforms is not allowed.".format(self._num_transforms))
 
         if (self._split_dim - 1) >= len(transform_output_shape):
-            raise ValueError('No split_dim in output shape')
+            raise ValueError("No split_dim in output shape")
 
         if transform_output_shape[self._split_dim - 1] < 2:
-            raise ValueError('Size of dimension {} must be at least 2.'.format(self._split_dim))
+            raise ValueError("Size of dimension {} must be at least 2.".format(self._split_dim))
 
         self._transforms.append(transform)
 
@@ -153,10 +154,9 @@ class MultiscaleCompositeTransform(Transform):
 
     def forward(self, inputs, context=None, full_jacobian=False):
         if self._split_dim >= inputs.dim():
-            raise ValueError('No split_dim in inputs.')
+            raise ValueError("No split_dim in inputs.")
         if self._num_transforms != len(self._transforms):
-            raise RuntimeError('Expecting exactly {} transform(s) '
-                               'to be added.'.format(self._num_transforms))
+            raise RuntimeError("Expecting exactly {} transform(s) " "to be added.".format(self._num_transforms))
 
         batch_size = inputs.shape[0]
 
@@ -165,9 +165,7 @@ class MultiscaleCompositeTransform(Transform):
 
             for i, transform in enumerate(self._transforms[:-1]):
                 transform_outputs, logabsdet = transform(hiddens, context, full_jacobian)
-                outputs, hiddens = torch.chunk(transform_outputs,
-                                               chunks=2,
-                                               dim=self._split_dim)
+                outputs, hiddens = torch.chunk(transform_outputs, chunks=2, dim=self._split_dim)
                 assert outputs.shape[1:] == self._output_shapes[i]
                 yield outputs, logabsdet
 
@@ -199,10 +197,9 @@ class MultiscaleCompositeTransform(Transform):
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 2:
-            raise ValueError('Expecting NxD inputs')
+            raise ValueError("Expecting NxD inputs")
         if self._num_transforms != len(self._transforms):
-            raise RuntimeError('Expecting exactly {} transform(s) '
-                               'to be added.'.format(self._num_transforms))
+            raise RuntimeError("Expecting exactly {} transform(s) " "to be added.".format(self._num_transforms))
 
         batch_size = inputs.shape[0]
 
@@ -213,7 +210,7 @@ class MultiscaleCompositeTransform(Transform):
 
         split_inputs = []
         for i in range(len(self._output_shapes)):
-            flat_input = inputs[:, split_indices[i]:split_indices[i+1]]
+            flat_input = inputs[:, split_indices[i] : split_indices[i + 1]]
             split_inputs.append(flat_input.view(-1, *self._output_shapes[i]))
         rev_split_inputs = split_inputs[::-1]
 

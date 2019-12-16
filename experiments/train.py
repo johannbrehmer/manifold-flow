@@ -15,7 +15,6 @@ from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManif
 from experiments.utils.loading import load_training_dataset, load_simulator
 from experiments.utils.names import create_filename, create_modelname
 from experiments.utils.models import create_model
-from experiments import utils
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +109,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
         loss_weights=[100.0],
-        epochs=1,  # args.epochs // 4,
+        epochs=args.epochs // 4,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         batch_size=args.batchsize,
@@ -282,13 +281,7 @@ if __name__ == "__main__":
 
     create_modelname(args)
 
-    logger.info(
-        "Training model %s with algorithm %s (%s latent dims) on data set %s",
-        args.modelname,
-        args.algorithm,
-        args.modellatentdim,
-        args.dataset,
-    )
+    logger.info("Training model %s with algorithm %s (%s latent dims) on data set %s", args.modelname, args.algorithm, args.modellatentdim, args.dataset)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)

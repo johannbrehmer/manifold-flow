@@ -39,7 +39,7 @@ class MCMC_Sampler:
         """
         Generates MCMC samples. Should be implemented in a subclass.
         """
-        raise NotImplementedError('Should be implemented as a subclass.')
+        raise NotImplementedError("Should be implemented as a subclass.")
 
 
 class GaussianMetropolis(MCMC_Sampler):
@@ -66,7 +66,7 @@ class GaussianMetropolis(MCMC_Sampler):
         :return: numpy array of samples
         """
 
-        assert n_samples >= 0, 'number of samples can''t be negative'
+        assert n_samples >= 0, "number of samples can" "t be negative"
 
         n_acc = 0
         L_trace = []
@@ -90,29 +90,29 @@ class GaussianMetropolis(MCMC_Sampler):
             samples[n] = self.x
 
             # acceptance rate
-            acc_rate = n_acc / float(self.thin * (n+1))
+            acc_rate = n_acc / float(self.thin * (n + 1))
 
-            if (n+1) % 100 == 0:
-                logger.info('MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
+            if (n + 1) % 100 == 0:
+                logger.info("MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L))
             else:
-                logger.debug('MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
+                logger.debug("MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L))
 
             # record traces
             if show_info:
                 L_trace.append(self.L)
                 acc_rate_trace.append(acc_rate)
 
-        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {2:.2f}'.format(n+1, acc_rate, self.L))
+        logger.info("MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L))
 
         # show plot with the traces
         if show_info:
             fig, ax = plt.subplots(2, 1, sharex=True)
             ax[0].plot(L_trace)
-            ax[0].set_ylabel('log probability')
+            ax[0].set_ylabel("log probability")
             ax[1].plot(acc_rate_trace)
             ax[1].set_ylim([0, 1])
-            ax[1].set_ylabel('acceptance rate')
-            ax[1].set_xlabel('samples')
+            ax[1].set_ylabel("acceptance rate")
+            ax[1].set_xlabel("samples")
             plt.show(block=False)
 
         return samples
@@ -124,7 +124,7 @@ class SliceSampler(MCMC_Sampler):
     It cycles sampling from each conditional using univariate slice sampling.
     """
 
-    def __init__(self, x, lp_f, max_width=float('inf'), thin=None):
+    def __init__(self, x, lp_f, max_width=float("inf"), thin=None):
         """
         :param x: initial state
         :param lp_f: function that returns the log prob
@@ -146,14 +146,14 @@ class SliceSampler(MCMC_Sampler):
 
         logger.debug("Generating %s MCMC samples", n_samples)
 
-        assert n_samples >= 0, 'number of samples can''t be negative'
+        assert n_samples >= 0, "number of samples can" "t be negative"
 
         order = range(self.n_dims)
         L_trace = []
         samples = np.empty([n_samples, self.n_dims])
 
         if self.width is None:
-            logger.debug('Tuning bracket width')
+            logger.debug("Tuning bracket width")
             self._tune_bracket_width(rng)
         logger.debug("Bracket width: %s", self.width)
 
@@ -170,22 +170,22 @@ class SliceSampler(MCMC_Sampler):
 
             self.L = self.lp_f(self.x)
 
-            if (n+1) % 100 == 0:
-                logger.info('MCMC after sample {0}: log likelihood = {1:.2f}'.format(n+1, self.L))
+            if (n + 1) % 100 == 0:
+                logger.info("MCMC after sample {0}: log likelihood = {1:.2f}".format(n + 1, self.L))
             else:
-                logger.debug('MCMC after sample {0}: log likelihood = {1:.2f}'.format(n+1, self.L))
+                logger.debug("MCMC after sample {0}: log likelihood = {1:.2f}".format(n + 1, self.L))
 
             if show_info:
                 L_trace.append(self.L)
 
-        logger.info('MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {1:.2f}'.format(n+1, self.L))
+        logger.info("MCMC chain finished after {0} samples: acceptance rate = {1:.2f}, log likelihood = {1:.2f}".format(n + 1, self.L))
 
         # show trace plot
         if show_info:
             fig, ax = plt.subplots(1, 1)
             ax.plot(L_trace)
-            ax.set_ylabel('log probability')
-            ax.set_xlabel('samples')
+            ax.set_ylabel("log probability")
+            ax.set_xlabel("samples")
             plt.show(block=False)
 
         return samples
@@ -220,7 +220,7 @@ class SliceSampler(MCMC_Sampler):
         """
 
         # conditional log prob
-        Li = lambda t: self.lp_f(np.concatenate([self.x[:i], [t], self.x[i+1:]]))
+        Li = lambda t: self.lp_f(np.concatenate([self.x[:i], [t], self.x[i + 1 :]]))
         wi = self.width[i]
 
         # sample a slice uniformly

@@ -8,16 +8,14 @@ class OneByOneConvolution(transforms.LULinear):
     Reference:
     > D. Kingma et. al., Glow: Generative flow with invertible 1x1 convolutions, NeurIPS 2018.
     """
-    def __init__(self,
-                 num_channels,
-                 using_cache=False,
-                 identity_init=True):
+
+    def __init__(self, num_channels, using_cache=False, identity_init=True):
         super().__init__(num_channels, using_cache, identity_init)
         self.permutation = transforms.RandomPermutation(num_channels, dim=1)
 
     def _lu_forward_inverse(self, inputs, inverse=False):
         b, c, h, w = inputs.shape
-        inputs = inputs.permute(0, 2, 3, 1).reshape(b*h*w, c)
+        inputs = inputs.permute(0, 2, 3, 1).reshape(b * h * w, c)
 
         if inverse:
             outputs, logabsdet = super().inverse(inputs)
@@ -31,7 +29,7 @@ class OneByOneConvolution(transforms.LULinear):
 
     def forward(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 4:
-            raise ValueError('Inputs must be a 4D tensor.')
+            raise ValueError("Inputs must be a 4D tensor.")
 
         if full_jacobian:
             raise NotImplementedError
@@ -42,7 +40,7 @@ class OneByOneConvolution(transforms.LULinear):
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         if inputs.dim() != 4:
-            raise ValueError('Inputs must be a 4D tensor.')
+            raise ValueError("Inputs must be a 4D tensor.")
 
         if full_jacobian:
             raise NotImplementedError

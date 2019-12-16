@@ -6,24 +6,11 @@ from manifold_flow.utils import various
 
 
 class UNet(nn.Module):
-    def __init__(
-        self,
-        in_features,
-        max_hidden_features,
-        num_layers,
-        out_features,
-        nonlinearity=F.relu,
-    ):
+    def __init__(self, in_features, max_hidden_features, num_layers, out_features, nonlinearity=F.relu):
         super().__init__()
 
-        assert various.is_power_of_two(
-            max_hidden_features
-        ), "'max_hidden_features' must be a power of two."
-        assert (
-            max_hidden_features // 2 ** num_layers > 1
-        ), "'num_layers' must be {} or fewer".format(
-            int(np.log2(max_hidden_features) - 1)
-        )
+        assert various.is_power_of_two(max_hidden_features), "'max_hidden_features' must be a power of two."
+        assert max_hidden_features // 2 ** num_layers > 1, "'num_layers' must be {} or fewer".format(int(np.log2(max_hidden_features) - 1))
 
         self.nonlinearity = nonlinearity
         self.num_layers = num_layers
@@ -31,28 +18,13 @@ class UNet(nn.Module):
         self.initial_layer = nn.Linear(in_features, max_hidden_features)
 
         self.down_layers = nn.ModuleList(
-            [
-                nn.Linear(
-                    in_features=max_hidden_features // 2 ** i,
-                    out_features=max_hidden_features // 2 ** (i + 1),
-                )
-                for i in range(num_layers)
-            ]
+            [nn.Linear(in_features=max_hidden_features // 2 ** i, out_features=max_hidden_features // 2 ** (i + 1)) for i in range(num_layers)]
         )
 
-        self.middle_layer = nn.Linear(
-            in_features=max_hidden_features // 2 ** num_layers,
-            out_features=max_hidden_features // 2 ** num_layers,
-        )
+        self.middle_layer = nn.Linear(in_features=max_hidden_features // 2 ** num_layers, out_features=max_hidden_features // 2 ** num_layers)
 
         self.up_layers = nn.ModuleList(
-            [
-                nn.Linear(
-                    in_features=max_hidden_features // 2 ** (i + 1),
-                    out_features=max_hidden_features // 2 ** i,
-                )
-                for i in range(num_layers - 1, -1, -1)
-            ]
+            [nn.Linear(in_features=max_hidden_features // 2 ** (i + 1), out_features=max_hidden_features // 2 ** i) for i in range(num_layers - 1, -1, -1)]
         )
 
         self.final_layer = nn.Linear(max_hidden_features, out_features)

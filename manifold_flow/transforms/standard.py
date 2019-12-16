@@ -27,12 +27,12 @@ class AffineScalarTransform(transforms.Transform):
         super().__init__()
 
         if shift is None and scale is None:
-            raise ValueError('At least one of scale and shift must be provided.')
-        if scale == 0.:
-            raise ValueError('Scale cannot be zero.')
+            raise ValueError("At least one of scale and shift must be provided.")
+        if scale == 0.0:
+            raise ValueError("Scale cannot be zero.")
 
-        self.register_buffer('_shift', torch.tensor(shift if (shift is not None) else 0.))
-        self.register_buffer('_scale', torch.tensor(scale if (scale is not None) else 1.))
+        self.register_buffer("_shift", torch.tensor(shift if (shift is not None) else 0.0))
+        self.register_buffer("_scale", torch.tensor(scale if (scale is not None) else 1.0))
 
     @property
     def _log_scale(self):

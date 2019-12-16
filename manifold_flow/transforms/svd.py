@@ -14,15 +14,13 @@ class SVDLinear(Linear):
         super().__init__(features, using_cache)
 
         # First orthogonal matrix (U).
-        self.orthogonal_1 = transforms.HouseholderSequence(
-            features=features, num_transforms=num_householder)
+        self.orthogonal_1 = transforms.HouseholderSequence(features=features, num_transforms=num_householder)
 
         # Logs of diagonal entries of the diagonal matrix (S).
         self.log_diagonal = nn.Parameter(torch.zeros(features))
 
         # Second orthogonal matrix (V^T).
-        self.orthogonal_2 = transforms.HouseholderSequence(
-            features=features, num_transforms=num_householder)
+        self.orthogonal_2 = transforms.HouseholderSequence(features=features, num_transforms=num_householder)
 
         self._initialize()
 
@@ -30,7 +28,6 @@ class SVDLinear(Linear):
         stdv = 1.0 / np.sqrt(self.features)
         init.uniform_(self.log_diagonal, -stdv, stdv)
         init.constant_(self.bias, 0.0)
-
 
     def forward_no_cache(self, inputs):
         """Cost:

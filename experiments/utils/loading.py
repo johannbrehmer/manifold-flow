@@ -42,8 +42,8 @@ def load_training_dataset(simulator, args):
         params = np.ones(x.shape[0])
 
     if args.samplesize is not None:
-        x = x[:args.samplesize]
-        params = params[:args.samplesize]
+        x = x[: args.samplesize]
+        params = params[: args.samplesize]
 
     return NumpyDataset(x, params)
 

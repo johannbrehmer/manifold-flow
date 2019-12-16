@@ -34,7 +34,7 @@ class Linear(transforms.Transform):
 
     def __init__(self, features, using_cache=False):
         if not various.is_positive_int(features):
-            raise TypeError('Number of features must be a positive integer.')
+            raise TypeError("Number of features must be a positive integer.")
         super().__init__()
 
         self.features = features
@@ -98,7 +98,7 @@ class Linear(transforms.Transform):
 
     def use_cache(self, mode=True):
         if not various.is_bool(mode):
-            raise TypeError('Mode must be boolean.')
+            raise TypeError("Mode must be boolean.")
         self.using_cache = mode
 
     def weight_and_logabsdet(self):

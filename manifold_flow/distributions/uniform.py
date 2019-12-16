@@ -13,4 +13,4 @@ class TweakedUniform(distributions.Uniform):
         #     return result
 
     def sample(self, num_samples, context):
-        return super().sample((num_samples, ))
+        return super().sample((num_samples,))

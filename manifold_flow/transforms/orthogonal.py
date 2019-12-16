@@ -24,9 +24,9 @@ class HouseholderSequence(transforms.Transform):
             TypeError: if arguments are not the right type.
         """
         if not various.is_positive_int(features):
-            raise TypeError('Number of features must be a positive integer.')
+            raise TypeError("Number of features must be a positive integer.")
         if not various.is_positive_int(num_transforms):
-            raise TypeError('Number of transforms must be a positive integer.')
+            raise TypeError("Number of transforms must be a positive integer.")
 
         super().__init__()
         self.features = features

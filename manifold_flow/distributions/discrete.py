@@ -28,19 +28,17 @@ class ConditionalIndependentBernoulli(distributions.Distribution):
     def _compute_params(self, context):
         """Compute the logits from context."""
         if context is None:
-            raise ValueError('Context can\'t be None.')
+            raise ValueError("Context can't be None.")
 
         logits = self._context_encoder(context)
         if logits.shape[0] != context.shape[0]:
-            raise RuntimeError(
-                'The batch dimension of the parameters is inconsistent with the input.')
+            raise RuntimeError("The batch dimension of the parameters is inconsistent with the input.")
 
         return logits.reshape(logits.shape[0], *self._shape)
 
     def _log_prob(self, inputs, context):
         if inputs.shape[1:] != self._shape:
-            raise ValueError('Expected input of shape {}, got {}'.format(
-                self._shape, inputs.shape[1:]))
+            raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
 
         # Compute parameters.
         logits = self._compute_params(context)

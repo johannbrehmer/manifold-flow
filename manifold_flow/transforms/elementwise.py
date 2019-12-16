@@ -40,8 +40,8 @@ class ConditionalAffineScalarTransform(transforms.Transform):
         scale = torch.exp(scale_and_shift[:, 0].unsqueeze(1))
         shift = scale_and_shift[:, 1].unsqueeze(1)
 
-        num_dims = torch.prod(torch.tensor([1,]), dtype=torch.float)
-        logabsdet = torch.log(torch.abs(scale.squeeze()) + 1.e-6) * num_dims
+        num_dims = torch.prod(torch.tensor([1]), dtype=torch.float)
+        logabsdet = torch.log(torch.abs(scale.squeeze()) + 1.0e-6) * num_dims
         return scale, shift, logabsdet
 
     def forward(self, inputs, context=None, full_jacobian=False):
@@ -57,7 +57,7 @@ class ConditionalAffineScalarTransform(transforms.Transform):
 
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = inputs * scale + shift
-        logabsdet = torch.log(torch.abs(scale.squeeze()) + 1.e-6) * num_dims
+        logabsdet = torch.log(torch.abs(scale.squeeze()) + 1.0e-6) * num_dims
 
         return outputs, logabsdet
 
@@ -74,22 +74,23 @@ class ConditionalAffineScalarTransform(transforms.Transform):
 
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = (inputs - shift) / scale
-        logabsdet = - torch.log(torch.abs(scale) + 1.e-6) * num_dims
+        logabsdet = -torch.log(torch.abs(scale) + 1.0e-6) * num_dims
 
         return outputs, logabsdet
 
 
 class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
-    def __init__(self,
-                 param_net=None,
-                 features=1,
-                 num_bins=10,
-                 tails="linear",
-                 tail_bound=100.,
-                 min_bin_width=splines.rational_quadratic.DEFAULT_MIN_BIN_WIDTH,
-                 min_bin_height=splines.rational_quadratic.DEFAULT_MIN_BIN_HEIGHT,
-                 min_derivative=splines.rational_quadratic.DEFAULT_MIN_DERIVATIVE,
-                 ):
+    def __init__(
+        self,
+        param_net=None,
+        features=1,
+        num_bins=10,
+        tails="linear",
+        tail_bound=100.0,
+        min_bin_width=splines.rational_quadratic.DEFAULT_MIN_BIN_WIDTH,
+        min_bin_height=splines.rational_quadratic.DEFAULT_MIN_BIN_HEIGHT,
+        min_derivative=splines.rational_quadratic.DEFAULT_MIN_DERIVATIVE,
+    ):
 
         super(ElementwisePiecewiseRationalQuadraticTransform, self).__init__()
 
@@ -104,7 +105,7 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
             self.params = torch.zeros(features * self._output_dim_multiplier())
             torch.nn.init.normal_(self.params)
             self.params = torch.nn.Parameter(self.params)
-            self.param_net = lambda _ : self.params
+            self.param_net = lambda _: self.params
         else:
             self.param_net = param_net
             self.params = None
@@ -120,7 +121,7 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
         return outputs, logabsdet
 
     def _output_dim_multiplier(self):
-        if self.tails == 'linear':
+        if self.tails == "linear":
             return self.num_bins * 3 - 1
         elif self.tails is None:
             return self.num_bins * 3 + 1
@@ -133,32 +134,25 @@ class ElementwisePiecewiseRationalQuadraticTransform(transforms.Transform):
 
         batch_size, features = inputs.shape[0], inputs.shape[1]
 
-        transform_params = params.view(
-            -1,
-            features,
-            self._output_dim_multiplier()
-        )
+        transform_params = params.view(-1, features, self._output_dim_multiplier())
 
         if transform_params.size(0) < batch_size:
             transform_params = transform_params + torch.zeros((batch_size, features, self._output_dim_multiplier()))
 
-        unnormalized_widths = transform_params[...,:self.num_bins]
-        unnormalized_heights = transform_params[...,self.num_bins:2*self.num_bins]
-        unnormalized_derivatives = transform_params[...,2*self.num_bins:]
+        unnormalized_widths = transform_params[..., : self.num_bins]
+        unnormalized_heights = transform_params[..., self.num_bins : 2 * self.num_bins]
+        unnormalized_derivatives = transform_params[..., 2 * self.num_bins :]
 
-        if hasattr(self.param_net, 'hidden_features'):
+        if hasattr(self.param_net, "hidden_features"):
             unnormalized_widths /= np.sqrt(self.param_net.hidden_features)
             unnormalized_heights /= np.sqrt(self.param_net.hidden_features)
 
         if self.tails is None:
             spline_fn = splines.rational_quadratic_spline
             spline_kwargs = {}
-        elif self.tails == 'linear':
+        elif self.tails == "linear":
             spline_fn = splines.unconstrained_rational_quadratic_spline
-            spline_kwargs = {
-                'tails': self.tails,
-                'tail_bound': self.tail_bound
-            }
+            spline_kwargs = {"tails": self.tails, "tail_bound": self.tail_bound}
         else:
             raise ValueError
 

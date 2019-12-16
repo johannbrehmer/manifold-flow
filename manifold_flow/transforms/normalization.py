@@ -19,7 +19,7 @@ class BatchNorm(transforms.Transform):
 
     def __init__(self, features, eps=1e-5, momentum=0.1, affine=True):
         if not various.is_positive_int(features):
-            raise TypeError('Number of features must be a positive integer.')
+            raise TypeError("Number of features must be a positive integer.")
         super().__init__()
 
         self.momentum = momentum
@@ -28,8 +28,8 @@ class BatchNorm(transforms.Transform):
         self.unconstrained_weight = nn.Parameter(constant * torch.ones(features))
         self.bias = nn.Parameter(torch.zeros(features))
 
-        self.register_buffer('running_mean', torch.zeros(features))
-        self.register_buffer('running_var', torch.zeros(features))
+        self.register_buffer("running_mean", torch.zeros(features))
+        self.register_buffer("running_var", torch.zeros(features))
 
     @property
     def weight(self):
@@ -37,7 +37,7 @@ class BatchNorm(transforms.Transform):
 
     def forward(self, inputs, context=None):
         if inputs.dim() != 2:
-            raise ValueError('Expected 2-dim inputs, got inputs of shape: {}'.format(inputs.shape))
+            raise ValueError("Expected 2-dim inputs, got inputs of shape: {}".format(inputs.shape))
 
         if self.training:
             mean, var = inputs.mean(0), inputs.var(0)
@@ -55,14 +55,13 @@ class BatchNorm(transforms.Transform):
 
     def inverse(self, inputs, context=None):
         if self.training:
-            raise transforms.InverseNotAvailable(
-                'Batch norm inverse is only available in eval mode, not in training mode.')
+            raise transforms.InverseNotAvailable("Batch norm inverse is only available in eval mode, not in training mode.")
         if inputs.dim() != 2:
-            raise ValueError('Expected 2-dim inputs, got inputs of shape: {}'.format(inputs.shape))
+            raise ValueError("Expected 2-dim inputs, got inputs of shape: {}".format(inputs.shape))
 
         outputs = torch.sqrt(self.running_var + self.eps) * ((inputs - self.bias) / self.weight) + self.running_mean
 
-        logabsdet_ = - torch.log(self.weight) + 0.5 * torch.log(self.running_var + self.eps)
+        logabsdet_ = -torch.log(self.weight) + 0.5 * torch.log(self.running_var + self.eps)
         logabsdet = torch.sum(logabsdet_) * torch.ones(inputs.shape[0])
 
         return outputs, logabsdet
@@ -78,7 +77,7 @@ class ActNorm(transforms.Transform):
         > D. Kingma et. al., Glow: Generative flow with invertible 1x1 convolutions, NeurIPS 2018.
         """
         if not various.is_positive_int(features):
-            raise TypeError('Number of features must be a positive integer.')
+            raise TypeError("Number of features must be a positive integer.")
         super().__init__()
 
         self.initialized = False
@@ -97,7 +96,7 @@ class ActNorm(transforms.Transform):
 
     def forward(self, inputs, context=None):
         if inputs.dim() not in [2, 4]:
-            raise ValueError('Expecting inputs to be a 2D or a 4D tensor.')
+            raise ValueError("Expecting inputs to be a 2D or a 4D tensor.")
 
         if self.training and not self.initialized:
             self._initialize(inputs)
@@ -109,24 +108,24 @@ class ActNorm(transforms.Transform):
             batch_size, _, h, w = inputs.shape
             logabsdet = h * w * torch.sum(self.log_scale) * torch.ones(batch_size)
         else:
-            batch_size,_ = inputs.shape
+            batch_size, _ = inputs.shape
             logabsdet = torch.sum(self.log_scale) * torch.ones(batch_size)
 
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
         if inputs.dim() not in [2, 4]:
-            raise ValueError('Expecting inputs to be a 2D or a 4D tensor.')
+            raise ValueError("Expecting inputs to be a 2D or a 4D tensor.")
 
         scale, shift = self._broadcastable_scale_shift(inputs)
         outputs = (inputs - shift) / scale
 
         if inputs.dim() == 4:
             batch_size, _, h, w = inputs.shape
-            logabsdet = - h * w * torch.sum(self.log_scale) * torch.ones(batch_size)
+            logabsdet = -h * w * torch.sum(self.log_scale) * torch.ones(batch_size)
         else:
             batch_size, _ = inputs.shape
-            logabsdet = - torch.sum(self.log_scale) * torch.ones(batch_size)
+            logabsdet = -torch.sum(self.log_scale) * torch.ones(batch_size)
 
         return outputs, logabsdet
 
@@ -144,6 +143,3 @@ class ActNorm(transforms.Transform):
             self.shift.data = -mu
 
         self.initialized = True
-
-
-

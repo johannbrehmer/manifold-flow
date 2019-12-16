@@ -7,6 +7,7 @@ from manifold_flow.utils import various
 
 class NoMeanException(Exception):
     """Exception to be thrown when a mean function doesn't exist."""
+
     pass
 
 
@@ -14,7 +15,7 @@ class Distribution(nn.Module):
     """Base class for all distribution objects."""
 
     def forward(self, *args):
-        raise RuntimeError('Forward method cannot be called for a Distribution object.')
+        raise RuntimeError("Forward method cannot be called for a Distribution object.")
 
     def log_prob(self, inputs, context=None):
         """Calculate log probability under the distribution.
@@ -31,7 +32,7 @@ class Distribution(nn.Module):
         if context is not None:
             context = torch.as_tensor(context)
             if inputs.shape[0] != context.shape[0]:
-                raise ValueError('Number of input items must be equal to number of context items.')
+                raise ValueError("Number of input items must be equal to number of context items.")
         return self._log_prob(inputs, context)
 
     def _log_prob(self, inputs, context):
@@ -51,7 +52,7 @@ class Distribution(nn.Module):
             [context_size, num_samples, ...] if context is given.
         """
         if not various.is_positive_int(num_samples):
-            raise TypeError('Number of samples must be a positive integer.')
+            raise TypeError("Number of samples must be a positive integer.")
 
         if context is not None:
             context = torch.as_tensor(context)
@@ -61,7 +62,7 @@ class Distribution(nn.Module):
 
         else:
             if not various.is_positive_int(batch_size):
-                raise TypeError('Batch size must be a positive integer.')
+                raise TypeError("Batch size must be a positive integer.")
 
             num_batches = num_samples // batch_size
             num_leftover = num_samples % batch_size

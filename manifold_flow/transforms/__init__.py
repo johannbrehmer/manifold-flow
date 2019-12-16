@@ -1,18 +1,11 @@
-from .base import (
-    InverseNotAvailable,
-    InputOutsideDomain,
-    Transform,
-    CompositeTransform,
-    MultiscaleCompositeTransform,
-    InverseTransform
-)
+from .base import InverseNotAvailable, InputOutsideDomain, Transform, CompositeTransform, MultiscaleCompositeTransform, InverseTransform
 
 from .autoregressive import (
     MaskedAffineAutoregressiveTransform,
     MaskedPiecewiseLinearAutoregressiveTransform,
     MaskedPiecewiseQuadraticAutoregressiveTransform,
     MaskedPiecewiseCubicAutoregressiveTransform,
-    MaskedPiecewiseRationalQuadraticAutoregressiveTransform
+    MaskedPiecewiseRationalQuadraticAutoregressiveTransform,
 )
 
 from .linear import NaiveLinear
@@ -30,13 +23,10 @@ from .nonlinearities import (
     PiecewiseCubicCDF,
     PiecewiseRationalQuadraticCDF,
     Sigmoid,
-    Tanh
+    Tanh,
 )
 
-from .normalization import (
-    BatchNorm,
-    ActNorm
-)
+from .normalization import BatchNorm, ActNorm
 
 from .orthogonal import HouseholderSequence
 
@@ -50,13 +40,10 @@ from .coupling import (
     PiecewiseLinearCouplingTransform,
     PiecewiseQuadraticCouplingTransform,
     PiecewiseCubicCouplingTransform,
-    PiecewiseRationalQuadraticCouplingTransform
+    PiecewiseRationalQuadraticCouplingTransform,
 )
 
-from .standard import (
-    IdentityTransform,
-    AffineScalarTransform,
-)
+from .standard import IdentityTransform, AffineScalarTransform
 
 from .reshape import SqueezeTransform, ReshapeTransform
 from .conv import OneByOneConvolution

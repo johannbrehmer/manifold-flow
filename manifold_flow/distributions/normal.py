@@ -18,8 +18,7 @@ class StandardNormal(distributions.Distribution):
     def _log_prob(self, inputs, context):
         # Note: the context is ignored.
         if inputs.shape[1:] != self._shape:
-            raise ValueError('Expected input of shape {}, got {}'.format(
-                self._shape, inputs.shape[1:]))
+            raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
         neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1)
         return neg_energy - self._log_z
 
@@ -43,7 +42,7 @@ class StandardNormal(distributions.Distribution):
 class RescaledNormal(distributions.Distribution):
     """A multivariate Normal with zero mean and unit covariance."""
 
-    def __init__(self, shape, std=1.):
+    def __init__(self, shape, std=1.0):
         super().__init__()
         self._shape = torch.Size(shape)
         self.std = std
@@ -52,8 +51,7 @@ class RescaledNormal(distributions.Distribution):
     def _log_prob(self, inputs, context):
         # Note: the context is ignored.
         if inputs.shape[1:] != self._shape:
-            raise ValueError('Expected input of shape {}, got {}'.format(
-                self._shape, inputs.shape[1:]))
+            raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
         neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std ** 2
         return neg_energy - self._log_z
 
@@ -96,15 +94,13 @@ class ConditionalDiagonalNormal(distributions.Distribution):
     def _compute_params(self, context):
         """Compute the means and log stds form the context."""
         if context is None:
-            raise ValueError('Context can\'t be None.')
+            raise ValueError("Context can't be None.")
 
         params = self._context_encoder(context)
         if params.shape[-1] % 2 != 0:
-            raise RuntimeError(
-                'The context encoder must return a tensor whose last dimension is even.')
+            raise RuntimeError("The context encoder must return a tensor whose last dimension is even.")
         if params.shape[0] != context.shape[0]:
-            raise RuntimeError(
-                'The batch dimension of the parameters is inconsistent with the input.')
+            raise RuntimeError("The batch dimension of the parameters is inconsistent with the input.")
 
         split = params.shape[-1] // 2
         means = params[..., :split].reshape(params.shape[0], *self._shape)
@@ -113,8 +109,7 @@ class ConditionalDiagonalNormal(distributions.Distribution):
 
     def _log_prob(self, inputs, context):
         if inputs.shape[1:] != self._shape:
-            raise ValueError('Expected input of shape {}, got {}'.format(
-                self._shape, inputs.shape[1:]))
+            raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
 
         # Compute parameters.
         means, log_stds = self._compute_params(context)

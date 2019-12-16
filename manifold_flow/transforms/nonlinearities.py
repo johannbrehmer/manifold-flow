@@ -24,7 +24,7 @@ class Tanh(transforms.Transform):
         if torch.min(inputs) <= -1 or torch.max(inputs) >= 1:
             raise transforms.InputOutsideDomain()
         outputs = 0.5 * torch.log((1 + inputs) / (1 - inputs))
-        logabsdet = - torch.log(1 - inputs ** 2)
+        logabsdet = -torch.log(1 - inputs ** 2)
         logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
@@ -37,19 +37,18 @@ class LogTanh(transforms.Transform):
 
     def __init__(self, cut_point=1):
         if cut_point <= 0:
-            raise ValueError('Cut point must be positive.')
+            raise ValueError("Cut point must be positive.")
         super().__init__()
 
         self.cut_point = cut_point
         self.inv_cut_point = np.tanh(cut_point)
 
         self.alpha = (1 - np.tanh(np.tanh(cut_point))) / cut_point
-        self.beta = np.exp((np.tanh(cut_point) - self.alpha * np.log(cut_point))
-                           / self.alpha)
+        self.beta = np.exp((np.tanh(cut_point) - self.alpha * np.log(cut_point)) / self.alpha)
 
     def forward(self, inputs, context=None):
-        mask_right = (inputs > self.cut_point)
-        mask_left = (inputs < -self.cut_point)
+        mask_right = inputs > self.cut_point
+        mask_left = inputs < -self.cut_point
         mask_middle = ~(mask_right | mask_left)
 
         outputs = torch.zeros_like(inputs)
@@ -67,13 +66,12 @@ class LogTanh(transforms.Transform):
 
     def inverse(self, inputs, context=None):
 
-        mask_right = (inputs > self.inv_cut_point)
-        mask_left = (inputs < -self.inv_cut_point)
+        mask_right = inputs > self.inv_cut_point
+        mask_left = inputs < -self.inv_cut_point
         mask_middle = ~(mask_right | mask_left)
 
         outputs = torch.zeros_like(inputs)
-        outputs[mask_middle] = 0.5 * torch.log((1 + inputs[mask_middle])
-                                               / (1 - inputs[mask_middle]))
+        outputs[mask_middle] = 0.5 * torch.log((1 + inputs[mask_middle]) / (1 - inputs[mask_middle]))
         outputs[mask_right] = torch.exp(inputs[mask_right] / self.alpha) / self.beta
         outputs[mask_left] = -torch.exp(-inputs[mask_left] / self.alpha) / self.beta
 
@@ -89,7 +87,7 @@ class LogTanh(transforms.Transform):
 class LeakyReLU(transforms.Transform):
     def __init__(self, negative_slope=1e-2):
         if negative_slope <= 0:
-            raise ValueError('Slope must be positive.')
+            raise ValueError("Slope must be positive.")
         super().__init__()
         self.negative_slope = negative_slope
         self.log_negative_slope = torch.log(torch.as_tensor(self.negative_slope))
@@ -118,9 +116,7 @@ class Sigmoid(transforms.Transform):
     def forward(self, inputs, context=None):
         inputs = self.temperature * inputs
         outputs = torch.sigmoid(inputs)
-        logabsdet = various.sum_except_batch(
-            torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs)
-        )
+        logabsdet = various.sum_except_batch(torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs))
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
@@ -130,10 +126,7 @@ class Sigmoid(transforms.Transform):
         inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
 
         outputs = (1 / self.temperature) * (torch.log(inputs) - torch.log1p(-inputs))
-        logabsdet = - various.sum_except_batch(
-            torch.log(self.temperature) - F.softplus(
-                -self.temperature * outputs) - F.softplus(self.temperature * outputs)
-        )
+        logabsdet = -various.sum_except_batch(torch.log(self.temperature) - F.softplus(-self.temperature * outputs) - F.softplus(self.temperature * outputs))
         return outputs, logabsdet
 
 
@@ -148,9 +141,7 @@ class CauchyCDF(transforms.Transform):
 
     def forward(self, inputs, context=None):
         outputs = (1 / np.pi) * torch.atan(inputs) + 0.5
-        logabsdet = various.sum_except_batch(
-            - np.log(np.pi) - torch.log(1 + inputs ** 2)
-        )
+        logabsdet = various.sum_except_batch(-np.log(np.pi) - torch.log(1 + inputs ** 2))
         return outputs, logabsdet
 
     def inverse(self, inputs, context=None):
@@ -158,38 +149,26 @@ class CauchyCDF(transforms.Transform):
             raise transforms.InputOutsideDomain()
 
         outputs = torch.tan(np.pi * (inputs - 0.5))
-        logabsdet = - various.sum_except_batch(
-            - np.log(np.pi) - torch.log(1 + outputs ** 2)
-        )
+        logabsdet = -various.sum_except_batch(-np.log(np.pi) - torch.log(1 + outputs ** 2))
         return outputs, logabsdet
 
 
 class CauchyCDFInverse(transforms.InverseTransform):
     def __init__(self, location=None, scale=None, features=None):
-        super().__init__(CauchyCDF(
-            location=location,
-            scale=scale,
-            features=features
-        ))
+        super().__init__(CauchyCDF(location=location, scale=scale, features=features))
 
 
 class CompositeCDFTransform(transforms.CompositeTransform):
     def __init__(self, squashing_transform, cdf_transform):
-        super().__init__([
-            squashing_transform,
-            cdf_transform,
-            transforms.InverseTransform(squashing_transform)
-        ])
+        super().__init__([squashing_transform, cdf_transform, transforms.InverseTransform(squashing_transform)])
+
 
 def _share_across_batch(params, batch_size):
-    return params[None,...].expand(batch_size, *params.shape)
+    return params[None, ...].expand(batch_size, *params.shape)
+
 
 class PiecewiseLinearCDF(transforms.Transform):
-    def __init__(self,
-                 shape,
-                 num_bins=10,
-                 tails=None,
-                 tail_bound=1.):
+    def __init__(self, shape, num_bins=10, tails=None, tail_bound=1.0):
         super().__init__()
 
         self.tail_bound = tail_bound
@@ -203,18 +182,10 @@ class PiecewiseLinearCDF(transforms.Transform):
         unnormalized_pdf = _share_across_batch(self.unnormalized_pdf, batch_size)
 
         if self.tails is None:
-            outputs, logabsdet = splines.linear_spline(
-                inputs=inputs,
-                unnormalized_pdf=unnormalized_pdf,
-                inverse=inverse
-            )
+            outputs, logabsdet = splines.linear_spline(inputs=inputs, unnormalized_pdf=unnormalized_pdf, inverse=inverse)
         else:
             outputs, logabsdet = splines.unconstrained_linear_spline(
-                inputs=inputs,
-                unnormalized_pdf=unnormalized_pdf,
-                inverse=inverse,
-                tails=self.tails,
-                tail_bound=self.tail_bound
+                inputs=inputs, unnormalized_pdf=unnormalized_pdf, inverse=inverse, tails=self.tails, tail_bound=self.tail_bound
             )
 
         return outputs, various.sum_except_batch(logabsdet)
@@ -225,14 +196,17 @@ class PiecewiseLinearCDF(transforms.Transform):
     def inverse(self, inputs, context=None):
         return self._spline(inputs, inverse=True)
 
+
 class PiecewiseQuadraticCDF(transforms.Transform):
-    def __init__(self,
-                 shape,
-                 num_bins=10,
-                 tails=None,
-                 tail_bound=1.,
-                 min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH,
-                 min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT):
+    def __init__(
+        self,
+        shape,
+        num_bins=10,
+        tails=None,
+        tail_bound=1.0,
+        min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH,
+        min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT,
+    ):
         super().__init__()
         self.min_bin_width = min_bin_width
         self.min_bin_height = min_bin_height
@@ -241,7 +215,7 @@ class PiecewiseQuadraticCDF(transforms.Transform):
 
         self.unnormalized_widths = nn.Parameter(torch.randn(*shape, num_bins))
 
-        num_heights = (num_bins - 1) if self.tails == 'linear' else (num_bins + 1)
+        num_heights = (num_bins - 1) if self.tails == "linear" else (num_bins + 1)
         self.unnormalized_heights = nn.Parameter(torch.randn(*shape, num_heights))
 
     def _spline(self, inputs, inverse=False):
@@ -255,10 +229,7 @@ class PiecewiseQuadraticCDF(transforms.Transform):
             spline_kwargs = {}
         else:
             spline_fn = splines.unconstrained_quadratic_spline
-            spline_kwargs = {
-                'tails': self.tails,
-                'tail_bound': self.tail_bound
-            }
+            spline_kwargs = {"tails": self.tails, "tail_bound": self.tail_bound}
 
         outputs, logabsdet = spline_fn(
             inputs=inputs,
@@ -278,14 +249,17 @@ class PiecewiseQuadraticCDF(transforms.Transform):
     def inverse(self, inputs, context=None):
         return self._spline(inputs, inverse=True)
 
+
 class PiecewiseCubicCDF(transforms.Transform):
-    def __init__(self,
-                 shape,
-                 num_bins=10,
-                 tails=None,
-                 tail_bound=1.,
-                 min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH,
-                 min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT):
+    def __init__(
+        self,
+        shape,
+        num_bins=10,
+        tails=None,
+        tail_bound=1.0,
+        min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH,
+        min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT,
+    ):
         super().__init__()
 
         self.min_bin_width = min_bin_width
@@ -311,10 +285,7 @@ class PiecewiseCubicCDF(transforms.Transform):
             spline_kwargs = {}
         else:
             spline_fn = splines.unconstrained_cubic_spline
-            spline_kwargs = {
-                'tails': self.tails,
-                'tail_bound': self.tail_bound
-            }
+            spline_kwargs = {"tails": self.tails, "tail_bound": self.tail_bound}
 
         outputs, logabsdet = spline_fn(
             inputs=inputs,
@@ -336,16 +307,19 @@ class PiecewiseCubicCDF(transforms.Transform):
     def inverse(self, inputs, context=None):
         return self._spline(inputs, inverse=True)
 
+
 class PiecewiseRationalQuadraticCDF(transforms.Transform):
-    def __init__(self,
-                 shape,
-                 num_bins=10,
-                 tails=None,
-                 tail_bound=1.,
-                 identity_init=False,
-                 min_bin_width=splines.rational_quadratic.DEFAULT_MIN_BIN_WIDTH,
-                 min_bin_height=splines.rational_quadratic.DEFAULT_MIN_BIN_HEIGHT,
-                 min_derivative=splines.rational_quadratic.DEFAULT_MIN_DERIVATIVE):
+    def __init__(
+        self,
+        shape,
+        num_bins=10,
+        tails=None,
+        tail_bound=1.0,
+        identity_init=False,
+        min_bin_width=splines.rational_quadratic.DEFAULT_MIN_BIN_WIDTH,
+        min_bin_height=splines.rational_quadratic.DEFAULT_MIN_BIN_HEIGHT,
+        min_derivative=splines.rational_quadratic.DEFAULT_MIN_DERIVATIVE,
+    ):
         super().__init__()
 
         self.min_bin_width = min_bin_width
@@ -360,32 +334,28 @@ class PiecewiseRationalQuadraticCDF(transforms.Transform):
             self.unnormalized_heights = nn.Parameter(torch.zeros(*shape, num_bins))
 
             constant = np.log(np.exp(1 - min_derivative) - 1)
-            num_derivatives = (num_bins - 1) if self.tails == 'linear' else (num_bins + 1)
-            self.unnormalized_derivatives = nn.Parameter(constant * torch.ones(*shape,
-                                                                               num_derivatives))
+            num_derivatives = (num_bins - 1) if self.tails == "linear" else (num_bins + 1)
+            self.unnormalized_derivatives = nn.Parameter(constant * torch.ones(*shape, num_derivatives))
         else:
             self.unnormalized_widths = nn.Parameter(torch.rand(*shape, num_bins))
             self.unnormalized_heights = nn.Parameter(torch.rand(*shape, num_bins))
 
-            num_derivatives = (num_bins - 1) if self.tails == 'linear' else (num_bins + 1)
+            num_derivatives = (num_bins - 1) if self.tails == "linear" else (num_bins + 1)
             self.unnormalized_derivatives = nn.Parameter(torch.rand(*shape, num_derivatives))
 
     def _spline(self, inputs, inverse=False):
         batch_size = inputs.shape[0]
 
-        unnormalized_widths=_share_across_batch(self.unnormalized_widths, batch_size)
-        unnormalized_heights=_share_across_batch(self.unnormalized_heights, batch_size)
-        unnormalized_derivatives=_share_across_batch(self.unnormalized_derivatives, batch_size)
+        unnormalized_widths = _share_across_batch(self.unnormalized_widths, batch_size)
+        unnormalized_heights = _share_across_batch(self.unnormalized_heights, batch_size)
+        unnormalized_derivatives = _share_across_batch(self.unnormalized_derivatives, batch_size)
 
         if self.tails is None:
             spline_fn = splines.rational_quadratic_spline
             spline_kwargs = {}
         else:
             spline_fn = splines.unconstrained_rational_quadratic_spline
-            spline_kwargs = {
-                'tails': self.tails,
-                'tail_bound': self.tail_bound
-            }
+            spline_kwargs = {"tails": self.tails, "tail_bound": self.tail_bound}
 
         outputs, logabsdet = spline_fn(
             inputs=inputs,
@@ -406,5 +376,3 @@ class PiecewiseRationalQuadraticCDF(transforms.Transform):
 
     def inverse(self, inputs, context=None):
         return self._spline(inputs, inverse=True)
-
-

@@ -45,7 +45,7 @@ class LULinear(Linear):
         lower = self.lower_entries.new_zeros(self.features, self.features)
         lower[self.lower_indices[0], self.lower_indices[1]] = self.lower_entries
         # The diagonal of L is taken to be all-ones without loss of generality.
-        lower[self.diag_indices[0], self.diag_indices[1]] = 1.
+        lower[self.diag_indices[0], self.diag_indices[1]] = 1.0
 
         upper = self.upper_entries.new_zeros(self.features, self.features)
         upper[self.upper_indices[0], self.upper_indices[1]] = self.upper_entries

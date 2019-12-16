@@ -16,13 +16,13 @@ class Permutation(transforms.Transform):
 
     def __init__(self, permutation, dim=1):
         if permutation.ndimension() != 1:
-            raise ValueError('Permutation must be a 1D tensor.')
+            raise ValueError("Permutation must be a 1D tensor.")
         if not various.is_positive_int(dim):
-            raise ValueError('dim must be a positive integer.')
+            raise ValueError("dim must be a positive integer.")
 
         super().__init__()
         self._dim = dim
-        self.register_buffer('_permutation', permutation)
+        self.register_buffer("_permutation", permutation)
 
     @property
     def _inverse_permutation(self):
@@ -33,8 +33,7 @@ class Permutation(transforms.Transform):
         if dim >= inputs.ndimension():
             raise ValueError("No dimension {} in inputs.".format(dim))
         if inputs.shape[dim] != len(permutation):
-            raise ValueError("Dimension {} in inputs must be of size {}."
-                             .format(dim, len(permutation)))
+            raise ValueError("Dimension {} in inputs must be of size {}.".format(dim, len(permutation)))
         batch_size = inputs.shape[0]
         if full_jacobian:
             # inputs.requires_grad = True
@@ -47,17 +46,17 @@ class Permutation(transforms.Transform):
 
             # First build the Jacobian as a 2D matrix
             jacobian = torch.zeros((outputs.size()[dim], inputs.size()[dim]))
-            jacobian[permutation, torch.arange(0, len(permutation), 1)] = 1.
+            jacobian[permutation, torch.arange(0, len(permutation), 1)] = 1.0
 
             # Add dummy dimensions for batch size...
             jacobian = jacobian.unsqueeze(0)  # (1, n, n)
             # ... and for every dimension smaller than dim...
             for i in range(dim - 1):
-                jacobian = jacobian.unsqueeze(2 + 2*i)
+                jacobian = jacobian.unsqueeze(2 + 2 * i)
                 jacobian = jacobian.unsqueeze(1 + i)
             # ... and for every dimension larger than dim...
             for i in range(len(inputs.size()) - dim - 1):
-                jacobian = jacobian.unsqueeze(1 + 2 * dim + 2*i)
+                jacobian = jacobian.unsqueeze(1 + 2 * dim + 2 * i)
                 jacobian = jacobian.unsqueeze(1 + dim + i)
 
             # Broadcast to full size
@@ -87,7 +86,7 @@ class RandomPermutation(Permutation):
 
     def __init__(self, features, dim=1):
         if not various.is_positive_int(features):
-            raise ValueError('Number of features must be a positive integer.')
+            raise ValueError("Number of features must be a positive integer.")
         super().__init__(torch.randperm(features), dim)
 
 
@@ -96,5 +95,5 @@ class ReversePermutation(Permutation):
 
     def __init__(self, features, dim=1):
         if not various.is_positive_int(features):
-            raise ValueError('Number of features must be a positive integer.')
+            raise ValueError("Number of features must be a positive integer.")
         super().__init__(torch.arange(features - 1, -1, -1), dim)
