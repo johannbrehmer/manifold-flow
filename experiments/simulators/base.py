@@ -20,7 +20,7 @@ class BaseSimulator:
     def log_density(self, x, parameters=None):
         raise NotImplementedError
 
-    def load_dataset(self, train, dataset_dir):
+    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
         raise NotImplementedError
 
     def sample(self, n, parameters=None):

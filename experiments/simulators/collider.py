@@ -29,11 +29,15 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir):
-        data_filename = "{}/x_{}.npy".format(dataset_dir, "train" if train else "test")
-        param_filename = "{}/theta_{}.npy".format(dataset_dir, "train" if train else "test")
+    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+        x = "{}/x_{}.npy".format(dataset_dir, "train" if train else "test")
+        params = "{}/theta_{}.npy".format(dataset_dir, "train" if train else "test")
 
-        return NumpyDataset(data_filename, param_filename)
+        if limit_samplesize is not None:
+            x = np.load(x)[:limit_samplesize]
+            params = np.load(params)[:limit_samplesize]
+
+        return NumpyDataset(x, params)
 
     def default_parameters(self):
         return np.zeros(self._parameter_dim)

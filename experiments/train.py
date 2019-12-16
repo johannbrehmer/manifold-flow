@@ -46,6 +46,7 @@ def parse_args():
     parser.add_argument("--batchsize", type=int, default=200)
     parser.add_argument("--genbatchsize", type=int, default=800)
     parser.add_argument("--lr", type=float, default=1.0e-3)
+    parser.add_argument("--samplesize", type=int, default=None)
 
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")

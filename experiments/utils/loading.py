@@ -30,7 +30,7 @@ def load_simulator(args):
 
 def load_training_dataset(simulator, args):
     try:
-        return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args))
+        return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize)
     except NotImplementedError:
         pass
 
@@ -40,6 +40,10 @@ def load_training_dataset(simulator, args):
         params = np.load(create_filename("sample", "parameters_train", args))
     except:
         params = np.ones(x.shape[0])
+
+    if args.samplesize is not None:
+        x = x[:args.samplesize]
+        params = params[:args.samplesize]
 
     return NumpyDataset(x, params)
 
