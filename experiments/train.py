@@ -57,13 +57,11 @@ def parse_args():
 def train(args):
     create_modelname(args)
     logger.info(
-        "Training model %s with algorithm %s and %s latent dims on data set %s (data dim %s, true latent dim %s)",
+        "Training model %s with algorithm %s (%s latent dims) on data set %s",
         args.modelname,
         args.algorithm,
         args.modellatentdim,
         args.dataset,
-        args.datadim,
-        args.truelatentdim,
     )
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
