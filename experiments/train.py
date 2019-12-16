@@ -168,7 +168,6 @@ def _train_hybrid(args, dataset, model, simulator):
         epochs=args.epochs - args.epochs // 4,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
-        forward_kwargs={"mode": "mf"},
         batch_size=args.genbatchsize,
         **common_kwargs,
     )
@@ -203,7 +202,6 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
         epochs=args.epochs - 3 * (args.epochs // 6),
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
-        forward_kwargs={"mode": "mf"},
         batch_size=args.genbatchsize,
         **common_kwargs,
     )
