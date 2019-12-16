@@ -30,7 +30,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate(args):
+if __name__ == "__main__":
+    args = parse_args()
+    logging.basicConfig(
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
+    )
+    logger.info("Hi!")
+
     # Simulator
     simulator = load_simulator(args)
 
@@ -54,12 +60,4 @@ def generate(args):
         np.save(create_filename("sample", "parameters_train", args), parameters_train)
         np.save(create_filename("sample", "parameters_test", args), parameters_test)
 
-
-if __name__ == "__main__":
-    args = parse_args()
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
-    )
-    logger.info("Hi!")
-    generate(args)
     logger.info("All done! Have a nice day!")

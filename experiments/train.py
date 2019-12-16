@@ -54,51 +54,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def train(args):
-    create_modelname(args)
-    logger.info(
-        "Training model %s with algorithm %s (%s latent dims) on data set %s",
-        args.modelname,
-        args.algorithm,
-        args.modellatentdim,
-        args.dataset,
-    )
-
-    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
-    torch.multiprocessing.set_start_method("spawn", force=True)
-
-    # Data
-    simulator = load_simulator(args)
-    dataset = load_training_dataset(simulator, args)
-
-    logger.info("Parameters: %s", simulator.parameter_dim())
-
-    # Model
-    model = create_model(args, simulator)
-
-    # Train
-    if args.algorithm == "pie":
-        learning_curves = _train_pie(args, dataset, model, simulator)
-    elif args.algorithm == "flow":
-        learning_curves = _train_flow(args, dataset, model, simulator)
-    elif args.algorithm == "slice":
-        learning_curves = _train_slice_of_pie(args, dataset, model, simulator)
-    elif args.algorithm == "mf":
-        learning_curves = _train_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "gamf":
-        learning_curves = _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "hybrid":
-        learning_curves = _train_hybrid(args, dataset, model, simulator)
-    else:
-        raise ValueError("Unknown algorithm %s", args.algorithm)
-
-    # Save
-    logger.info("Saving model")
-    torch.save(model.state_dict(), create_filename("model", None, args))
-    np.save(create_filename("learning_curve", None, args), learning_curves)
-
-
-def _train_manifold_flow(args, dataset, model, simulator):
+def train_manifold_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
 
@@ -144,7 +100,7 @@ def _train_manifold_flow(args, dataset, model, simulator):
     return learning_curves
 
 
-def _train_hybrid(args, dataset, model, simulator):
+def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
@@ -154,7 +110,7 @@ def _train_hybrid(args, dataset, model, simulator):
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
         loss_weights=[100.0],
-        epochs=args.epochs // 4,
+        epochs=1,  # args.epochs // 4,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         batch_size=args.batchsize,
@@ -178,7 +134,7 @@ def _train_hybrid(args, dataset, model, simulator):
     return learning_curves
 
 
-def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
+def train_hybrid(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
@@ -188,7 +144,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
         loss_weights=[100.0],
-        epochs=args.epochs // 4,
+        epochs=args.epochs // 6,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         batch_size=args.batchsize,
@@ -240,7 +196,7 @@ def _train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
     return learning_curves
 
 
-def _train_slice_of_pie(args, dataset, model, simulator):
+def train_slice_of_pie(args, dataset, model, simulator):
     logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
@@ -283,7 +239,7 @@ def _train_slice_of_pie(args, dataset, model, simulator):
     return learning_curves
 
 
-def _train_flow(args, dataset, model, simulator):
+def train_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
@@ -299,7 +255,7 @@ def _train_flow(args, dataset, model, simulator):
     return learning_curves
 
 
-def _train_pie(args, dataset, model, simulator):
+def train_pie(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training PIE on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
@@ -317,10 +273,54 @@ def _train_pie(args, dataset, model, simulator):
 
 
 if __name__ == "__main__":
+    # Logger
     args = parse_args()
     logging.basicConfig(
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
     logger.info("Hi!")
-    train(args)
+
+    create_modelname(args)
+
+    logger.info(
+        "Training model %s with algorithm %s (%s latent dims) on data set %s",
+        args.modelname,
+        args.algorithm,
+        args.modellatentdim,
+        args.dataset,
+    )
+
+    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
+    torch.multiprocessing.set_start_method("spawn", force=True)
+
+    # Data
+    simulator = load_simulator(args)
+    dataset = load_training_dataset(simulator, args)
+
+    logger.info("Parameters: %s", simulator.parameter_dim())
+
+    # Model
+    model = create_model(args, simulator)
+
+    # Train
+    if args.algorithm == "pie":
+        learning_curves = train_pie(args, dataset, model, simulator)
+    elif args.algorithm == "flow":
+        learning_curves = train_flow(args, dataset, model, simulator)
+    elif args.algorithm == "slice":
+        learning_curves = train_slice_of_pie(args, dataset, model, simulator)
+    elif args.algorithm == "mf":
+        learning_curves = train_manifold_flow(args, dataset, model, simulator)
+    elif args.algorithm == "gamf":
+        learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
+    elif args.algorithm == "hybrid":
+        learning_curves = train_hybrid(args, dataset, model, simulator)
+    else:
+        raise ValueError("Unknown algorithm %s", args.algorithm)
+
+    # Save
+    logger.info("Saving model")
+    torch.save(model.state_dict(), create_filename("model", None, args))
+    np.save(create_filename("learning_curve", None, args), learning_curves)
+
     logger.info("All done! Have a nice day!")

@@ -533,7 +533,7 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
         x = x.to(self.device, self.dtype)
         params = params.to(self.device, self.dtype)
 
-        x_gen = self.model.sample(x, n=batch_size, context=params, **forward_kwargs)
+        x_gen = self.model.sample(n=batch_size, context=params, **forward_kwargs)
         losses = [loss_fn(x_gen, x, None) for loss_fn in loss_functions]
         return losses
 
