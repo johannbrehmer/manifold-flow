@@ -36,10 +36,8 @@ def create_filename(type, label, args):
 
 
 def create_modelname(args):
-    if args.modelname is not None:
-        return
-
+    appendix = "" if args.modelname is None else "_" + args.modelname
     if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-        args.modelname = "{}_{}_{}_{}_{}_{:.3f}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon)
+        args.modelname = "{}_{}_{}_{}_{}_{:.3f}{}".format(args.algorithm, args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix)
     else:
-        args.modelname = "{}_{}_{}".format(args.algorithm, args.modellatentdim, args.dataset)
+        args.modelname = "{}_{}_{}{}".format(args.algorithm, args.modellatentdim, args.dataset, appendix)
