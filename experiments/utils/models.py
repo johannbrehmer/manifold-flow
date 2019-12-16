@@ -362,7 +362,7 @@ def create_model(args, simulator):
             "Creating standard flow for vector data with %s layers, transform %s, %s context features",
             args.innerlayers + args.outerlayers,
             args.outertransform,
-            context_features=simulator.parameter_dim(),
+            simulator.parameter_dim(),
         )
         transform = create_vector_transform(
             args.datadim,

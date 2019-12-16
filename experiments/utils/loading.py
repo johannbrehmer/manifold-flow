@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader
+from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, TopHiggsLoader
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
 from manifold_flow.training import NumpyDataset
@@ -15,21 +15,23 @@ def load_simulator(args):
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
+    elif args.dataset == "tth":
+        simulator = TopHiggsLoader()
     elif args.dataset == "cifar10":
         simulator = CIFAR10Loader()
-        args.datadim = simulator.data_dim()
     elif args.dataset == "imagenet":
         simulator = ImageNetLoader()
-        args.datadim = simulator.data_dim()
     else:
-        raise NotImplementedError("Unknown dataset {}".format(args.dataset))
+        raise ValueError("Unknown dataset {}".format(args.dataset))
+
+    args.datadim = simulator.data_dim()
     return simulator
 
 
 def load_training_dataset(simulator, args):
     try:
         return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args))
-    except:
+    except NotImplementedError:
         pass
 
     if args.dataset == "spherical_gaussian":

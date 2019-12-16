@@ -1,13 +1,13 @@
 import os
 
-SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian", "cifar10", "imagenet"]
+SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian", "tth", "cifar10", "imagenet"]
 ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid"]
 
 
 def create_filename(type, label, args):
-    if type == "dataset":
+    if type == "dataset":  # Fixed datasets
         filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
-    elif type == "sample":
+    elif type == "sample":  # Dynamically sampled from simulator
         filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
             args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
         )

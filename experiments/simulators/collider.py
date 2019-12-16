@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class BaseLHCLoader(BaseSimulator):
     def __init__(self, n_parameters, n_observables, n_final, n_additional_constraints=0, prior_scale=1.):
-        super(self).__init__()
+        super().__init__()
 
         self._prior_scale = prior_scale
         self._data_dim = n_observables
@@ -54,4 +54,4 @@ class BaseLHCLoader(BaseSimulator):
 
 class TopHiggsLoader(BaseLHCLoader):
     def __init__(self):
-        super().__init__(n_parameters=3, n_observables=100, n_final=8, n_additional_constraints=1, prior_scale=0.5)
+        super().__init__(n_parameters=3, n_observables=48, n_final=8, n_additional_constraints=1, prior_scale=0.5)

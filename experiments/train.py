@@ -12,7 +12,7 @@ import experiments.utils.names
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks, GenerativeTrainer, ConditionalGenerativeTrainer
-from experiments.utils.various import load_training_dataset, load_simulator
+from experiments.utils.loading import load_training_dataset, load_simulator
 from experiments.utils.names import create_filename, create_modelname
 from experiments.utils.models import create_model
 from experiments import utils
