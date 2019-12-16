@@ -7,10 +7,13 @@ import torch
 import argparse
 from torch import optim
 
+import experiments.utils.names
+
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks, GenerativeTrainer, ConditionalGenerativeTrainer
-from experiments.utils.various import create_filename, load_training_dataset, create_modelname, load_simulator
+from experiments.utils.various import load_training_dataset, load_simulator
+from experiments.utils.names import create_filename, create_modelname
 from experiments.utils.models import create_model
 from experiments import utils
 
@@ -21,8 +24,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--modelname", type=str, default=None, help="Model name.")
-    parser.add_argument("--algorithm", type=str, default="mf", choices=utils.ALGORITHMS)
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=utils.SIMULATORS)
+    parser.add_argument("--algorithm", type=str, default="mf", choices=experiments.utils.names.ALGORITHMS)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=experiments.utils.names.SIMULATORS)
 
     parser.add_argument("--truelatentdim", type=int, default=2)
     parser.add_argument("--datadim", type=int, default=3)

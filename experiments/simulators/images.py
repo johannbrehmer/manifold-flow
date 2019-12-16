@@ -6,39 +6,12 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms as tvt
 from torchvision import datasets
-from torchvision.datasets.folder import default_loader, has_file_allowed_extension, IMG_EXTENSIONS
 
 from experiments.simulators.base import BaseSimulator
 from experiments.utils import download_file_from_google_drive
+from manifold_flow.training import UnlabelledImageFolder
 
 logger = logging.getLogger(__name__)
-
-
-class UnlabelledImageFolder(Dataset):
-    def __init__(self, root, transform=None):
-        self.root = root
-        self.transform = transform
-        self.paths = self.find_images(os.path.join(root))
-
-    def __getitem__(self, index):
-        path = self.paths[index]
-        image = default_loader(path)
-        if self.transform is not None:
-            image = self.transform(image)
-        # Add a bogus label to be compatible with standard image simulators.
-        return image, torch.tensor([0.0])
-
-    def __len__(self):
-        return len(self.paths)
-
-    @staticmethod
-    def find_images(dir):
-        paths = []
-        for fname in sorted(os.listdir(dir)):
-            if has_file_allowed_extension(fname, IMG_EXTENSIONS):
-                path = os.path.join(dir, fname)
-                paths.append(path)
-        return paths
 
 
 class CIFAR10Fast(datasets.CIFAR10):

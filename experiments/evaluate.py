@@ -6,10 +6,13 @@ import sys
 import torch
 import argparse
 
+import experiments.utils.names
+
 sys.path.append("../")
 
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils.various import load_simulator, create_filename, create_modelname
+from experiments.utils.various import load_simulator
+from experiments.utils.names import create_filename, create_modelname
 from experiments.utils.models import create_model
 from experiments.utils.various import load_test_samples
 from experiments import utils
@@ -21,8 +24,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--modelname", type=str, default=None, help="Model name.")
-    parser.add_argument("--algorithm", type=str, default="mf", choices=utils.ALGORITHMS)
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=utils.SIMULATORS)
+    parser.add_argument("--algorithm", type=str, default="mf", choices=experiments.utils.names.ALGORITHMS)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=experiments.utils.names.SIMULATORS)
 
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--truelatentdim", type=int, default=2)
