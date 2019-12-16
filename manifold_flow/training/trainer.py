@@ -139,7 +139,7 @@ class Trainer(object):
 
             # LR schedule
             if sched is not None:
-                logger.debug("  Learning rate: %s", sched.get_lr()[0])
+                logger.debug("Learning rate: %s", sched.get_lr()[0])
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
