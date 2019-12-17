@@ -68,7 +68,7 @@ class ManifoldFlow(BaseFlow):
         """ Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently."""
 
         if u is None:
-            u = self.manifold_latent_distribution.sample(n, context=context)
+            u = self.manifold_latent_distribution.sample(n, context=None)
         u_orthogonal = self.orthogonal_latent_distribution.sample(n, context=context) if sample_orthogonal else None
         x = self.decode(u, u_orthogonal=u_orthogonal)
         return x
