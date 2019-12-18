@@ -56,7 +56,8 @@ class BaseLHCLoader(BaseSimulator):
         )
 
     def evaluate_log_prior(self, parameters):
-        return np.sum(norm(loc=0.0, scale=self._prior_scale).logpdf(x=parameters.flatten()).reshape(parameters.shape), axis=1)
+        parameters = parameters.reshape((-1, self.parameter_dim()))
+        return np.sum(norm(loc=0.0, scale=self._prior_scale).logpdf(x=parameters), axis=1)
 
     @staticmethod
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):

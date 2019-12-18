@@ -107,7 +107,7 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
             # timer.timer(start="nde likelihood")
             params_ = np.broadcast_to(params.reshape((-1, params.shape[-1])), (x_obs.shape[0], params.shape[-1]))
             params_ = torch.tensor(params_, dtype=torch.float)
-            log_prob = np.sum(model.log_prob(torch.tensor(x_obs_), context=params_).detach().numpy())
+            log_prob = np.sum(model.log_prob(x_obs_, context=params_).detach().numpy())
             # timer.timer(stop="nde likelihood", start="nde prior")
             log_prob += simulator.evaluate_log_prior(params)
             # timer.timer(stop="nde prior")

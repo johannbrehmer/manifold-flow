@@ -8,9 +8,14 @@ def create_filename(type, label, args):
     if type == "dataset":  # Fixed datasets
         filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
     elif type == "sample":  # Dynamically sampled from simulator
-        filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
-            args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
-        )
+        if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
+            filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
+                args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
+            )
+        else:
+            filename = "{}/experiments/data/samples/{}/{}.npy".format(
+                args.dir, args.dataset, label
+            )
     elif type == "model":
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
     elif type == "learning_curve":
