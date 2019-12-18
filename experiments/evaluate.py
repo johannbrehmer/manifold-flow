@@ -44,6 +44,7 @@ def parse_args():
     # Evaluation settings
     parser.add_argument("--generate", type=int, default=1000)
     parser.add_argument("--observedsamples", type=int, default=10)
+    parser.add_argument("--slicesampler", action="store_true")
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -167,10 +168,10 @@ if __name__ == "__main__":
 
     else:
         # Evaluate MMD
-        model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples)
+        model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
         np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
-        true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples)
+        true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
         np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
         mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
