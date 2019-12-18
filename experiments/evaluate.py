@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument("--generate", type=int, default=1000)
     parser.add_argument("--observedsamples", type=int, default=10)
     parser.add_argument("--slicesampler", action="store_true")
+    parser.add_argument("--thin", type=int, default=10)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
