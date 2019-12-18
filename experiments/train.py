@@ -47,11 +47,11 @@ def parse_args():
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--genbatchsize", type=int, default=800)
     parser.add_argument("--lr", type=float, default=1.0e-3)
-    parser.add_argument("--initialmsefactor", type=float, default=100.)
+    parser.add_argument("--initialmsefactor", type=float, default=100.0)
     parser.add_argument("--initialnllfactor", type=float, default=0.01)
-    parser.add_argument("--msefactor", type=float, default=1.)
-    parser.add_argument("--nllfactor", type=float, default=1.)
-    parser.add_argument("--sinkhornfactor", type=float, default=1.)
+    parser.add_argument("--msefactor", type=float, default=1.0)
+    parser.add_argument("--nllfactor", type=float, default=1.0)
+    parser.add_argument("--sinkhornfactor", type=float, default=1.0)
     parser.add_argument("--samplesize", type=int, default=None)
 
     # Other settings
