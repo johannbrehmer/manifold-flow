@@ -42,6 +42,7 @@ def load_training_dataset(simulator, args):
         params = np.ones(x.shape[0])
 
     if args.samplesize is not None:
+        logger.info("Only using %s of %s available samples", args.samplesize, x.shape[0])
         x = x[: args.samplesize]
         params = params[: args.samplesize]
 
