@@ -52,64 +52,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def evaluate_samples(args):
-    # Model name
-    create_modelname(args)
-
-    logger.info("Evaluating model %s on generation tasks", args.modelname)
-
-    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
-    torch.multiprocessing.set_start_method("spawn", force=True)
-
-    # Data
-    simulator = load_simulator(args)
-
-    if simulator.parameter_dim() is not None:
-        logger.info("Data set %s has parameters, skipping generative evaluation", args.dataset)
-        return
-
-    # Model
-    model = create_model(args, simulator)
-
-    # Generate data
-    x_gen = _sample_from_model(args, model)
-
-    # Calculate likelihood of data
-    _evaluate_model_samples(args, simulator, x_gen)
-
-
-def evaluate_inference(args):
-    # Model name
-    create_modelname(args)
-
-    logger.info("Evaluating model %s on inference tasks", args.modelname)
-
-    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
-    torch.multiprocessing.set_start_method("spawn", force=True)
-
-    # Data
-    simulator = load_simulator(args)
-
-    if simulator.parameter_dim() is None:
-        logger.info("Data set %s has no parameters, skipping inference evaluation", args.dataset)
-        return
-
-    # Model
-    model = create_model(args, context_features=simulator.parameter_dim())
-    model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
-
-    # Evaluate MMD
-    model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples)
-    np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
-
-    true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples)
-    np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
-
-    mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-    np.save(create_filename("results", "mmd", args), mmd)
-    logger.info("MMD between model and true posterior samples: %s", mmd)
-
-
 def _sample_from_model(args, model):
     logger.info("Sampling from model")
     x_gen = model.sample(n=args.generate).detach().numpy()
@@ -201,7 +143,38 @@ if __name__ == "__main__":
     )
     logger.info("Hi!")
 
-    evaluate_samples(args)
-    evaluate_inference(args)
+    # Model name
+    create_modelname(args)
+    logger.info("Evaluating model %s", args.modelname)
+
+    # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
+    torch.multiprocessing.set_start_method("spawn", force=True)
+
+    # Data
+    simulator = load_simulator(args)
+
+    # Model
+    model = create_model(args, simulator=simulator)
+    model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
+
+    # Evaluate either generative or inference performance
+    if simulator.parameter_dim() is None:
+        # Generate data
+        x_gen = _sample_from_model(args, model)
+
+        # Calculate likelihood of data
+        _evaluate_model_samples(args, simulator, x_gen)
+
+    else:
+        # Evaluate MMD
+        model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples)
+        np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
+
+        true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples)
+        np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
+
+        mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
+        np.save(create_filename("results", "mmd", args), mmd)
+        logger.info("MMD between model and true posterior samples: %s", mmd)
 
     logger.info("All done! Have a nice day!")
