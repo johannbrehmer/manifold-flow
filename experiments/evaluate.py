@@ -6,16 +6,12 @@ import sys
 import torch
 import argparse
 
-import experiments.utils.names
-
 sys.path.append("../")
 
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils.various import load_simulator
-from experiments.utils.names import create_filename, create_modelname
+from experiments.utils.loading import load_simulator, load_test_samples
+from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
 from experiments.utils.models import create_model
-from experiments.utils.various import load_test_samples
-from experiments import utils
 
 logger = logging.getLogger(__name__)
 
@@ -23,24 +19,33 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--modelname", type=str, default=None, help="Model name.")
-    parser.add_argument("--algorithm", type=str, default="mf", choices=experiments.utils.names.ALGORITHMS)
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=experiments.utils.names.SIMULATORS)
+    # What what what
+    parser.add_argument("--modelname", type=str, default=None)
+    parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
 
-    parser.add_argument("--conditionalouter", action="store_true")
+    # Dataset details
     parser.add_argument("--truelatentdim", type=int, default=2)
     parser.add_argument("--datadim", type=int, default=3)
     parser.add_argument("--epsilon", type=float, default=0.01)
 
+    # Model details
     parser.add_argument("--modellatentdim", type=int, default=2)
     parser.add_argument("--outertransform", type=str, default="affine-coupling")
     parser.add_argument("--innertransform", type=str, default="affine-coupling")
     parser.add_argument("--lineartransform", type=str, default="permutation")
     parser.add_argument("--outerlayers", type=int, default=5)
     parser.add_argument("--innerlayers", type=int, default=5)
+    parser.add_argument("--conditionalouter", action="store_true")
+    parser.add_argument("--outercouplingmlp", action="store_true")
+    parser.add_argument("--outercouplinglayers", type=int, default=3)
+    parser.add_argument("--outercouplinghidden", type=int, default=256)
 
+    # Evaluation settings
     parser.add_argument("--generate", type=int, default=1000)
     parser.add_argument("--observedsamples", type=int, default=10)
+
+    # Other settings
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
 
