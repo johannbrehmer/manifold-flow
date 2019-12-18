@@ -121,7 +121,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[100.0],
+        loss_weights=[1.0],
         epochs=args.epochs - args.epochs // 4,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -155,7 +155,7 @@ def train_hybrid(args, dataset, model, simulator):
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[100.0],
+        loss_weights=[1.0],
         epochs=args.epochs - 3 * (args.epochs // 6),
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
