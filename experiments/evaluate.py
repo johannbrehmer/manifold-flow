@@ -105,13 +105,17 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
     else:
         # MCMC based on neural likelihood estimator
         def log_posterior(params):
-            # timer.timer(start="nde likelihood")
             params_ = np.broadcast_to(params.reshape((-1, params.shape[-1])), (x_obs.shape[0], params.shape[-1]))
             params_ = torch.tensor(params_, dtype=torch.float)
-            log_prob = np.sum(model.log_prob(x_obs_, context=params_).detach().numpy())
-            # timer.timer(stop="nde likelihood", start="nde prior")
+
+            if args.algorithm == "flow":
+                log_prob = np.sum(model.log_prob(x_obs_, context=params_).detach().numpy())
+            elif args.algorithm in ["pie", "slice"]:
+                log_prob = np.sum(model.log_prob(x_obs_, context=params_, mode=args.algorithm).detach().numpy())
+            else:
+                log_prob = np.sum(model.log_prob(x_obs_, context=params_, mode="mf").detach().numpy())
+
             log_prob += simulator.evaluate_log_prior(params)
-            # timer.timer(stop="nde prior")
             return float(log_prob)
 
     if slice_sampling:
@@ -121,18 +125,12 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
         logger.debug("Initializing Gaussian Metropolis-Hastings sampler")
         sampler = mcmc.GaussianMetropolis(true_parameters, log_posterior, step=step, thin=thin)
 
-    # timer.reset()
-    # timer.timer(start="mcmc")
-
     if burnin > 0:
         logger.info("Starting burn in")
         sampler.gen(burnin)  # burn in
     logger.info("Burn in done, starting main chain")
     posterior_samples = sampler.gen(n_mcmc_samples)
     logger.info("MCMC done")
-
-    # timer.timer(stop="mcmc")
-    # timer.report()
 
     return posterior_samples
 
@@ -171,11 +169,15 @@ if __name__ == "__main__":
         model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
         np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
-        true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
-        np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
+        try:
+            true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
+            np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
-        mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-        np.save(create_filename("results", "mmd", args), mmd)
-        logger.info("MMD between model and true posterior samples: %s", mmd)
+            mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
+            np.save(create_filename("results", "mmd", args), mmd)
+            logger.info("MMD between model and true posterior samples: %s", mmd)
+
+        except:
+            logger.info("Ground truth likelihood not defined, skipping MCMC based on true likelihood")
 
     logger.info("All done! Have a nice day!")
