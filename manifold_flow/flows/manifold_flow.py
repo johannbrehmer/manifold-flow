@@ -69,8 +69,8 @@ class ManifoldFlow(BaseFlow):
 
         if u is None:
             u = self.manifold_latent_distribution.sample(n, context=None)
-        u_orthogonal = self.orthogonal_latent_distribution.sample(n, context=context) if sample_orthogonal else None
-        x = self.decode(u, u_orthogonal=u_orthogonal)
+        u_orthogonal = self.orthogonal_latent_distribution.sample(n, context=None) if sample_orthogonal else None
+        x = self.decode(u, u_orthogonal=u_orthogonal, context=context)
         return x
 
     def _encode(self, x, context=None):
