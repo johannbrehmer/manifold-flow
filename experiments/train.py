@@ -45,6 +45,11 @@ def parse_args():
     parser.add_argument("--batchsize", type=int, default=200)
     parser.add_argument("--genbatchsize", type=int, default=800)
     parser.add_argument("--lr", type=float, default=1.0e-3)
+    parser.add_argument("--initialmsefactor", type=float, default=100.)
+    parser.add_argument("--initialnllfactor", type=float, default=0.01)
+    parser.add_argument("--msefactor", type=float, default=1.)
+    parser.add_argument("--nllfactor", type=float, default=1.)
+    parser.add_argument("--sinkhornfactor", type=float, default=1.)
     parser.add_argument("--samplesize", type=int, default=None)
 
     parser.add_argument("--dir", type=str, default="../")
@@ -61,7 +66,7 @@ def train_manifold_flow(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
-        loss_weights=[100.0],
+        loss_weights=[args.initialmsefactor],
         epochs=args.epochs // 3,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
@@ -73,7 +78,7 @@ def train_manifold_flow(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[100.0, 0.01],
+        loss_weights=[args.initialmsefactor, args.initialnllfactor],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -87,7 +92,7 @@ def train_manifold_flow(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[1.0, 1.0],
+        loss_weights=[args.msefactor, args.nllfactor],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
@@ -108,7 +113,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
-        loss_weights=[100.0],
+        loss_weights=[args.initialmsefactor],
         epochs=args.epochs // 4,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
@@ -121,7 +126,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[1.0],
+        loss_weights=[args.sinkhornfactor],
         epochs=args.epochs - args.epochs // 4,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -142,7 +147,7 @@ def train_hybrid(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
-        loss_weights=[100.0],
+        loss_weights=[args.initialmsefactor],
         epochs=args.epochs // 6,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
@@ -155,7 +160,7 @@ def train_hybrid(args, dataset, model, simulator):
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
-        loss_weights=[1.0],
+        loss_weights=[args.sinkhornfactor],
         epochs=args.epochs - 3 * (args.epochs // 6),
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -169,7 +174,7 @@ def train_hybrid(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[100.0, 0.01],
+        loss_weights=[args.initialmsefactor, args.initialnllfactor],
         epochs=args.epochs // 6,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -183,7 +188,7 @@ def train_hybrid(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[1.0, 1.0],
+        loss_weights=[args.msefactor, args.nllfactor],
         epochs=args.epochs // 6,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
@@ -202,7 +207,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
-        loss_weights=[100.0],
+        loss_weights=[args.initialmsefactor],
         epochs=args.epochs // 3,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
@@ -213,7 +218,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[100.0, 0.01],
+        loss_weights=[args.initialmsefactor, args.initialnllfactor],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
@@ -226,7 +231,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[1.0, 1.0],
+        loss_weights=[args.msefactor, args.nllfactor],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
@@ -245,7 +250,7 @@ def train_flow(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
-        loss_weights=[1.0],
+        loss_weights=[args.nllfactor],
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         **common_kwargs,
@@ -261,7 +266,7 @@ def train_pie(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
-        loss_weights=[1.0],
+        loss_weights=[args.nllfactor],
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
         forward_kwargs={"mode": "pie"},
