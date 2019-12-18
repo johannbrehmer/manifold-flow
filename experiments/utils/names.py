@@ -13,9 +13,7 @@ def create_filename(type, label, args):
                 args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
             )
         else:
-            filename = "{}/experiments/data/samples/{}/{}.npy".format(
-                args.dir, args.dataset, label
-            )
+            filename = "{}/experiments/data/samples/{}/{}.npy".format(args.dir, args.dataset, label)
     elif type == "model":
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
     elif type == "learning_curve":

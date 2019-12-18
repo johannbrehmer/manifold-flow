@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-slice-tth
+#SBATCH --job-name=t-sl-tth
 #SBATCH --output=log_train_slice_tth.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1

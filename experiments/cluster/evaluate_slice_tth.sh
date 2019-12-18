@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-slice-tth
+#SBATCH --job-name=e-sl-tth
 #SBATCH --output=log_evaluate_slice_tth.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
