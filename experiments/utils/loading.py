@@ -34,8 +34,7 @@ def load_training_dataset(simulator, args):
     except NotImplementedError:
         pass
 
-    if args.dataset == "spherical_gaussian":
-        x = np.load(create_filename("sample", "x_train", args))
+    x = np.load(create_filename("sample", "x_train", args))
     try:
         params = np.load(create_filename("sample", "parameters_train", args))
     except:
