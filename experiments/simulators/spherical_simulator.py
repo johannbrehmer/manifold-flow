@@ -66,7 +66,7 @@ class SphericalGaussianSimulator(BaseSimulator):
         sins[:, 0] = 1
         sins = np.cumprod(sins, axis=1)  # n entries, each (1, sin(z0), sin(z1), ..., sin(zk))
         coss = np.cos(a)
-        coss = np.roll(coss, -1)  # n entries, each (cos(z0), cos(z1), ..., cos(zk), 1)
+        coss = np.roll(coss, -1, axis=1)  # n entries, each (cos(z0), cos(z1), ..., cos(zk), 1)
         exact_sphere = sins * coss  # (n, k+1)
         fuzzy_sphere = exact_sphere * r[:, np.newaxis]
         x = np.concatenate((fuzzy_sphere, z_eps[:, 1:]), axis=1)
