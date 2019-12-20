@@ -41,13 +41,15 @@ class SphericalCoordinates(transforms.Transform):
             _, logdet = torch.slogdet(jacobian)
             return outputs, logdet
 
+        return outputs, jacobian
+
     def _split_spherical(self, spherical):
         batchsize = spherical.size(0)
         d = spherical.size(1)
 
         phi = spherical[:, :self.n]
         dr = spherical[:, self.n].view(batchsize, 1)
-        others = spherical[:, self.n:]
+        others = spherical[:, self.n + 1:]
 
         return (batchsize, d), (phi, dr, others)
 
@@ -59,12 +61,13 @@ class SphericalCoordinates(transforms.Transform):
         a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1)
 
         sins = torch.sin(a1)  # (batchsize, n+1), first row is ones
-        sins = torch.cumprod(sins, dim=1)
+        sins = torch.cumprod(sins, dim=1)  # (batchsize, n+1)
         coss = torch.cos(a0)  # (batchsize, n+1), first row is ones
         coss = torch.roll(coss, -1, dims=1)  # (batchsize, n+1), last row is ones
 
         unit_sphere = sins * coss
-        sphere = unit_sphere * r[:, np.newaxis]
+        sphere = unit_sphere * r.view((-1, 1))
+
         outputs = torch.cat((sphere, others), dim=1)
 
         return outputs
