@@ -63,12 +63,12 @@ class SphericalCoordinates(transforms.Transform):
         (batchsize, d), (phi, dr, others) = self._split_spherical(inputs)
         r = dr + self.r0
 
-        a1 = torch.cat((np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1)
-        a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1)
+        a1 = torch.cat((0.5 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row is pi, rest are angles
+        a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row are 2pi, rest are angles
 
-        sins = torch.sin(a1)  # (batchsize, n+1), first row is ones
+        sins = torch.sin(a1)  # (batchsize, n+1), first row is ones, others are sin(angles)
         sins = torch.cumprod(sins, dim=1)  # (batchsize, n+1)
-        coss = torch.cos(a0)  # (batchsize, n+1), first row is ones
+        coss = torch.cos(a0)  # (batchsize, n+1), first row is ones, others are sin(angles)
         coss = torch.roll(coss, -1, dims=1)  # (batchsize, n+1), last row is ones
 
         unit_sphere = sins * coss
