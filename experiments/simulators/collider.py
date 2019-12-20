@@ -42,8 +42,23 @@ class BaseLHCLoader(BaseSimulator):
             x = x[:limit_samplesize]
             params = params[:limit_samplesize]
 
+        # Make sure things are sane
+        logger.info("ttH features before preprocessing:")
+        for i in range(x.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:,i]), np.max(x[:,i]), np.mean(x[:,i]), np.std(x[:,i]))
+
         # Preprocess to zero mean and unit variance
         x = self._preprocess(x)
+
+        # Make sure things are sane
+        logger.info("ttH features after preprocessing:")
+        for i in range(x.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:,i]), np.max(x[:,i]), np.mean(x[:,i]), np.std(x[:,i]))
+
+        # Make sure things are sane
+        logger.info("ttH parameters:")
+        for i in range(params.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:,i]), np.max(params[:,i]), np.mean(params[:,i]), np.std(params[:,i]))
 
         return NumpyDataset(x, params)
 
