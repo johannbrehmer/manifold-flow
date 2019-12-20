@@ -12,4 +12,4 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --dataset tth --algorithm pie --modellatentdim 20 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset tth --algorithm pie --modellatentdim 20 --lr 1.e-4 --dir /scratch/jb6504/manifold-flow

@@ -66,7 +66,7 @@ class Trainer(object):
         validation_split=0.25,
         early_stopping=True,
         early_stopping_patience=None,
-        clip_gradient=10.0,
+        clip_gradient=1.0,
         verbose="some",
         parameters=None,
         callbacks=None,
