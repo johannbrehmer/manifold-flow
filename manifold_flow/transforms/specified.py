@@ -74,17 +74,19 @@ class SphericalCoordinates(transforms.Transform):
         phis = []
         for i in range(self.n):
             r_ = torch.sum(inputs[:, i : self.n + 1] ** 2, dim=1) ** 0.5
-            phis.append(torch.arccos(inputs[:, i] / r_))
+            phi_ = torch.acos(inputs[:, i] / r_).view((-1, 1))
+            phis.append(phi_)
 
         # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates
-        phis[-1] = torch.where(inputs[:, self.d] < 0.0, 2.0 * np.pi - phis[-1], phis[-1])
+        phis[-1] = torch.where(inputs[:, self.n] < 0.0, 2.0 * np.pi - phis[-1][:, 0], phis[-1][:, 0]).view((-1, 1))
 
         # Radial coordinate
-        r = torch.sum(inputs[:, : self.d + 1] ** 2, dim=1) ** 0.5
+        r = torch.sum(inputs[:, : self.n + 1] ** 2, dim=1) ** 0.5
         dr = r - self.r0
+        dr = dr.view((-1, 1))
 
         # Combine
-        others = inputs[:,self.n:]
+        others = inputs[:,self.n + 1:]
         outputs = torch.cat(phis + [dr, others], dim=1)
 
         return outputs
