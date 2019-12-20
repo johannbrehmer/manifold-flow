@@ -12,11 +12,14 @@ class SphericalCoordinates(transforms.Transform):
     """ Translates the first d+1 data components from Cartesian to the hyperspherical coordinates of a d-sphere and a radial coordinate, leaving the remaining variables
     invariant. Only supports  """
 
-    def __init__(self, n):
-        """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. """
+    def __init__(self, n, r0=0.):
+        """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. r0 is subtracted from the radial coordinate, so with r = 1 deviations
+        from the unit sphere are calculated. """
+
         super().__init__()
 
         self.n = n
+        self.r0 = r0
 
     def forward(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
@@ -27,7 +30,6 @@ class SphericalCoordinates(transforms.Transform):
         if not full_jacobian:
             _, logdet = torch.slogdet(jacobian)
             return outputs, logdet
-
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
@@ -44,12 +46,14 @@ class SphericalCoordinates(transforms.Transform):
         d = spherical.size(1)
 
         phi = spherical[:, :self.n]
-        r = spherical[:, self.n].view(batchsize, 1)
+        dr = spherical[:, self.n].view(batchsize, 1)
         others = spherical[:, self.n:]
-        return (batchsize, d), (phi, r, others)
+
+        return (batchsize, d), (phi, dr, others)
 
     def _spherical_to_cartesian(self, inputs):
-        (batchsize, d), (phi, r, others) = self._split_spherical(inputs)
+        (batchsize, d), (phi, dr, others) = self._split_spherical(inputs)
+        r = dr + self.r0
 
         a1 = torch.cat((np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1)
         a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1)
@@ -75,8 +79,12 @@ class SphericalCoordinates(transforms.Transform):
         # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates
         phis[-1] = torch.where(inputs[:, self.d] < 0.0, 2.0 * np.pi - phis[-1], phis[-1])
 
-        # Radial coordinate, others, and combine
+        # Radial coordinate
         r = torch.sum(inputs[:, : self.d + 1] ** 2, dim=1) ** 0.5
+        dr = r - self.r0
+
+        # Combine
         others = inputs[:,self.n:]
-        outputs = torch.cat(phis + [r, others], dim=1)
+        outputs = torch.cat(phis + [dr, others], dim=1)
+
         return outputs
