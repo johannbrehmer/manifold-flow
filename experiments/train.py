@@ -32,6 +32,7 @@ def parse_args():
 
     # Model details
     parser.add_argument("--modellatentdim", type=int, default=2)
+    parser.add_argument("--specified", action="store_true")
     parser.add_argument("--outertransform", type=str, default="affine-coupling")
     parser.add_argument("--innertransform", type=str, default="affine-coupling")
     parser.add_argument("--lineartransform", type=str, default="permutation")

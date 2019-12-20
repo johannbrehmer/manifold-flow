@@ -382,6 +382,35 @@ def create_model(args, simulator):
         )
         raise NotImplementedError
 
+    elif not simulator.is_image() and args.specified:
+        logger.info(
+            "Creating manifold flow for vector data with %s latent dimensions, specified outer transformation + %s inner layers, transform %s, %s context features",
+            args.modellatentdim,
+            args.innerlayers,
+            args.innertransform,
+            simulator.parameter_dim(),
+        )
+
+        if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
+            outer_transform = transforms.SphericalCoordinates(n=args.modellatentdim, r0=1.)
+        else:
+            raise NotImplementedError("Specified outer transformation not yet implemented for dataset {}".format(args.dataset))
+
+        inner_transform = create_vector_transform(
+            args.modellatentdim,
+            args.innerlayers,
+            linear_transform_type=args.lineartransform,
+            base_transform_type=args.innertransform,
+            context_features=simulator.parameter_dim(),
+        )
+        model = ManifoldFlow(
+            data_dim=args.datadim,
+            latent_dim=args.modellatentdim,
+            outer_transform=outer_transform,
+            inner_transform=inner_transform,
+            apply_context_to_outer=args.conditionalouter,
+        )
+
     elif not simulator.is_image():
         logger.info(
             "Creating manifold flow for vector data with %s latent dimensions, %s + %s layers, transforms %s / %s, %s context features",
