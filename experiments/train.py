@@ -66,45 +66,59 @@ def train_manifold_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
 
-    logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
-    learning_curves = trainer.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
-        loss_weights=[args.initialmsefactor],
-        epochs=args.epochs // 3,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
-        forward_kwargs={"mode": "projection"},
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
+    if args.specified:
+        logger.info("Starting training MF with specified manifold on NLL")
+        learning_curves = trainer.train(
+            loss_functions=[losses.nll],
+            loss_labels=["NLL"],
+            loss_weights=[args.nllfactor],
+            epochs=args.epochs,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+            forward_kwargs={"mode": "mf"},
+            **common_kwargs,
+        )
+        learning_curves = np.vstack(learning_curves).T
+    else:
+        logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
+        learning_curves = trainer.train(
+            loss_functions=[losses.mse],
+            loss_labels=["MSE"],
+            loss_weights=[args.initialmsefactor],
+            epochs=args.epochs // 3,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
+            **common_kwargs,
+        )
+        learning_curves = np.vstack(learning_curves).T
 
-    logger.info("Starting training MF, phase 2: mixed training")
-    learning_curves_ = trainer.train(
-        loss_functions=[losses.mse, losses.nll],
-        loss_labels=["MSE", "NLL"],
-        loss_weights=[args.initialmsefactor, args.initialnllfactor],
-        epochs=args.epochs - 2 * (args.epochs // 3),
-        parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
-        forward_kwargs={"mode": "mf"},
-        **common_kwargs,
-    )
-    learning_curves_ = np.vstack(learning_curves_).T
-    learning_curves = np.vstack((learning_curves, learning_curves_))
+        logger.info("Starting training MF, phase 2: mixed training")
+        learning_curves_ = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[args.initialmsefactor, args.initialnllfactor],
+            epochs=args.epochs - 2 * (args.epochs // 3),
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+            forward_kwargs={"mode": "mf"},
+            **common_kwargs,
+        )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
 
-    logger.info("Starting training MF, phase 3: training only inner flow on NLL")
-    learning_curves_ = trainer.train(
-        loss_functions=[losses.mse, losses.nll],
-        loss_labels=["MSE", "NLL"],
-        loss_weights=[args.msefactor, args.nllfactor],
-        epochs=args.epochs // 3,
-        parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
-        forward_kwargs={"mode": "mf"},
-        **common_kwargs,
-    )
-    learning_curves_ = np.vstack(learning_curves_).T
-    learning_curves = np.vstack((learning_curves, learning_curves_))
+        logger.info("Starting training MF, phase 3: training only inner flow on NLL")
+        learning_curves_ = trainer.train(
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[args.msefactor, args.nllfactor],
+            epochs=args.epochs // 3,
+            parameters=model.inner_transform.parameters(),
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+            forward_kwargs={"mode": "mf"},
+            **common_kwargs,
+        )
+        learning_curves_ = np.vstack(learning_curves_).T
+        learning_curves = np.vstack((learning_curves, learning_curves_))
+
     return learning_curves
 
 

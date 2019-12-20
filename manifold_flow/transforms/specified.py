@@ -24,6 +24,9 @@ class SphericalCoordinates(transforms.Transform):
     def forward(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
 
+        if not inputs.requires_grad:
+            inputs.requires_grad = True
+
         outputs = self._cartesian_to_spherical(inputs)
         jacobian = batch_jacobian(outputs, inputs)
 
@@ -33,6 +36,9 @@ class SphericalCoordinates(transforms.Transform):
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
+
+        if not inputs.requires_grad:
+            inputs.requires_grad = True
 
         outputs = self._spherical_to_cartesian(inputs)
         jacobian = batch_jacobian(outputs, inputs)
