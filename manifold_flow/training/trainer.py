@@ -382,6 +382,8 @@ class ManifoldFlowTrainer(Trainer):
             forward_kwargs = {}
 
         x, y = batch_data
+        self._check_for_nans("Training data", x)
+
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
@@ -389,7 +391,13 @@ class ManifoldFlowTrainer(Trainer):
             x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
             x_reco, log_prob, _ = self.model(x, **forward_kwargs)
+        self._check_for_nans("Reconstructed data", x_reco)
+        if log_prob is not None:
+            self._check_for_nans("Log likelihood", log_prob)
+
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
+
         return losses
 
 
@@ -407,13 +415,18 @@ class ConditionalManifoldFlowTrainer(Trainer):
 
         x = x.to(self.device, self.dtype)
         params = params.to(self.device, self.dtype)
+        self._check_for_nans("Training data", x, params)
 
         if self.multi_gpu:
             x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
         else:
             x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
+        self._check_for_nans("Reconstructed data", x_reco)
+        if log_prob is not None:
+            self._check_for_nans("Log likelihood", log_prob)
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
 
         return losses
 
@@ -429,9 +442,14 @@ class GenerativeTrainer(Trainer):
         if len(x.size()) < 2:
             x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)
+        self._check_for_nans("Training data", x)
 
         x_gen = self.model.sample(n=batch_size, **forward_kwargs)
+        self._check_for_nans("Generated data", x_gen)
+
         losses = [loss_fn(x_gen, x, None) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
+
         return losses
 
 
@@ -448,12 +466,17 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
             x = x.view(batch_size, -1)
         if len(params.size()) < 2:
             params = params.view(batch_size, -1)
+        self._check_for_nans("Training data", x, params)
 
         x = x.to(self.device, self.dtype)
         params = params.to(self.device, self.dtype)
 
         x_gen = self.model.sample(n=batch_size, context=params, **forward_kwargs)
+        self._check_for_nans("Generated data", x_gen)
+
         losses = [loss_fn(x_gen, x, None) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
+
         return losses
 
 
