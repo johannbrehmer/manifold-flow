@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 
 # sbatch timing.sh
@@ -12,8 +12,8 @@
 # sbatch --array=0-2 train_mf_spherical.sh
 # sbatch train_gamf_spherical.sh
 # sbatch train_hybrid_spherical.sh
-sbatch train_spie_spherical.sh
-sbatch train_smf_spherical.sh
+# sbatch train_spie_spherical.sh
+# sbatch train_smf_spherical.sh
 
 # sbatch train_flow_csg.sh
 # sbatch train_pie_csg.sh
