@@ -30,21 +30,48 @@ class SphericalCoordinates(transforms.Transform):
         outputs = self._cartesian_to_spherical(inputs)
         jacobian = batch_jacobian(outputs, inputs)
 
+        if torch.isnan(jacobian).any():
+            for i in range(jacobian.size(0)):
+                if torch.isnan(jacobian[i]).any():
+                    logger.warning("Spherical Jacobian contains NaNs")
+                    logger.warning("  Cartesian: %s", inputs[i])
+                    logger.warning("  Spherical: %s", outputs[i])
+                    logger.warning("  Jacobian:  %s", jacobian[i])
+
+                    self._spherical_to_cartesian(inputs[i:i+1])
+
+                    raise RuntimeError
+
         if not full_jacobian:
             _, logdet = torch.slogdet(jacobian)
             return outputs, logdet
 
+        return outputs, jacobian
+
     def inverse(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
-
         if not inputs.requires_grad:
             inputs.requires_grad = True
 
         outputs = self._spherical_to_cartesian(inputs)
         jacobian = batch_jacobian(outputs, inputs)
 
+        if torch.isnan(jacobian).any():
+            for i in range(jacobian.size(0)):
+                if torch.isnan(jacobian[i]).any():
+                    logger.warning("Spherical inverse Jacobian contains NaNs")
+                    logger.warning("  Spherical: %s", inputs[i])
+                    logger.warning("  Cartesian: %s", outputs[i])
+                    logger.warning("  Jacobian:  %s", jacobian[i])
+
+                    self._spherical_to_cartesian(inputs[i:i+1])
+
+                    raise RuntimeError
+
         if not full_jacobian:
             _, logdet = torch.slogdet(jacobian)
+            if torch.isnan(logdet).any():
+                logger.warning("log det Jacobian contains NaNs: %s", logdet)
             return outputs, logdet
 
         return outputs, jacobian
@@ -84,6 +111,12 @@ class SphericalCoordinates(transforms.Transform):
         for i in range(self.n):
             r_ = torch.sum(inputs[:, i : self.n + 1] ** 2, dim=1) ** 0.5
             phi_ = torch.acos(inputs[:, i] / r_).view((-1, 1))
+
+            # The cartesian -> spherical transformation is not unique when inputs_i to inputs_n are all zero
+            # In that case we can choose to set the coordinate to 0
+            # This choice avoids derivatives evaluating to NaNs
+            phi_ = torch.where(r_ < 1.e-3, torch.zeros_like(phi_), phi_)
+
             phis.append(phi_)
 
         # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates

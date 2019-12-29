@@ -22,7 +22,7 @@ class ManifoldFlow(BaseFlow):
         self.apply_context_to_outer = apply_context_to_outer
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
-        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=pie_epsilon)
+        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.*pie_epsilon)
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
         self.outer_transform = outer_transform
@@ -103,9 +103,24 @@ class ManifoldFlow(BaseFlow):
 
     def _log_prob(self, mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
         if mode == "pie":
+            if torch.isnan(u).any():
+                logger.warning("u contains NaNs: %s", u)
+            if torch.isnan(log_det_outer).any():
+                logger.warning("Outer log det contains NaNs: %s", log_det_outer)
+            if torch.isnan(log_det_inner).any():
+                logger.warning("Inner log det contains NaNs: %s", log_det_inner)
+
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+            if torch.isnan(log_prob).any():
+                logger.warning("Log prob from manifold latent contains NaNs: %s", log_prob)
+
             log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
+            if torch.isnan(log_prob).any():
+                logger.warning("Log prob from orthogonal latent contains NaNs: %s", log_prob)
+
             log_prob = log_prob + log_det_outer + log_det_inner
+            if torch.isnan(log_prob).any():
+                logger.warning("Log prob sum contains NaNs: %s", log_prob)
 
         elif mode == "pie-inv":
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
