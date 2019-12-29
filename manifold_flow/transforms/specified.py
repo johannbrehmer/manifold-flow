@@ -110,13 +110,30 @@ class SphericalCoordinates(transforms.Transform):
         phis = []
         for i in range(self.n):
             r_ = torch.sum(inputs[:, i : self.n + 1] ** 2, dim=1) ** 0.5
-            phi_ = torch.acos(inputs[:, i] / r_).view((-1, 1))
+            phi_ = torch.acos(inputs[:, i] / r_)
 
             # The cartesian -> spherical transformation is not unique when inputs_i to inputs_n are all zero
             # In that case we can choose to set the coordinate to 0
-            # This choice avoids derivatives evaluating to NaNs
-            phi_ = torch.where(r_ < 1.e-3, torch.zeros_like(phi_), phi_)
+            # This choice maybe avoids derivatives evaluating to NaNs? Noo... :/
+            # phi_ = torch.where(r_ < 0.04, torch.zeros_like(phi_), phi_)
 
+            # Actually, we have to be more aggressive to save the gradients from becoming NaNs!
+            # When inputs_(i+1) to inputs_n are all zero, the argument to the arccos is very small,
+            # either below zero (when inputs_i is negative) or above (when inputs_i is positive).
+            # In this case we can fix this angle to be zero or pi.
+            phi_ = torch.where(
+                torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.0001,
+                torch.where(
+                    inputs[:,i] < 0.,
+                    np.pi * torch.ones_like(phi_),
+                    torch.zeros_like(phi_)
+                ),
+                phi_
+            )
+            logger.debug(torch.sum(torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.000001).item())
+
+
+            phi_ = phi_.view((-1, 1))
             phis.append(phi_)
 
         # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates
