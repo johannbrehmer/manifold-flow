@@ -5,15 +5,15 @@ echo "Checking status of all log files"
 echo ""
 
 for filename in log_*.log; do
-    if grep -Fxq "All done!" $filename
+    if tail -n 1 $filename | grep -q "Have a nice day"
     then
-        echo "${filename}: success"
+        echo "   :)  - ${filename}"
     else
         if grep -Fxq "Exception" $filename
         then
-            echo "${filename}: PROBABLY ERROR"
+            echo "ERROR   - ${filename}"
         else
-            echo "${filename}: unfinished or ERROR"
+            echo "running - ${filename}"
         fi
     fi
 done
