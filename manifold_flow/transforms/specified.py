@@ -25,7 +25,7 @@ class SphericalCoordinates(transforms.Transform):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
 
         # Avoid NaNs by ignoring a pole
-        inputs_[:, self.n+1] = torch.where(inputs[:,self.n+1] < 1.e-3, torch.zeros_like(inputs[:,self.n+1]))
+        inputs[:, self.n] = torch.where(inputs[:,self.n]**2 < 1.e-4, 1.e-2*torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n]), inputs[:, self.n])
 
         if not inputs.requires_grad:
             inputs.requires_grad = True
