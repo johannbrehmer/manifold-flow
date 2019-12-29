@@ -24,6 +24,9 @@ class SphericalCoordinates(transforms.Transform):
     def forward(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
 
+        # Avoid NaNs by ignoring a pole
+        inputs_[:, self.n+1] = torch.where(inputs[:,self.n+1] < 1.e-3, torch.zeros_like(inputs[:,self.n+1]))
+
         if not inputs.requires_grad:
             inputs.requires_grad = True
 
@@ -121,17 +124,17 @@ class SphericalCoordinates(transforms.Transform):
             # When inputs_(i+1) to inputs_n are all zero, the argument to the arccos is very small,
             # either below zero (when inputs_i is negative) or above (when inputs_i is positive).
             # In this case we can fix this angle to be zero or pi.
-            phi_ = torch.where(
-                torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.0001,
-                torch.where(
-                    inputs[:,i] < 0.,
-                    np.pi * torch.ones_like(phi_),
-                    torch.zeros_like(phi_)
-                ),
-                phi_
-            )
-            logger.debug(torch.sum(torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.000001).item())
-
+            # But it also doesn't suffice...
+            # phi_ = torch.where(
+            #     torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.000001,
+            #     torch.where(
+            #         inputs[:,i] < 0.,
+            #         np.pi * torch.ones_like(phi_),
+            #         torch.zeros_like(phi_)
+            #     ),
+            #     phi_
+            # )
+            # logger.debug(torch.sum(torch.sum(inputs[:, i+1 : self.n + 1] ** 2, dim=1) < 0.000001).item())
 
             phi_ = phi_.view((-1, 1))
             phis.append(phi_)
