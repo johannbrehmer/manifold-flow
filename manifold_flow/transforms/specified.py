@@ -29,7 +29,7 @@ class SphericalCoordinates(transforms.Transform):
         mask = torch.zeros_like(inputs)
         mask[:, self.n] = 1.
         mask = mask * (inputs**2 < 1.e-4)
-        replace = 1.e-2 * torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n])
+        replace = 1.e-2 * torch.sign(inputs)
         inputs = mask * replace + (1. - mask) * inputs
 
         if not inputs.requires_grad:
