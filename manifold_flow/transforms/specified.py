@@ -28,7 +28,7 @@ class SphericalCoordinates(transforms.Transform):
         # inputs[:, self.n] = torch.where(inputs[:,self.n]**2 < 1.e-4, 1.e-2*torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n]), inputs[:, self.n])
         mask = torch.zeros_like(inputs)
         mask[:, self.n] = 1.
-        mask = mask * (inputs[:,self.n]**2 < 1.e-4)
+        mask = mask * (inputs**2 < 1.e-4)
         replace = 1.e-2 * torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n])
         inputs = mask * replace + (1. - mask) * inputs
 
