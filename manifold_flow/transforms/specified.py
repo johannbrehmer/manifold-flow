@@ -24,8 +24,13 @@ class SphericalCoordinates(transforms.Transform):
     def forward(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
 
-        # Avoid NaNs by ignoring a pole
-        inputs[:, self.n] = torch.where(inputs[:,self.n]**2 < 1.e-4, 1.e-2*torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n]), inputs[:, self.n])
+        # Avoid NaNs by moving points slightly off the equator
+        # inputs[:, self.n] = torch.where(inputs[:,self.n]**2 < 1.e-4, 1.e-2*torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n]), inputs[:, self.n])
+        mask = torch.zeros_like(inputs)
+        mask[:, self.n] = 1.
+        mask = mask * (inputs[:,self.n]**2 < 1.e-4)
+        replace = 1.e-2 * torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n])
+        inputs = mask * replace + (1. - mask) * inputs
 
         if not inputs.requires_grad:
             inputs.requires_grad = True
