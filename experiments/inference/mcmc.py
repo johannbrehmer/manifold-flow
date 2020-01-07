@@ -148,7 +148,7 @@ class SliceSampler(MCMC_Sampler):
 
         assert n_samples >= 0, "number of samples can" "t be negative"
 
-        order = range(self.n_dims)
+        order = list(range(self.n_dims))
         L_trace = []
         samples = np.empty([n_samples, self.n_dims])
 
