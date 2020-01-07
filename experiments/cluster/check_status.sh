@@ -9,7 +9,7 @@ for filename in log_*.log; do
     then
         echo "   :)   - ${filename}"
     else
-        if grep -Fxq "Exception" $filename
+        if grep -Fxq "Error" $filename
         then
             echo "ERROR   - ${filename}"
         else

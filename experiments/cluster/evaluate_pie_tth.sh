@@ -11,4 +11,4 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset tth --algorithm pie --modellatentdim 20 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset tth --algorithm pie --modellatentdim 20 --slicesampler --dir /scratch/jb6504/manifold-flow
