@@ -21,8 +21,8 @@ def parse_args():
     parser.add_argument("--truelatentdim", type=int, default=2)
     parser.add_argument("--datadim", type=int, default=3)
     parser.add_argument("--epsilon", type=float, default=0.01)
-    parser.add_argument("--train", type=int, default=100000)
-    parser.add_argument("--test", type=int, default=1000)
+    parser.add_argument("--train", type=int, default=1000000)
+    parser.add_argument("--test", type=int, default=10000)
 
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")

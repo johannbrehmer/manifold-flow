@@ -44,9 +44,9 @@ def parse_args():
     parser.add_argument("--outercouplinghidden", type=int, default=256)
 
     # Training
-    parser.add_argument("--epochs", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batchsize", type=int, default=100)
-    parser.add_argument("--genbatchsize", type=int, default=800)
+    parser.add_argument("--genbatchsize", type=int, default=100)
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--initialmsefactor", type=float, default=100.0)
     parser.add_argument("--initialnllfactor", type=float, default=0.01)
