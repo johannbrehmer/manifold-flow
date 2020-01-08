@@ -58,6 +58,7 @@ def parse_args():
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--nopretraining", action="store_true")
 
     return parser.parse_args()
 
@@ -79,24 +80,28 @@ def train_manifold_flow(args, dataset, model, simulator):
         )
         learning_curves = np.vstack(learning_curves).T
     else:
-        logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
-        learning_curves = trainer.train(
-            loss_functions=[losses.mse],
-            loss_labels=["MSE"],
-            loss_weights=[args.initialmsefactor],
-            epochs=args.epochs // 3,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
-            forward_kwargs={"mode": "projection"},
-            **common_kwargs,
-        )
-        learning_curves = np.vstack(learning_curves).T
+        if args.nopretraining:
+            logger.info("Skipping pretraining phase")
+            learning_curves = []
+        else:
+            logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
+            learning_curves = trainer.train(
+                loss_functions=[losses.mse],
+                loss_labels=["MSE"],
+                loss_weights=[args.initialmsefactor],
+                epochs=args.epochs // 3,
+                callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+                forward_kwargs={"mode": "projection"},
+                **common_kwargs,
+            )
+            learning_curves = np.vstack(learning_curves).T
 
         logger.info("Starting training MF, phase 2: mixed training")
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
             loss_weights=[args.initialmsefactor, args.initialnllfactor],
-            epochs=args.epochs - 2 * (args.epochs // 3),
+            epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "mf"},
@@ -127,25 +132,29 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
 
-    logger.info("Starting training GAMF, phase 1: pretraining on reconstruction error")
-    learning_curves = trainer.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
-        loss_weights=[args.initialmsefactor],
-        epochs=args.epochs // 4,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
-        forward_kwargs={"mode": "projection"},
-        batch_size=args.batchsize,
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
+    if args.nopretraining:
+        logger.info("Skipping pretraining phase")
+        learning_curves = []
+    else:
+        logger.info("Starting training GAMF, phase 1: pretraining on reconstruction error")
+        learning_curves = trainer.train(
+            loss_functions=[losses.mse],
+            loss_labels=["MSE"],
+            loss_weights=[args.initialmsefactor],
+            epochs=args.epochs // 4,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
+            batch_size=args.batchsize,
+            **common_kwargs,
+        )
+        learning_curves = np.vstack(learning_curves).T
 
     logger.info("Starting training GAMF, phase 2: Sinkhorn-GAN")
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
         loss_weights=[args.sinkhornfactor],
-        epochs=args.epochs - args.epochs // 4,
+        epochs=args.epochs - (0 if args.nopretraining else 1) * args.epochs // 4,
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         batch_size=args.genbatchsize,
@@ -161,25 +170,29 @@ def train_hybrid(args, dataset, model, simulator):
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
 
-    logger.info("Starting training GAMF, phase 1: pretraining on reconstruction error")
-    learning_curves = trainer.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
-        loss_weights=[args.initialmsefactor],
-        epochs=args.epochs // 6,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
-        forward_kwargs={"mode": "projection"},
-        batch_size=args.batchsize,
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
+    if args.nopretraining:
+        logger.info("Skipping pretraining phase")
+        learning_curves = []
+    else:
+        logger.info("Starting training GAMF, phase 1: pretraining on reconstruction error")
+        learning_curves = trainer.train(
+            loss_functions=[losses.mse],
+            loss_labels=["MSE"],
+            loss_weights=[args.initialmsefactor],
+            epochs=args.epochs // 6,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
+            batch_size=args.batchsize,
+            **common_kwargs,
+        )
+        learning_curves = np.vstack(learning_curves).T
 
     logger.info("Starting training GAMF, phase 2: mixed training")
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["d_Sinkhorn"],
         loss_weights=[args.sinkhornfactor],
-        epochs=args.epochs - 3 * (args.epochs // 6),
+        epochs=args.epochs - (2 if args.nopretraining else 3) * (args.epochs // 6),
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         batch_size=args.genbatchsize,
@@ -219,25 +232,32 @@ def train_hybrid(args, dataset, model, simulator):
 
 
 def train_slice_of_pie(args, dataset, model, simulator):
-    logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
-    learning_curves = trainer.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
-        loss_weights=[args.initialmsefactor],
-        epochs=args.epochs // 3,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
-        forward_kwargs={"mode": "projection"},
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
+
+
+    if args.nopretraining:
+        logger.info("Skipping pretraining phase")
+        learning_curves = []
+    else:
+        logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
+        learning_curves = trainer.train(
+            loss_functions=[losses.mse],
+            loss_labels=["MSE"],
+            loss_weights=[args.initialmsefactor],
+            epochs=args.epochs // 3,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            forward_kwargs={"mode": "projection"},
+            **common_kwargs,
+        )
+        learning_curves = np.vstack(learning_curves).T
+
     logger.info("Starting training slice of PIE, phase 2: mixed training")
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
         loss_weights=[args.initialmsefactor, args.initialnllfactor],
-        epochs=args.epochs - 2 * (args.epochs // 3),
+        epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
         parameters=model.inner_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "slice"},
@@ -245,6 +265,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
     )
     learning_curves_ = np.vstack(learning_curves_).T
     learning_curves = np.vstack((learning_curves, learning_curves_))
+
     logger.info("Starting training slice of PIE, phase 3: training only inner flow on NLL")
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
@@ -258,6 +279,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
     )
     learning_curves_ = np.vstack(learning_curves_).T
     learning_curves = np.vstack((learning_curves, learning_curves_))
+
     return learning_curves
 
 
