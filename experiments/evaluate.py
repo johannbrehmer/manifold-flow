@@ -79,27 +79,40 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
-def _evaluate_test_samples(args, simulator, model=None):
+def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100):
 
     if model is None:
         logger.info("Evaluating true log likelihood of test samples")
     else:
         logger.info("Evaluating model likelihood of test samples")
 
-    x = torch.tensor(load_test_samples(args), dtype=torch.float)
-    if simulator.parameter_dim() is None:
-        params = None
-    else:
-        params = torch.tensor([simulator.default_parameters() for _ in x], dtype=torch.float)
+    x = load_test_samples(args)[:samples]
 
     if model is None:
         log_prob = simulator.log_density(x, parameters=params)
         reco_error = np.zeros(x.shape[0])
     else:
-        x_reco, log_prob, _ = model(x, context=params)
-        reco_error = torch.sum((x - x_reco) ** 2, dim=1) ** 0.5
-        log_prob = log_prob.detach().numpy()
-        reco_error = reco_error.detach().numpy()
+        log_prob = []
+        reco_error = []
+        n_batches = (samples - 1) // batchsize + 1
+
+        for i in range(n_batches):
+            logger.debug("Evaluating batch %s / %s", i+1, n_batches)
+            
+            x_ = torch.tensor(x[i*batchsize:(i+1)*batchsize], dtype=torch.float)
+            if simulator.parameter_dim() is None:
+                params = None
+            else:
+                params = torch.tensor([simulator.default_parameters() for _ in x_], dtype=torch.float)
+
+            x_reco, log_prob_, _ = model(x_, context=params)
+            reco_error_ = torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5
+
+            log_prob.append(log_prob_.detach().numpy())
+            reco_error.append(reco_error_.detach().numpy())
+
+        log_prob = np.concatenate(log_prob, axis=0)
+        reco_error = np.concatenate(reco_error, axis=0)
 
     return log_prob, reco_error
 
