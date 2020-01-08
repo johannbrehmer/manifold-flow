@@ -392,7 +392,7 @@ def create_model(args, simulator):
         )
 
         if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-            outer_transform = transforms.SphericalCoordinates(n=args.modellatentdim, r0=1.)
+            outer_transform = transforms.SphericalCoordinates(n=args.modellatentdim, r0=1.0)
         else:
             raise NotImplementedError("Specified outer transformation not yet implemented for dataset {}".format(args.dataset))
 

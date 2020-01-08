@@ -12,7 +12,7 @@ class SphericalCoordinates(transforms.Transform):
     """ Translates the first d+1 data components from Cartesian to the hyperspherical coordinates of a d-sphere and a radial coordinate, leaving the remaining variables
     invariant. Only supports  """
 
-    def __init__(self, n, r0=0.):
+    def __init__(self, n, r0=0.0):
         """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. r0 is subtracted from the radial coordinate, so with r = 1 deviations
         from the unit sphere are calculated. """
 
@@ -27,10 +27,10 @@ class SphericalCoordinates(transforms.Transform):
         # Avoid NaNs by moving points slightly off the equator
         # inputs[:, self.n] = torch.where(inputs[:,self.n]**2 < 1.e-4, 1.e-2*torch.sign(inputs[:,self.n])*torch.ones_like(inputs[:,self.n]), inputs[:, self.n])
         mask = torch.zeros_like(inputs)
-        mask[:, self.n] = 1.
-        mask = mask * (inputs**2 < 1.e-4)
-        replace = 1.e-2 * torch.sign(inputs)
-        inputs = mask * replace + (1. - mask) * inputs
+        mask[:, self.n] = 1.0
+        mask = mask * (inputs ** 2 < 1.0e-4)
+        replace = 1.0e-2 * torch.sign(inputs)
+        inputs = mask * replace + (1.0 - mask) * inputs
 
         if not inputs.requires_grad:
             inputs.requires_grad = True
@@ -46,7 +46,7 @@ class SphericalCoordinates(transforms.Transform):
                     logger.warning("  Spherical: %s", outputs[i])
                     logger.warning("  Jacobian:  %s", jacobian[i])
 
-                    self._spherical_to_cartesian(inputs[i:i+1])
+                    self._spherical_to_cartesian(inputs[i : i + 1])
 
                     raise RuntimeError
 
@@ -72,7 +72,7 @@ class SphericalCoordinates(transforms.Transform):
                     logger.warning("  Cartesian: %s", outputs[i])
                     logger.warning("  Jacobian:  %s", jacobian[i])
 
-                    self._spherical_to_cartesian(inputs[i:i+1])
+                    self._spherical_to_cartesian(inputs[i : i + 1])
 
                     raise RuntimeError
 
@@ -88,9 +88,9 @@ class SphericalCoordinates(transforms.Transform):
         batchsize = spherical.size(0)
         d = spherical.size(1)
 
-        phi = spherical[:, :self.n]
+        phi = spherical[:, : self.n]
         dr = spherical[:, self.n].view(batchsize, 1)
-        others = spherical[:, self.n + 1:]
+        others = spherical[:, self.n + 1 :]
 
         return (batchsize, d), (phi, dr, others)
 
@@ -153,7 +153,7 @@ class SphericalCoordinates(transforms.Transform):
         dr = dr.view((-1, 1))
 
         # Combine
-        others = inputs[:,self.n + 1:]
+        others = inputs[:, self.n + 1 :]
         outputs = torch.cat(phis + [dr, others], dim=1)
 
         return outputs

@@ -42,7 +42,7 @@ class StandardNormal(distributions.Distribution):
 class RescaledNormal(distributions.Distribution):
     """A multivariate Normal with zero mean and unit covariance."""
 
-    def __init__(self, shape, std=1.0, clip=10.):
+    def __init__(self, shape, std=1.0, clip=10.0):
         super().__init__()
         self._shape = torch.Size(shape)
         self.std = std
@@ -53,7 +53,7 @@ class RescaledNormal(distributions.Distribution):
         # Note: the context is ignored.
         if inputs.shape[1:] != self._shape:
             raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
-        inputs = torch.clamp(inputs, - self._clip, self._clip)
+        inputs = torch.clamp(inputs, -self._clip, self._clip)
         neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std ** 2
         return neg_energy - self._log_z
 

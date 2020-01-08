@@ -22,7 +22,9 @@ class ManifoldFlow(BaseFlow):
         self.apply_context_to_outer = apply_context_to_outer
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
-        self.orthogonal_latent_distribution = distributions.RescaledNormal((self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.*pie_epsilon)
+        self.orthogonal_latent_distribution = distributions.RescaledNormal(
+            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.0 * pie_epsilon
+        )
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
         self.outer_transform = outer_transform

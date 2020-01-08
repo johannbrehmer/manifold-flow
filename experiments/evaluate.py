@@ -78,6 +78,31 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
+def _evaluate_test_samples(args, simulator, model=None):
+
+    if model is None:
+        logger.info("Evaluating true log likelihood of test samples")
+    else:
+        logger.info("Evaluating model likelihood of test samples")
+
+    x = torch.tensor(load_test_samples(args), dtype=torch.float)
+    if simulator.parameter_dim() is None:
+        params = None
+    else:
+        params = torch.tensor([simulator.default_parameters() for _ in range(x)], dtype=torch.float)
+
+    if model is None:
+        log_prob = simulator.log_density(x, params=params)
+        reco_error = np.zeros(x.shape[0])
+    else:
+        x_reco, log_prob, _ = model(x, context=params)
+        reco_error = torch.sum((x - x_reco) ** 2, dim=1) ** 0.5
+        log_prob = log_prob.detach().numpy()
+        reco_error = reco_error.detach().numpy()
+
+    return log_prob, reco_error
+
+
 def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.5, thin=10, burnin=100):
     # George's settings: thin = 10, n_mcmc_samples = 5000, burnin = 100
 
@@ -157,6 +182,15 @@ if __name__ == "__main__":
     # Model
     model = create_model(args, simulator=simulator)
     model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
+
+    # Evaluate test samples
+    log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model=None)
+    np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
+    np.save(create_filename("results", "true_reco_error_test", args), reconstruction_error_test)
+
+    log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model)
+    np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
+    np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
 
     # Evaluate either generative or inference performance
     if simulator.parameter_dim() is None:
