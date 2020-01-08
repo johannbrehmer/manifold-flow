@@ -89,8 +89,13 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
     x = load_test_samples(args)[:samples]
 
     if model is None:
+        if simulator.parameter_dim() is None:
+            params = None
+        else:
+            params = torch.tensor([simulator.default_parameters() for _ in x], dtype=torch.float)
         log_prob = simulator.log_density(x, parameters=params)
         reco_error = np.zeros(x.shape[0])
+
     else:
         log_prob = []
         reco_error = []
