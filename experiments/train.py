@@ -247,7 +247,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
 
     if args.nopretraining or args.epochs // 3 < 1:
         logger.info("Skipping pretraining phase")
-        learning_curves = np.zeros((0,2))
+        learning_curves = np.zeros((0, 2))
     else:
         logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
         learning_curves = trainer.train(
