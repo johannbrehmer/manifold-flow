@@ -1,6 +1,10 @@
 import numpy as np
 
 
+
+class IntractableLikelihoodError(Exception):
+    pass
+
 class BaseSimulator:
     def is_image(self):
         raise NotImplementedError
@@ -18,7 +22,7 @@ class BaseSimulator:
         raise NotImplementedError
 
     def log_density(self, x, parameters=None):
-        raise NotImplementedError
+        raise IntractableLikelihoodError
 
     def load_dataset(self, train, dataset_dir, limit_samplesize=None):
         raise NotImplementedError

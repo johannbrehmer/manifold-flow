@@ -12,6 +12,7 @@ from experiments.inference import mcmc, sq_maximum_mean_discrepancy
 from experiments.utils.loading import load_simulator, load_test_samples
 from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
 from experiments.utils.models import create_model
+from experiments.simulators.base import IntractableLikelihoodError
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +90,10 @@ def _evaluate_test_samples(args, simulator, model=None):
     if simulator.parameter_dim() is None:
         params = None
     else:
-        params = torch.tensor([simulator.default_parameters() for _ in range(x)], dtype=torch.float)
+        params = torch.tensor([simulator.default_parameters() for _ in x], dtype=torch.float)
 
     if model is None:
-        log_prob = simulator.log_density(x, params=params)
+        log_prob = simulator.log_density(x, parameters=params)
         reco_error = np.zeros(x.shape[0])
     else:
         x_reco, log_prob, _ = model(x, context=params)
@@ -184,13 +185,16 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
 
     # Evaluate test samples
-    log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model=None)
-    np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
-    np.save(create_filename("results", "true_reco_error_test", args), reconstruction_error_test)
-
     log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model)
     np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
     np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
+
+    try:
+        log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model=None)
+        np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
+        np.save(create_filename("results", "true_reco_error_test", args), reconstruction_error_test)
+    except IntractableLikelihoodError:
+        logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
     # Evaluate either generative or inference performance
     if simulator.parameter_dim() is None:
@@ -213,7 +217,7 @@ if __name__ == "__main__":
             np.save(create_filename("results", "mmd", args), mmd)
             logger.info("MMD between model and true posterior samples: %s", mmd)
 
-        except:
-            logger.info("Ground truth likelihood not defined, skipping MCMC based on true likelihood")
+        except IntractableLikelihoodError:
+            logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
 
     logger.info("All done! Have a nice day!")
