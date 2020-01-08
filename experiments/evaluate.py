@@ -97,9 +97,9 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
         n_batches = (samples - 1) // batchsize + 1
 
         for i in range(n_batches):
-            logger.debug("Evaluating batch %s / %s", i+1, n_batches)
-            
-            x_ = torch.tensor(x[i*batchsize:(i+1)*batchsize], dtype=torch.float)
+            logger.debug("Evaluating batch %s / %s", i + 1, n_batches)
+
+            x_ = torch.tensor(x[i * batchsize : (i + 1) * batchsize], dtype=torch.float)
             if simulator.parameter_dim() is None:
                 params = None
             else:

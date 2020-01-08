@@ -1,9 +1,9 @@
 import numpy as np
 
 
-
 class IntractableLikelihoodError(Exception):
     pass
+
 
 class BaseSimulator:
     def is_image(self):
