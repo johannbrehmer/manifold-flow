@@ -93,9 +93,9 @@ class GaussianMetropolis(MCMC_Sampler):
             acc_rate = n_acc / float(self.thin * (n + 1))
 
             if (n + 1) % 100 == 0:
-                logger.info("MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L))
+                logger.info("MCMC after sample {0} = {3}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L, samples[n]))
             else:
-                logger.debug("MCMC after sample {0}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L))
+                logger.debug("MCMC after sample {0} = {3}: acceptance rate = {1:.2f}, log likelihood = {2:.2f}".format(n + 1, acc_rate, self.L, samples[n]))
 
             # record traces
             if show_info:

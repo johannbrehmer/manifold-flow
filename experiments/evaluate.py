@@ -47,11 +47,14 @@ def parse_args():
     parser.add_argument("--generate", type=int, default=10000)
     parser.add_argument("--observedsamples", type=int, default=10)
     parser.add_argument("--slicesampler", action="store_true")
+    parser.add_argument("--mcmcstep", type=float, default=0.2)
     parser.add_argument("--thin", type=int, default=10)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--skipmodelmcmc", action="store_true")
+    parser.add_argument("--skiptruthmcmc", action="store_true")
 
     return parser.parse_args()
 
@@ -122,15 +125,15 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
     return log_prob, reco_error
 
 
-def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.5, thin=10, burnin=100):
+def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.2, thin=10, burnin=100):
     # George's settings: thin = 10, n_mcmc_samples = 5000, burnin = 100
 
     logger.info(
-        "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s sampler",
+        "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s",
         "true simulator likelihood" if model is None else "neural likelihood estimate",
         n_samples,
         n_mcmc_samples,
-        "slice sampler" if slice_sampling else "Metropolis-Hastings sampler",
+        "slice sampler" if slice_sampling else "Metropolis-Hastings sampler (step = {})".format(step),
     )
 
     # Data
@@ -141,11 +144,8 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
     if model is None:
         # MCMC based on ground truth likelihood
         def log_posterior(params):
-            # timer.timer(start="true likelihood")
             log_prob = np.sum(simulator.log_density(x_obs, parameters=params))
-            # timer.timer(stop="true likelihood", start="true prior")
             log_prob += simulator.evaluate_log_prior(params)
-            # timer.timer(stop="true prior")
             return float(log_prob)
 
     else:
@@ -224,18 +224,28 @@ if __name__ == "__main__":
 
     else:
         # Evaluate MMD
-        model_posterior_samples = _mcmc(simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
-        np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
+        if args.skipmodelmcmc:
+            logger.info("Skipping MCMC based on model")
+            model_posterior_samples = None
+        else:
+            model_posterior_samples = _mcmc(
+                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep
+            )
+            np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
-        try:
-            true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler)
-            np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
+        if args.skiptruthmcmc:
+            logger.info("Skipping MCMC based on true likelihood")
+        else:
+            try:
+                true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep)
+                np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
-            mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-            np.save(create_filename("results", "mmd", args), mmd)
-            logger.info("MMD between model and true posterior samples: %s", mmd)
+                if not args.skipmodelmcmc:
+                    mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
+                    np.save(create_filename("results", "mmd", args), mmd)
+                    logger.info("MMD between model and true posterior samples: %s", mmd)
 
-        except IntractableLikelihoodError:
-            logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
+            except IntractableLikelihoodError:
+                logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
 
     logger.info("All done! Have a nice day!")

@@ -195,3 +195,9 @@ class TopHiggsLoader(BaseLHCLoader):
             ]
         )
         super().__init__(n_parameters=3, n_observables=48, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
+
+    def log_density(self, x, parameters=None):
+        # For debugging only: for any event, assume Gaussian likelihood centered at SM
+        return -0.5 * parameters ** 2
+
+        # raise IntractableLikelihoodError
