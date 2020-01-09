@@ -14,3 +14,5 @@ cd $basedir/experiments
 
 # python -u train.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm gamf --modellatentdim 2 --epochs 10 --samplesize 100000 --debug --dir $basedir
 # python -u evaluate.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm gamf --modellatentdim 2 --thin 1 --debug --dir $basedir
+
+python -u train.py --dataset tth2d --algorithm flow --modellatentdim 20 --debug --dir $basedir --samplesize 100000

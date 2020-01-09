@@ -89,6 +89,57 @@ class BaseLHCLoader(BaseSimulator):
 
 
 class TopHiggsLoader(BaseLHCLoader):
+    """
+    Features:
+        0 pt_l1
+        1 pt_l2
+        2 pt_b1
+        3 pt_b2
+        4 pt_a1
+        5 pt_a2
+        6 e_l1
+        7 e_l2
+        8 e_b1
+        9 e_b2
+        10 e_a1
+        11 e_a2
+        12 n_j
+        13 n_b
+        14 n_l
+        15 n_e
+        16 n_mu
+        17 n_a
+        18 eta_l1
+        19 eta_l2
+        20 eta_b1
+        21 eta_b2
+        22 eta_a1
+        23 eta_a2
+        24 phi_l1
+        25 phi_l2
+        26 phi_b1
+        27 phi_b2
+        28 phi_a1
+        29 phi_a2
+        30 met
+        31 m_ll
+        32 pt_ll
+        33 eta_ll
+        34 dphi_ll
+        35 m_bb
+        36 pt_bb
+        37 eta_bb
+        38 dphi_bb
+        39 m_aa
+        40 pt_aa
+        41 eta_aa
+        42 dphi_aa
+        43 dphi_l1aa
+        44 dphi_l2aa
+        45 dphi_b1aa
+        46 dphi_b2aa
+        47 dphi_METaa
+    """
     def __init__(self):
         TTH_X_MEANS = np.asarray(
             [
@@ -196,8 +247,51 @@ class TopHiggsLoader(BaseLHCLoader):
         )
         super().__init__(n_parameters=3, n_observables=48, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
 
-    def log_density(self, x, parameters=None):
-        # For debugging only: for any event, assume Gaussian likelihood centered at SM
-        return -0.5 * parameters ** 2
 
-        # raise IntractableLikelihoodError
+class ReducedTopHiggsLoader(BaseLHCLoader):
+    def __init__(self):
+        TTH_X_MEANS = np.asarray(
+            [
+                1.24853699e02,  # maa
+                1.70047745e02,  # ptaa
+            ]
+        )
+        TTH_X_STDS = np.asarray(
+            [
+                4.28175879e00,  # maa
+                1.43220505e02,  # ptaa
+            ]
+        )
+        super().__init__(n_parameters=3, n_observables=2, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
+
+
+    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+        # Load numpy arrays
+        x = np.load("{}/x_{}.npy".format(dataset_dir, "train" if train else "test"))[:, [39, 40]]
+        params = np.load("{}/theta_{}.npy".format(dataset_dir, "train" if train else "test"))
+
+        # OPtionally limit sample size
+        if limit_samplesize is not None:
+            logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
+            x = x[:limit_samplesize]
+            params = params[:limit_samplesize]
+
+        # Make sure things are sane
+        logger.info("ttH features before preprocessing:")
+        for i in range(x.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
+
+        # Preprocess to zero mean and unit variance
+        x = self._preprocess(x)
+
+        # Make sure things are sane
+        logger.info("ttH features after preprocessing:")
+        for i in range(x.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
+
+        # Make sure things are sane
+        logger.info("ttH parameters:")
+        for i in range(params.shape[1]):
+            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
+
+        return NumpyDataset(x, params)

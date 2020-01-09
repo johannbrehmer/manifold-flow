@@ -24,12 +24,19 @@
 # sbatch train_spie_csg.sh
 # sbatch train_smf_csg.sh
 
-sbatch train_flow_tth.sh
-sbatch train_pie_tth.sh
+# sbatch train_flow_tth.sh
+# sbatch train_pie_tth.sh
+# sbatch train_gamf_tth.sh
+# sbatch train_mf_tth.sh
 # sbatch train_slice_tth.sh
-sbatch train_mf_tth.sh
-sbatch train_gamf_tth.sh
 # sbatch train_hybrid_tth.sh
+
+sbatch train_flow_tth2d.sh
+sbatch train_pie_tth2d.sh
+sbatch train_gamf_tth2d.sh
+# sbatch train_mf_tth2d.sh
+# sbatch train_hybrid_tth2d.sh
+# sbatch train_slice_tth2d.sh
 
 
 # sbatch evaluate_flow_spherical.sh

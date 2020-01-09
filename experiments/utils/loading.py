@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, TopHiggsLoader
+from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, TopHiggsLoader, ReducedTopHiggsLoader
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
 from manifold_flow.training import NumpyDataset
@@ -17,6 +17,8 @@ def load_simulator(args):
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "tth":
         simulator = TopHiggsLoader()
+    elif args.dataset == "tth2d":
+        simulator = ReducedTopHiggsLoader()
     elif args.dataset == "cifar10":
         simulator = CIFAR10Loader()
     elif args.dataset == "imagenet":
