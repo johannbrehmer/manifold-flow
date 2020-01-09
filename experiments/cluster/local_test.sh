@@ -10,7 +10,7 @@ cd $basedir/experiments
 # python -u evaluate.py --dataset conditional_spherical_gaussian  --epsilon 0.01 --algorithm pie --modellatentdim 2 --thin 1 --debug --dir $basedir
 
 # python -u train.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm pie --specified --modellatentdim 2 --epochs 10 --samplesize 100000 --debug --dir $basedir
-python -u evaluate.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm pie --specified --modellatentdim 2 --thin 1 --debug --dir $basedir
+# python -u evaluate.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm pie --specified --modellatentdim 2 --thin 1 --debug --dir $basedir
 
 # python -u train.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm gamf --modellatentdim 2 --epochs 10 --samplesize 100000 --debug --dir $basedir
 # python -u evaluate.py --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm gamf --modellatentdim 2 --thin 1 --debug --dir $basedir
