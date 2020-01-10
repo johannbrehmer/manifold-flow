@@ -103,12 +103,12 @@ class TopHiggsLoader(BaseLHCLoader):
         9 e_b2
         10 e_a1
         11 e_a2
-        12 n_j
-        13 n_b
-        14 n_l
-        15 n_e
-        16 n_mu
-        17 n_a
+        # 12 n_j
+        # 13 n_b
+        # 14 n_l
+        # 15 n_e
+        # 16 n_mu
+        # 17 n_a
         18 eta_l1
         19 eta_l2
         20 eta_b1
@@ -156,12 +156,6 @@ class TopHiggsLoader(BaseLHCLoader):
                 1.35192581e02,
                 2.74855743e02,
                 1.11023781e02,
-                3.07111692e00,
-                2.06056309e00,
-                2.00628996e00,
-                8.91026020e-01,
-                1.11526406e00,
-                2.88845205e00,
                 9.74573672e-01,
                 1.09504437e00,
                 9.96066272e-01,
@@ -208,12 +202,6 @@ class TopHiggsLoader(BaseLHCLoader):
                 1.36799286e02,
                 2.49974258e02,
                 1.15999901e02,
-                1.13905418e00,
-                2.54389077e-01,
-                8.44966769e-02,
-                7.00606823e-01,
-                7.01320410e-01,
-                9.73071277e-01,
                 7.12765157e-01,
                 8.12319160e-01,
                 7.03543305e-01,
@@ -246,7 +234,7 @@ class TopHiggsLoader(BaseLHCLoader):
                 2.24098635e00,
             ]
         )
-        super().__init__(n_parameters=3, n_observables=48, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
+        super().__init__(n_parameters=3, n_observables=42, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
 
 
 class ReducedTopHiggsLoader(BaseLHCLoader):
