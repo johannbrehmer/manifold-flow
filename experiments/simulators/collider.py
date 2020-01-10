@@ -263,35 +263,3 @@ class ReducedTopHiggsLoader(BaseLHCLoader):
             ]
         )
         super().__init__(n_parameters=3, n_observables=2, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
-
-
-    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
-        # Load numpy arrays
-        x = np.load("{}/x_{}.npy".format(dataset_dir, "train" if train else "test"))[:, [39, 40]]
-        params = np.load("{}/theta_{}.npy".format(dataset_dir, "train" if train else "test"))
-
-        # OPtionally limit sample size
-        if limit_samplesize is not None:
-            logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
-            x = x[:limit_samplesize]
-            params = params[:limit_samplesize]
-
-        # Make sure things are sane
-        logger.info("ttH features before preprocessing:")
-        for i in range(x.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
-
-        # Preprocess to zero mean and unit variance
-        x = self._preprocess(x)
-
-        # Make sure things are sane
-        logger.info("ttH features after preprocessing:")
-        for i in range(x.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
-
-        # Make sure things are sane
-        logger.info("ttH parameters:")
-        for i in range(params.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
-
-        return NumpyDataset(x, params)

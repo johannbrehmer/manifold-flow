@@ -24,7 +24,10 @@ def unconstrained_rational_quadratic_spline(
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
+    full_jacobian=False,
 ):
+    assert not full_jacobian
+
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_interval_mask
 
@@ -74,7 +77,10 @@ def rational_quadratic_spline(
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
+    full_jacobian=False,
 ):
+    assert not full_jacobian
+
     try:
         if torch.min(inputs) < left or torch.max(inputs) > right:
             raise transforms.InputOutsideDomain()

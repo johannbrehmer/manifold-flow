@@ -18,7 +18,9 @@ def unconstrained_quadratic_spline(
     tails="linear",
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
+    full_jacobian=False,
 ):
+    assert not full_jacobian
 
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_interval_mask
@@ -62,7 +64,10 @@ def quadratic_spline(
     top=1.0,
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
+    full_jacobian=False,
 ):
+    assert not full_jacobian
+
     if not inverse and (torch.min(inputs) < left or torch.max(inputs) > right):
         raise transforms.InputOutsideDomain()
     elif inverse and (torch.min(inputs) < bottom or torch.max(inputs) > top):

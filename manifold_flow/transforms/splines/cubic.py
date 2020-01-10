@@ -24,7 +24,9 @@ def unconstrained_cubic_spline(
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     eps=DEFAULT_EPS,
     quadratic_threshold=DEFAULT_QUADRATIC_THRESHOLD,
+    full_jacobian=False,
 ):
+    assert not full_jacobian
 
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_interval_mask
@@ -73,12 +75,16 @@ def cubic_spline(
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     eps=DEFAULT_EPS,
     quadratic_threshold=DEFAULT_QUADRATIC_THRESHOLD,
+    full_jacobian=False,
 ):
     """
     References:
     > Blinn, J. F. (2007). How to solve a cubic equation, part 5: Back to numerics. IEEE Computer
     Graphics and Applications, 27(3):78–89.
     """
+
+    assert not full_jacobian
+
     if not inverse and (torch.min(inputs) < left or torch.max(inputs) > right):
         raise transforms.InputOutsideDomain()
     elif inverse and (torch.min(inputs) < bottom or torch.max(inputs) > top):
