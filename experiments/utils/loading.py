@@ -1,7 +1,14 @@
 import numpy as np
 import logging
 
-from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, TopHiggsLoader, ReducedTopHiggsLoader
+from experiments.simulators import (
+    SphericalGaussianSimulator,
+    ConditionalSphericalGaussianSimulator,
+    CIFAR10Loader,
+    ImageNetLoader,
+    TopHiggsLoader,
+    ReducedTopHiggsLoader,
+)
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
 from manifold_flow.training import NumpyDataset

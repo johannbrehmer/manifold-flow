@@ -7,9 +7,7 @@ from manifold_flow import transforms
 from manifold_flow.utils import various
 
 
-def unconstrained_linear_spline(inputs, unnormalized_pdf, inverse=False, tail_bound=1.0, tails="linear",
-    full_jacobian=False,
-):
+def unconstrained_linear_spline(inputs, unnormalized_pdf, inverse=False, tail_bound=1.0, tails="linear", full_jacobian=False):
     assert not full_jacobian
 
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
@@ -37,14 +35,12 @@ def unconstrained_linear_spline(inputs, unnormalized_pdf, inverse=False, tail_bo
     return outputs, logabsdet
 
 
-def linear_spline(inputs, unnormalized_pdf, inverse=False, left=0.0, right=1.0, bottom=0.0, top=1.0,
-    full_jacobian=False,
-):
+def linear_spline(inputs, unnormalized_pdf, inverse=False, left=0.0, right=1.0, bottom=0.0, top=1.0, full_jacobian=False):
     """
     Reference:
     > Müller et al., Neural Importance Sampling, arXiv:1808.03856, 2018.
     """
-    
+
     assert not full_jacobian
 
     if not inverse and (torch.min(inputs) < left or torch.max(inputs) > right):

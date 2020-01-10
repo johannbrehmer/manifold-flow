@@ -140,6 +140,7 @@ class TopHiggsLoader(BaseLHCLoader):
         46 dphi_b2aa
         47 dphi_METaa
     """
+
     def __init__(self):
         TTH_X_MEANS = np.asarray(
             [
@@ -250,16 +251,6 @@ class TopHiggsLoader(BaseLHCLoader):
 
 class ReducedTopHiggsLoader(BaseLHCLoader):
     def __init__(self):
-        TTH_X_MEANS = np.asarray(
-            [
-                1.24853699e02,  # maa
-                1.70047745e02,  # ptaa
-            ]
-        )
-        TTH_X_STDS = np.asarray(
-            [
-                4.28175879e00,  # maa
-                1.43220505e02,  # ptaa
-            ]
-        )
+        TTH_X_MEANS = np.asarray([1.24853699e02, 1.70047745e02])  # maa  # ptaa
+        TTH_X_STDS = np.asarray([4.28175879e00, 1.43220505e02])  # maa  # ptaa
         super().__init__(n_parameters=3, n_observables=2, n_final=8, n_additional_constraints=1, prior_scale=0.5, x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
