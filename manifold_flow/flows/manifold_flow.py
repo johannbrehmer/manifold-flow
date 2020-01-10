@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ManifoldFlow(BaseFlow):
-    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-3, apply_context_to_outer=True):
+    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
         super(ManifoldFlow, self).__init__()
 
         assert latent_dim < data_dim

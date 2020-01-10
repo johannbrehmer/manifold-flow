@@ -23,7 +23,7 @@ def parse_args():
 
     # What what what
     parser.add_argument("--modelname", type=str, default=None)
-    parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
+    parser.add_argument("--algorithm", type=str, default="flow", choices=ALGORITHMS)
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
 
     # Dataset details
@@ -34,22 +34,22 @@ def parse_args():
     # Model details
     parser.add_argument("--modellatentdim", type=int, default=2)
     parser.add_argument("--specified", action="store_true")
-    parser.add_argument("--outertransform", type=str, default="affine-coupling")
-    parser.add_argument("--innertransform", type=str, default="affine-coupling")
+    parser.add_argument("--outertransform", type=str, default="rq-coupling")
+    parser.add_argument("--innertransform", type=str, default="rq-coupling")
     parser.add_argument("--lineartransform", type=str, default="permutation")
-    parser.add_argument("--outerlayers", type=int, default=4)
-    parser.add_argument("--innerlayers", type=int, default=8)
+    parser.add_argument("--outerlayers", type=int, default=5)
+    parser.add_argument("--innerlayers", type=int, default=5)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--outercouplingmlp", action="store_true")
-    parser.add_argument("--outercouplinglayers", type=int, default=3)
-    parser.add_argument("--outercouplinghidden", type=int, default=256)
+    parser.add_argument("--outercouplinglayers", type=int, default=2)
+    parser.add_argument("--outercouplinghidden", type=int, default=100)
 
     # Training
     parser.add_argument("--load", type=str, default=None)
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--genbatchsize", type=int, default=100)
-    parser.add_argument("--lr", type=float, default=1.0e-3)
+    parser.add_argument("--lr", type=float, default=3.0e-4)
     parser.add_argument("--initialmsefactor", type=float, default=100.0)
     parser.add_argument("--initialnllfactor", type=float, default=0.01)
     parser.add_argument("--msefactor", type=float, default=1.0)
@@ -76,7 +76,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_labels=["NLL"],
             loss_weights=[args.nllfactor],
             epochs=args.epochs,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
             forward_kwargs={"mode": "mf"},
             **common_kwargs,
         )
@@ -92,7 +92,7 @@ def train_manifold_flow(args, dataset, model, simulator):
                 loss_labels=["MSE"],
                 loss_weights=[args.initialmsefactor],
                 epochs=args.epochs // 3,
-                callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+                callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
                 forward_kwargs={"mode": "projection"},
                 **common_kwargs,
             )
@@ -105,7 +105,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_weights=[args.initialmsefactor, args.initialnllfactor],
             epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
             parameters=model.inner_transform.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "mf"},
             **common_kwargs,
         )
@@ -119,7 +119,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_weights=[args.msefactor, args.nllfactor],
             epochs=args.epochs // 3,
             parameters=model.inner_transform.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
             forward_kwargs={"mode": "mf"},
             **common_kwargs,
         )
@@ -160,7 +160,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
         # epochs=args.epochs - (0 if args.nopretraining else 1) * args.epochs // 4,
         epochs=args.epochs,
         # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         batch_size=args.genbatchsize,
         **common_kwargs,
     )
@@ -201,7 +201,7 @@ def train_hybrid(args, dataset, model, simulator):
         # epochs=args.epochs - (2 if args.nopretraining else 3) * (args.epochs // 6),
         epochs=args.epochs - 2 * (args.epochs // 6),
         # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
         batch_size=args.genbatchsize,
         **common_kwargs,
     )
@@ -217,7 +217,7 @@ def train_hybrid(args, dataset, model, simulator):
         loss_weights=[args.initialmsefactor, args.initialnllfactor],
         epochs=args.epochs // 6,
         # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -232,7 +232,7 @@ def train_hybrid(args, dataset, model, simulator):
         epochs=args.epochs // 6,
         parameters=model.inner_transform.parameters(),
         # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_D{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -255,7 +255,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
             loss_labels=["MSE"],
             loss_weights=[args.initialmsefactor],
             epochs=args.epochs // 3,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_A{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
             forward_kwargs={"mode": "projection"},
             **common_kwargs,
         )
@@ -268,7 +268,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[args.initialmsefactor, args.initialnllfactor],
         epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -282,7 +282,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[args.msefactor, args.nllfactor],
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -301,7 +301,7 @@ def train_flow(args, dataset, model, simulator):
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
@@ -317,7 +317,7 @@ def train_pie(args, dataset, model, simulator):
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         forward_kwargs={"mode": "pie"},
         **common_kwargs,
     )
