@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 from experiments.utils import ALGORITHMS
 from manifold_flow import nn as nn_, transforms
-from manifold_flow.flows import Flow, ManifoldFlow
+from manifold_flow.flows import Flow, ManifoldFlow, VariableDimensionManifoldFlow
 from manifold_flow.nn import Conv2dSameSize
 from manifold_flow.utils import various
 
@@ -376,6 +376,31 @@ def create_model(args, simulator):
     elif simulator.is_image() and args.algorithm == "flow":
         logger.info(
             "Creating standard flow for image data with %s layers, transform %s, %s context features",
+            args.innerlayers + args.outerlayers,
+            args.outertransform,
+            context_features=simulator.parameter_dim(),
+        )
+        raise NotImplementedError
+
+    if not simulator.is_image() and args.algorithm == "dough":
+        logger.info(
+            "Creating variable-dimensional manifold flow for vector data with %s layers, transform %s, %s context features",
+            args.innerlayers + args.outerlayers,
+            args.outertransform,
+            simulator.parameter_dim(),
+        )
+        transform = create_vector_transform(
+            args.datadim,
+            args.innerlayers + args.outerlayers,
+            linear_transform_type=args.lineartransform,
+            base_transform_type=args.outertransform,
+            context_features=simulator.parameter_dim(),
+        )
+        model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
+
+    elif simulator.is_image() and args.algorithm == "dough":
+        logger.info(
+            "Creating variable-dimensional manifold flow for image data with %s layers, transform %s, %s context features",
             args.innerlayers + args.outerlayers,
             args.outertransform,
             context_features=simulator.parameter_dim(),

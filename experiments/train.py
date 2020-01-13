@@ -11,6 +11,7 @@ from torch import optim
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks, GenerativeTrainer, ConditionalGenerativeTrainer
+from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer
 from experiments.utils.loading import load_training_dataset, load_simulator
 from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
 from experiments.utils.models import create_model
@@ -58,6 +59,7 @@ def parse_args():
     parser.add_argument("--sinkhornfactor", type=float, default=1.0)
     parser.add_argument("--samplesize", type=int, default=None)
     parser.add_argument("--l2reg", type=float, default=None)
+    parser.add_argument("--doughl1reg", type=float, default=0.0)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -336,6 +338,25 @@ def train_pie(args, dataset, model, simulator):
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         forward_kwargs={"mode": "pie"},
         **common_kwargs,
+    )
+    learning_curves = np.vstack(learning_curves).T
+    return learning_curves
+
+
+def train_dough(args, dataset, model, simulator):
+    trainer = VariableDimensionManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalVariableDimensionManifoldFlowTrainer(model)
+    logger.info("Starting training PIE on NLL")
+    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+
+    learning_curves = trainer.train(
+        loss_functions=[losses.nll],
+        loss_labels=["NLL"],
+        loss_weights=[args.nllfactor],
+        epochs=args.epochs,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        custom_kwargs={"l1": args.doughl1reg} ** common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
     return learning_curves

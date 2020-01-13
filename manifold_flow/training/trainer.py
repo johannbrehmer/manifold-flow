@@ -71,6 +71,7 @@ class Trainer(object):
         parameters=None,
         callbacks=None,
         forward_kwargs=None,
+        custom_kwargs=None,
     ):
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
@@ -138,7 +139,15 @@ class Trainer(object):
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
-                    i_epoch, train_loader, val_loader, opt, loss_functions, loss_weights, clip_gradient, forward_kwargs=forward_kwargs
+                    i_epoch,
+                    train_loader,
+                    val_loader,
+                    opt,
+                    loss_functions,
+                    loss_weights,
+                    clip_gradient,
+                    forward_kwargs=forward_kwargs,
+                    custom_kwargs=custom_kwargs,
                 )
                 losses_train.append(loss_train)
                 losses_val.append(loss_val)
@@ -217,7 +226,7 @@ class Trainer(object):
 
         return train_loader, val_loader
 
-    def epoch(self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=None, forward_kwargs=None):
+    def epoch(self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=None, forward_kwargs=None, custom_kwargs=None):
         n_losses = len(loss_functions)
 
         self.model.train()
@@ -228,7 +237,7 @@ class Trainer(object):
             if i_batch == 0 and i_epoch == 0:
                 self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
-                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
             loss_train += batch_loss
             for i, batch_loss_contribution in enumerate(batch_loss_contributions):
@@ -245,7 +254,9 @@ class Trainer(object):
             loss_val = 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
-                batch_loss, batch_loss_contributions = self.batch_val(batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs)
+                batch_loss, batch_loss_contributions = self.batch_val(
+                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                )
                 loss_val += batch_loss
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions):
                     loss_contributions_val[i] += batch_loss_contribution
@@ -264,8 +275,8 @@ class Trainer(object):
     def first_batch(self, batch_data):
         pass
 
-    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None, forward_kwargs=None):
-        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs)
+    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=None, forward_kwargs=None, custom_kwargs=None):
+        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
         self.optimizer_step(optimizer, loss, clip_gradient)
@@ -274,15 +285,15 @@ class Trainer(object):
         loss_contributions = [contrib.item() for contrib in loss_contributions]
         return loss, loss_contributions
 
-    def batch_val(self, batch_data, loss_functions, loss_weights, forward_kwargs=None):
-        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs)
+    def batch_val(self, batch_data, loss_functions, loss_weights, forward_kwargs=None, custom_kwargs=None):
+        loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
         loss = loss.item()
         loss_contributions = [contrib.item() for contrib in loss_contributions]
         return loss, loss_contributions
 
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         """
         Forward pass of the model. Needs to be implemented by any subclass.
 
@@ -385,7 +396,7 @@ class ManifoldFlowTrainer(Trainer):
             x = x.to(self.device, self.dtype)
             self.model(x[: x.shape[0] // torch.cuda.device_count(), ...])
 
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
@@ -410,7 +421,7 @@ class ManifoldFlowTrainer(Trainer):
 
 
 class ConditionalManifoldFlowTrainer(Trainer):
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
@@ -439,9 +450,35 @@ class ConditionalManifoldFlowTrainer(Trainer):
         return losses
 
 
+class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
+        losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
+
+        if custom_kwargs is not None:
+            l1 = custom_kwargs.get("l1", 0.0)
+            l2 = custom_kwargs.get("l2", 0.0)
+            reg = self.model.latent_regularizer(l1, l2)
+            losses.append(reg)
+
+        return losses
+
+
+class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
+        losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
+
+        if custom_kwargs is not None:
+            l1 = custom_kwargs.get("l1", 0.0)
+            l2 = custom_kwargs.get("l2", 0.0)
+            reg = self.model.latent_regularizer(l1, l2)
+            losses.append(reg)
+
+        return losses
+
+
 class GenerativeTrainer(Trainer):
     # TODO: multi-GPU support
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
@@ -463,7 +500,7 @@ class GenerativeTrainer(Trainer):
 
 class ConditionalGenerativeTrainer(GenerativeTrainer):
     # TODO: multi-GPU support
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None):
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
