@@ -113,7 +113,13 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
             else:
                 params = torch.tensor([simulator.default_parameters() for _ in x_], dtype=torch.float)
 
-            x_reco, log_prob_, _ = model(x_, context=params)
+            if args.algorithm == "flow":
+                x_reco, log_prob_, _ = model(x_, context=params)
+            elif args.algorithm in ["pie", "slice"]:
+                x_reco, log_prob_, _ = model(x_, context=params, mode=args.algorithm)
+            else:
+                x_reco, log_prob_, _ = model(x_, context=params, mode="mf")
+
             reco_error_ = torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5
 
             log_prob.append(log_prob_.detach().numpy())

@@ -359,16 +359,19 @@ class Trainer(object):
             logger.info("Early stopping did not improve performance")
 
     @staticmethod
-    def _check_for_nans(label, *tensors, fix_until=None):
+    def _check_for_nans(label, *tensors, fix_until=None, replace=0.):
         for tensor in tensors:
             if tensor is None:
                 continue
+
             if torch.isnan(tensor).any():
                 if fix_until is not None:
                     n_nans = torch.sum(torch.isnan(tensor))
                     if n_nans <= fix_until:
                         logger.warning("%s contains %s NaNs, setting them to zero", label, n_nans)
-                        tensor[torch.isnan(tensor)] = 0.
+                        tensor[torch.isnan(tensor)] = replace
+                        return
+
                 logger.warning("%s contains NaNs, aborting training! Data:\n%s", label, tensor)
                 raise NanException
 
@@ -398,7 +401,7 @@ class ManifoldFlowTrainer(Trainer):
             x_reco, log_prob, _ = self.model(x, **forward_kwargs)
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
-            self._check_for_nans("Log likelihood", log_prob)
+            self._check_for_nans("Log likelihood", log_prob, fix_until=2)
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
