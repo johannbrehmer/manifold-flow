@@ -491,7 +491,7 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
         loss_labels.append("Regularizer")
         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
 
-        super().train(
+        return super().train(
             dataset,
             loss_functions,
             loss_weights,
