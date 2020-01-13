@@ -13,5 +13,5 @@ source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
+# python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+# python -u train.py --dataset spherical_gaussian --algorithm flow --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
