@@ -451,6 +451,70 @@ class ConditionalManifoldFlowTrainer(Trainer):
 
 
 class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
+    def train(
+        self,
+        dataset,
+        loss_functions,
+        loss_weights=None,
+        loss_labels=None,
+        epochs=50,
+        batch_size=100,
+        optimizer=optim.Adam,
+        optimizer_kwargs=None,
+        initial_lr=1.0e-3,
+        scheduler=optim.lr_scheduler.CosineAnnealingLR,
+        scheduler_kwargs=None,
+        restart_scheduler=None,
+        validation_split=0.25,
+        early_stopping=True,
+        early_stopping_patience=None,
+        clip_gradient=1.0,
+        verbose="some",
+        parameters=None,
+        callbacks=None,
+        forward_kwargs=None,
+        custom_kwargs=None,
+        l1=0.0,
+        l2=0.0,
+    ):
+        # Prepare inputs
+        if custom_kwargs is None:
+            custom_kwargs = dict()
+        if l1 is not None:
+            custom_kwargs["l1"] = l1
+        if l2 is not None:
+            custom_kwargs["l2"] = l2
+
+        n_losses = len(loss_functions) + 1
+        if loss_labels is None:
+            loss_labels = [fn.__name__ for fn in loss_functions]
+        loss_labels.append("Regularizer")
+        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
+
+        super().train(
+            dataset,
+            loss_functions,
+            loss_weights,
+            loss_labels,
+            epochs,
+            batch_size,
+            optimizer,
+            optimizer_kwargs,
+            initial_lr,
+            scheduler,
+            scheduler_kwargs,
+            restart_scheduler,
+            validation_split,
+            early_stopping,
+            early_stopping_patience,
+            clip_gradient,
+            verbose,
+            parameters,
+            callbacks,
+            forward_kwargs,
+            custom_kwargs,
+        )
+
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
 
@@ -467,10 +531,74 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
 
         logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
-        logger.debug("           stds       {}".format(self.model.latent_stds()))
+        logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
 
 
 class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
+    def train(
+        self,
+        dataset,
+        loss_functions,
+        loss_weights=None,
+        loss_labels=None,
+        epochs=50,
+        batch_size=100,
+        optimizer=optim.Adam,
+        optimizer_kwargs=None,
+        initial_lr=1.0e-3,
+        scheduler=optim.lr_scheduler.CosineAnnealingLR,
+        scheduler_kwargs=None,
+        restart_scheduler=None,
+        validation_split=0.25,
+        early_stopping=True,
+        early_stopping_patience=None,
+        clip_gradient=1.0,
+        verbose="some",
+        parameters=None,
+        callbacks=None,
+        forward_kwargs=None,
+        custom_kwargs=None,
+        l1=0.0,
+        l2=0.0,
+    ):
+        # Prepare inputs
+        if custom_kwargs is None:
+            custom_kwargs = dict()
+        if l1 is not None:
+            custom_kwargs["l1"] = l1
+        if l2 is not None:
+            custom_kwargs["l2"] = l2
+
+        n_losses = len(loss_functions) + 1
+        if loss_labels is None:
+            loss_labels = [fn.__name__ for fn in loss_functions]
+        loss_labels.append("Regularizer")
+        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
+
+        super().train(
+            dataset,
+            loss_functions,
+            loss_weights,
+            loss_labels,
+            epochs,
+            batch_size,
+            optimizer,
+            optimizer_kwargs,
+            initial_lr,
+            scheduler,
+            scheduler_kwargs,
+            restart_scheduler,
+            validation_split,
+            early_stopping,
+            early_stopping_patience,
+            clip_gradient,
+            verbose,
+            parameters,
+            callbacks,
+            forward_kwargs,
+            custom_kwargs,
+        )
+
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
 
@@ -487,7 +615,7 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
 
         logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
-        logger.debug("           stds       {}".format(self.model.latent_stds()))
+        logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
 
 
 class GenerativeTrainer(Trainer):

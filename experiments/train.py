@@ -354,7 +354,7 @@ def train_dough(args, dataset, model, simulator):
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
-        epochs=args.epochs,
+        epochs=args.epochs // 2,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
         **common_kwargs,
     )
@@ -365,9 +365,9 @@ def train_dough(args, dataset, model, simulator):
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
-        epochs=args.epochs,
+        epochs=args.epochs - args.epochs // 2,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
-        custom_kwargs={"l1": args.doughl1reg},
+        l1=args.doughl1reg,
         **common_kwargs,
     )
     learning_curves_ = np.vstack(learning_curves_).T
