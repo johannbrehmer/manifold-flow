@@ -17,7 +17,7 @@ class VariableDimensionManifoldFlow(BaseFlow):
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(self.latent_dim)
 
-        self.latent_distribution = distributions.DiagonalNormal((self.total_latent_dim,))
+        self.latent_distribution = distributions.DiagonalNormal((self.total_latent_dim,), initial_std=0.5)
         self.transform = transform
 
         self._report_model_parameters()

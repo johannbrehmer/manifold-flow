@@ -466,8 +466,8 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
         logging_fn = logger.info if verbose else logger.debug
         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
 
-        latent_dim_report = "           latent dim {:>8d}".format(self.model.calculate_latent_dim())
-        logging_fn(latent_dim_report)
+        logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
+        logger.debug("           stds       {}".format(self.model.latent_stds()))
 
 
 class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
@@ -486,8 +486,8 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
         logging_fn = logger.info if verbose else logger.debug
         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
 
-        latent_dim_report = "           latent dim {:>8d}".format(self.model.calculate_latent_dim())
-        logging_fn(latent_dim_report)
+        logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
+        logger.debug("           stds       {}".format(self.model.latent_stds()))
 
 
 class GenerativeTrainer(Trainer):
