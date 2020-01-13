@@ -345,20 +345,33 @@ def train_pie(args, dataset, model, simulator):
 
 def train_dough(args, dataset, model, simulator):
     trainer = VariableDimensionManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalVariableDimensionManifoldFlowTrainer(model)
-    logger.info("Starting training PIE on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
+    logger.info("Starting training dough, phase 1: NLL without latent regularization")
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-        custom_kwargs={"l1": args.doughl1reg} ** common_kwargs,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+        **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
+
+    logger.info("Starting training slice of PIE, phase 2: NLL with latent regularization")
+    learning_curves_ = trainer.train(
+        loss_functions=[losses.nll],
+        loss_labels=["NLL"],
+        loss_weights=[args.nllfactor],
+        epochs=args.epochs,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        custom_kwargs={"l1": args.doughl1reg},
+        **common_kwargs,
+    )
+    learning_curves_ = np.vstack(learning_curves_).T
+    learning_curves = np.vstack((learning_curves, learning_curves_))
     return learning_curves
 
 
@@ -409,6 +422,8 @@ if __name__ == "__main__":
         learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
     elif args.algorithm == "hybrid":
         learning_curves = train_hybrid(args, dataset, model, simulator)
+    elif args.algorithm == "dough":
+        learning_curves = train_dough(args, dataset, model, simulator)
     else:
         raise ValueError("Unknown algorithm %s", args.algorithm)
 

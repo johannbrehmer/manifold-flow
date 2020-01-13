@@ -63,13 +63,13 @@ class VariableDimensionManifoldFlow(BaseFlow):
     def latent_stds(self):
         return torch.exp(self.latent_distribution.log_stds)
 
-    def latent_dim(self, threshold=0.1):
-        return torch.sum(self.latent_stds() < threshold)
+    def calculate_latent_dim(self, threshold=0.5):
+        return torch.sum(self.latent_stds() > threshold)
 
     def latent_regularizer(self, l1=0.0, l2=0.0):
         reg = 0.0
         stds = self.latent_stds()
-        offset = torch.nn.torch.where(stds > 0.5, stds - 1.0, stds)
+        offset = torch.where(stds > 0.5, stds - 1.0, stds)
 
         # L1 regularizer
         if l1 > 0.0:

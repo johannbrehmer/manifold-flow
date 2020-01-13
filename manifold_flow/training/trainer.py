@@ -240,7 +240,7 @@ class Trainer(object):
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
             loss_train += batch_loss
-            for i, batch_loss_contribution in enumerate(batch_loss_contributions):
+            for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
             self.report_batch(i_epoch, i_batch, True, batch_data)
@@ -258,7 +258,7 @@ class Trainer(object):
                     batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
                 )
                 loss_val += batch_loss
-                for i, batch_loss_contribution in enumerate(batch_loss_contributions):
+                for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
                 self.report_batch(i_epoch, i_batch, False, batch_data)
@@ -462,6 +462,13 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
 
         return losses
 
+    def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
+        logging_fn = logger.info if verbose else logger.debug
+        super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
+
+        latent_dim_report = "           latent dim {:>8d}".format(self.model.calculate_latent_dim())
+        logging_fn(latent_dim_report)
+
 
 class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
@@ -474,6 +481,13 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
             losses.append(reg)
 
         return losses
+
+    def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
+        logging_fn = logger.info if verbose else logger.debug
+        super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
+
+        latent_dim_report = "           latent dim {:>8d}".format(self.model.calculate_latent_dim())
+        logging_fn(latent_dim_report)
 
 
 class GenerativeTrainer(Trainer):

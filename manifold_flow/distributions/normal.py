@@ -83,7 +83,7 @@ class DiagonalNormal(distributions.Distribution):
         self._clip = clip
         self._log_z_constant = 0.5 * np.prod(shape) * np.log(2 * np.pi)
 
-        self.log_stds = torch.nn.Parameter(np.log(initial_std) * torch.ones(shape=self._shape))
+        self.log_stds = torch.nn.Parameter(np.log(initial_std) * torch.ones(self._shape))
 
     def _log_prob(self, inputs, context):
         # Note: the context is ignored.
