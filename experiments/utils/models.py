@@ -382,7 +382,7 @@ def create_model(args, simulator):
         )
         raise NotImplementedError
 
-    if not simulator.is_image() and args.algorithm == "dough":
+    elif not simulator.is_image() and args.algorithm == "dough":
         logger.info(
             "Creating variable-dimensional manifold flow for vector data with %s layers, transform %s, %s context features",
             args.innerlayers + args.outerlayers,

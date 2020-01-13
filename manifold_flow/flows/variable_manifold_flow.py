@@ -67,7 +67,7 @@ class VariableDimensionManifoldFlow(BaseFlow):
         return torch.sum(self.latent_stds() > threshold)
 
     def latent_regularizer(self, l1=0.0, l2=0.0):
-        reg = 0.0
+        reg = torch.zeros((1,))
         stds = self.latent_stds()
         offset = torch.where(stds > 0.5, stds - 1.0, stds)
 
