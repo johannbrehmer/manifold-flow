@@ -40,7 +40,7 @@ class StandardNormal(distributions.Distribution):
 
 
 class RescaledNormal(distributions.Distribution):
-    """A multivariate Normal with zero mean and unit covariance."""
+    """A multivariate Normal with zero mean and a diagonal covariance that is epsilon^2 along each diagonal entry of the matrix."""
 
     def __init__(self, shape, std=1.0, clip=10.0):
         super().__init__()
@@ -65,6 +65,50 @@ class RescaledNormal(distributions.Distribution):
             context_size = context.shape[0]
             samples = self.std * torch.randn(context_size * num_samples, *self._shape)
             return various.split_leading_dim(samples, [context_size, num_samples])
+
+    def _mean(self, context):
+        if context is None:
+            return torch.zeros(self._shape)
+        else:
+            # The value of the context is ignored, only its size is taken into account.
+            return torch.zeros(context.shape[0], *self._shape)
+
+
+class DiagonalNormal(distributions.Distribution):
+    """A multivariate Normal with zero mean and a flexible diagonal covariance matrix."""
+
+    def __init__(self, shape, initial_std=1.0, clip=10.0):
+        super().__init__()
+        self._shape = torch.Size(shape)
+        self._clip = clip
+        self._log_z_constant = 0.5 * np.prod(shape) * np.log(2 * np.pi)
+
+        self.log_stds = torch.nn.Parameter(np.log(initial_std) * torch.ones(shape=self._shape))
+
+    def _log_prob(self, inputs, context):
+        # Note: the context is ignored.
+        if inputs.shape[1:] != self._shape:
+            raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
+        inputs = torch.clamp(inputs, -self._clip, self._clip)
+
+        stds = torch.exp(self.log_stds).unsqueeze(0)
+        neg_energy = -0.5 * various.sum_except_batch(inputs ** 2 / stds ** 2, num_batch_dims=1)
+        log_z = self._log_z_constant + torch.sum(self.log_stds)
+        return neg_energy - log_z
+
+    def _sample(self, num_samples, context):
+        if context is None:
+            return self.std * torch.randn(num_samples, *self._shape)
+        else:
+            stds = torch.exp(self.log_stds).unsqueeze(0)
+            # The value of the context is ignored, only its size is taken into account.
+            context_size = context.shape[0]
+
+            samples = torch.randn(context_size * num_samples, *self._shape)
+            samples = various.split_leading_dim(samples, [context_size, num_samples])
+            samples = stds * samples
+
+            return samples
 
     def _mean(self, context):
         if context is None:

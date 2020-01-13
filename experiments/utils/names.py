@@ -1,7 +1,7 @@
 import os
 
 SIMULATORS = ["spherical_gaussian", "conditional_spherical_gaussian", "tth", "tth2d", "cifar10", "imagenet"]
-ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid"]
+ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "pudding"]
 
 
 def create_filename(type, label, args):
