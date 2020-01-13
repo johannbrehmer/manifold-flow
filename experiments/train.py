@@ -57,6 +57,7 @@ def parse_args():
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=1.0)
     parser.add_argument("--samplesize", type=int, default=None)
+    parser.add_argument("--l2reg", type=float, default=None)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -69,6 +70,8 @@ def parse_args():
 def train_manifold_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
     if args.specified:
         logger.info("Starting training MF with specified manifold on NLL")
@@ -134,6 +137,8 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     # trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
     # if args.nopretraining or args.epochs // 4 < 1:
     #     logger.info("Skipping pretraining phase")
@@ -175,6 +180,8 @@ def train_hybrid(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
     # if args.nopretraining or args.epochs // 6 < 1:
     #     logger.info("Skipping pretraining phase")
@@ -245,6 +252,8 @@ def train_hybrid(args, dataset, model, simulator):
 def train_slice_of_pie(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
     if args.nopretraining or args.epochs // 3 < 1:
         logger.info("Skipping pretraining phase")
@@ -297,6 +306,9 @@ def train_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
@@ -313,6 +325,9 @@ def train_pie(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training PIE on NLL")
     common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    if args.l2reg is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
