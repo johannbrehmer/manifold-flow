@@ -409,6 +409,7 @@ def create_model(args, simulator):
             outer_transform=outer_transform,
             inner_transform=inner_transform,
             apply_context_to_outer=args.conditionalouter,
+            pie_epsilon=args.pieepsilon,
         )
 
     elif not simulator.is_image():
@@ -451,6 +452,7 @@ def create_model(args, simulator):
             outer_transform=outer_transform,
             inner_transform=inner_transform,
             apply_context_to_outer=args.conditionalouter,
+            pie_epsilon=args.pieepsilon,
         )
 
     else:

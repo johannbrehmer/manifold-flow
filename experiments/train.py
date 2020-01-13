@@ -43,6 +43,7 @@ def parse_args():
     parser.add_argument("--outercouplingmlp", action="store_true")
     parser.add_argument("--outercouplinglayers", type=int, default=2)
     parser.add_argument("--outercouplinghidden", type=int, default=100)
+    parser.add_argument("--pieepsilon", type=float, default=0.01)
 
     # Training
     parser.add_argument("--load", type=str, default=None)

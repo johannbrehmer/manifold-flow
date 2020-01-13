@@ -359,7 +359,7 @@ class Trainer(object):
             logger.info("Early stopping did not improve performance")
 
     @staticmethod
-    def _check_for_nans(label, *tensors, fix_until=None, replace=0.):
+    def _check_for_nans(label, *tensors, fix_until=None, replace=0.0):
         for tensor in tensors:
             if tensor is None:
                 continue
