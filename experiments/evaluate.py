@@ -122,7 +122,7 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
                     x_reco, log_prob_, _ = model(x_, context=params_, mode="mf")
 
                 log_prob.append(log_prob_.detach().numpy())
-                reco_error_.append(torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5)
+                reco_error_.append((torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5).detach().numpy())
 
             log_prob = np.concatenate(log_prob, axis=0)
             if reco_error is None:
