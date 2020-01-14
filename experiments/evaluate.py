@@ -134,7 +134,7 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
 
         log_probs.append(log_prob)
 
-    if parameter_grid[0] is None:
+    if simulator.parameter_dim() is None:
         return np.asarray(log_probs[0]), reco_error, None
     return np.asarray(log_probs), reco_error, parameter_grid
 
