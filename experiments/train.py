@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument("--initialnllfactor", type=float, default=0.01)
     parser.add_argument("--msefactor", type=float, default=1.0)
     parser.add_argument("--nllfactor", type=float, default=1.0)
-    parser.add_argument("--sinkhornfactor", type=float, default=1.0)
+    parser.add_argument("--sinkhornfactor", type=float, default=10.0)
     parser.add_argument("--samplesize", type=int, default=None)
     parser.add_argument("--l2reg", type=float, default=None)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
