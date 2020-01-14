@@ -55,8 +55,8 @@ class SphericalCoordinates(transforms.Transform):
             logdet = self._logdet(outputs, inverse=False)
 
             # Cross-check
-            jacobian = batch_jacobian(outputs, inputs)
-            logdet_check = torch.slogdet(jacobian)[1]
+            # jacobian = batch_jacobian(outputs, inputs)
+            # logdet_check = torch.slogdet(jacobian)[1]
 
             return outputs, logdet
 
@@ -85,8 +85,8 @@ class SphericalCoordinates(transforms.Transform):
             logdet = self._logdet(inputs, inverse=True)
 
             # Cross-check
-            jacobian = batch_jacobian(outputs, inputs)
-            logdet_check = torch.slogdet(jacobian)[1]
+            # jacobian = batch_jacobian(outputs, inputs)
+            # logdet_check = torch.slogdet(jacobian)[1]
 
             return outputs, logdet
 
@@ -172,7 +172,7 @@ class SphericalCoordinates(transforms.Transform):
         for i, phi_ in enumerate(torch.t(phi)):
             logdet = logdet + (self.n - i - 1) * torch.log(torch.abs(torch.sin(phi_)))
 
-        if inverse:
+        if not inverse:
             logdet = -logdet
 
         return logdet
