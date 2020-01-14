@@ -112,7 +112,11 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
 
             for j in range(n_batches):
                 x_ = torch.tensor(x[j * batchsize : (j + 1) * batchsize], dtype=torch.float)
-                params_ = None if params is None else torch.tensor([params for _ in x], dtype=torch.float)
+                if params is None:
+                    params_ = None
+                else:
+                    params_ = np.asarray([params for _ in x_])
+                    params_ = torch.tensor(params_, dtype=torch.float)
 
                 if args.algorithm == "flow":
                     x_reco, log_prob_, _ = model(x_, context=params_)
