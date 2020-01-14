@@ -4,5 +4,14 @@ source activate ml
 basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $basedir/experiments
 
-python -u train.py --dataset tth2d --algorithm flow --modellatentdim 20 --dir $basedir --samplesize 1000000
-python -u evaluate.py --dataset tth2d --algorithm flow --modellatentdim 20 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm flow --epsilon 0.01 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm flow --epsilon 0.001 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm flow --epsilon 0.1 --dir $basedir
+
+python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.001 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.1 --dir $basedir
+
+python -u evaluate.py --dataset spherical_gaussian --algorithm pie --epsilon 0.01 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm pie --epsilon 0.001 --dir $basedir
+python -u evaluate.py --dataset spherical_gaussian --algorithm pie --epsilon 0.1 --dir $basedir

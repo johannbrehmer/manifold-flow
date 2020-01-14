@@ -55,9 +55,6 @@ class ConditionalSphericalGaussianSimulator(BaseSimulator):
         z_phi, z_eps = self._transform_x_to_z(x)
         return np.sum(z_eps ** 2, axis=1) ** 0.5
 
-    def default_parameters(self):
-        return np.zeros(self.parameter_dim())
-
     def sample_from_prior(self, n):
         return uniform.rvs(loc=-1.0, scale=2.0, size=(n, self.parameter_dim()))
 

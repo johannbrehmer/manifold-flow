@@ -34,7 +34,17 @@ class BaseSimulator:
         raise NotImplementedError
 
     def default_parameters(self):
-        raise NotImplementedError
+        return np.zeros(self.parameter_dim())
+
+    def eval_parameter_grid(self, resolution=11):
+        if self.parameter_dim() is None or self.parameter_dim() < 1:
+            raise NotImplementedError
+
+        each = np.linspace(-1., 1., resolution)
+        each_grid = np.meshgrid([each for _ in range(self.parameter_dim())], indexing="ij")
+        each_grid = [x.flatten() for x in each_grid]
+        grid = np.vstack(each_grid).T
+        return grid
 
     def sample_from_prior(self, n):
         raise NotImplementedError

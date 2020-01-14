@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument("--pieepsilon", type=float, default=0.01)
 
     # Evaluation settings
+    parser.add_argument("--gridresolution", type=int, default=11)
     parser.add_argument("--generate", type=int, default=10000)
     parser.add_argument("--observedsamples", type=int, default=100)
     parser.add_argument("--slicesampler", action="store_true")
@@ -84,52 +85,53 @@ def _evaluate_model_samples(args, simulator, x_gen):
 
 
 def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100):
-
     if model is None:
         logger.info("Evaluating true log likelihood of test samples")
     else:
         logger.info("Evaluating model likelihood of test samples")
 
     x = load_test_samples(args)[:samples]
+    parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
-    if model is None:
-        if simulator.parameter_dim() is None:
-            params = None
+    log_probs = []
+    reco_errors = []
+    for i, params in enumerate(parameter_grid):
+        logger.debug("Evaluating grid point %s / %s", i + 1, len(parameter_grid))
+        if model is None:
+            params_ = None if params is None else np.asarray([params for _ in x])
+            log_prob = simulator.log_density(x, parameters=params_)
+            reco_error = np.zeros(x.shape[0])
+
         else:
-            params = torch.tensor([simulator.default_parameters() for _ in x], dtype=torch.float)
-        log_prob = simulator.log_density(x, parameters=params)
-        reco_error = np.zeros(x.shape[0])
+            log_prob = []
+            reco_error = []
+            n_batches = (samples - 1) // batchsize + 1
 
-    else:
-        log_prob = []
-        reco_error = []
-        n_batches = (samples - 1) // batchsize + 1
+            for j in range(n_batches):
+                x_ = torch.tensor(x[j * batchsize : (j + 1) * batchsize], dtype=torch.float)
+                params_ = None if params is None else torch.tensor([params for _ in x], dtype=torch.float)
 
-        for i in range(n_batches):
-            logger.debug("Evaluating batch %s / %s", i + 1, n_batches)
+                if args.algorithm == "flow":
+                    x_reco, log_prob_, _ = model(x_, context=params_)
+                elif args.algorithm in ["pie", "slice"]:
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode=args.algorithm)
+                else:
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode="mf")
 
-            x_ = torch.tensor(x[i * batchsize : (i + 1) * batchsize], dtype=torch.float)
-            if simulator.parameter_dim() is None:
-                params = None
-            else:
-                params = torch.tensor([simulator.default_parameters() for _ in x_], dtype=torch.float)
+                reco_error_ = torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5
 
-            if args.algorithm == "flow":
-                x_reco, log_prob_, _ = model(x_, context=params)
-            elif args.algorithm in ["pie", "slice"]:
-                x_reco, log_prob_, _ = model(x_, context=params, mode=args.algorithm)
-            else:
-                x_reco, log_prob_, _ = model(x_, context=params, mode="mf")
+                log_prob.append(log_prob_.detach().numpy())
+                reco_error.append(reco_error_.detach().numpy())
 
-            reco_error_ = torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5
+            log_prob = np.concatenate(log_prob, axis=0)
+            reco_error = np.concatenate(reco_error, axis=0)
 
-            log_prob.append(log_prob_.detach().numpy())
-            reco_error.append(reco_error_.detach().numpy())
+        log_probs.append(log_prob)
+        reco_errors.append(reco_error)
 
-        log_prob = np.concatenate(log_prob, axis=0)
-        reco_error = np.concatenate(reco_error, axis=0)
-
-    return log_prob, reco_error
+    if parameter_grid[0] is None:
+        return np.asarray(log_probs[0]), np.asarray(reco_errors[0]), None
+    return np.asarray(log_probs[0]), np.asarray(reco_errors[0]), parameter_grid
 
 
 def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.2, thin=10, burnin=100):
