@@ -94,17 +94,19 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
-    reco_errors = []
+    reco_error = None
+
     for i, params in enumerate(parameter_grid):
         logger.debug("Evaluating grid point %s / %s", i + 1, len(parameter_grid))
         if model is None:
             params_ = None if params is None else np.asarray([params for _ in x])
             log_prob = simulator.log_density(x, parameters=params_)
-            reco_error = np.zeros(x.shape[0])
+            if reco_error is None:
+                reco_error = np.zeros(x.shape[0])
 
         else:
             log_prob = []
-            reco_error = []
+            reco_error_ = []
             n_batches = (samples - 1) // batchsize + 1
 
             for j in range(n_batches):
@@ -118,20 +120,18 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
                 else:
                     x_reco, log_prob_, _ = model(x_, context=params_, mode="mf")
 
-                reco_error_ = torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5
-
                 log_prob.append(log_prob_.detach().numpy())
-                reco_error.append(reco_error_.detach().numpy())
+                reco_error_.append(torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5)
 
             log_prob = np.concatenate(log_prob, axis=0)
-            reco_error = np.concatenate(reco_error, axis=0)
+            if reco_error is None:
+                reco_error = np.concatenate(reco_error_, axis=0)
 
         log_probs.append(log_prob)
-        reco_errors.append(reco_error)
 
     if parameter_grid[0] is None:
-        return np.asarray(log_probs[0]), np.asarray(reco_errors[0]), None
-    return np.asarray(log_probs[0]), np.asarray(reco_errors[0]), parameter_grid
+        return np.asarray(log_probs[0]), reco_error, None
+    return np.asarray(log_probs), reco_error, parameter_grid
 
 
 def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.2, thin=10, burnin=100):
@@ -212,14 +212,15 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
 
     # Evaluate test samples
-    log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model)
+    log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model)
     np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
     np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
+    if parameter_grid is not None:
+        np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
 
     try:
-        log_likelihood_test, reconstruction_error_test = _evaluate_test_samples(args, simulator, model=None)
+        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None)
         np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
-        np.save(create_filename("results", "true_reco_error_test", args), reconstruction_error_test)
     except IntractableLikelihoodError:
         logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 

@@ -40,7 +40,7 @@ class BaseSimulator:
         if self.parameter_dim() is None or self.parameter_dim() < 1:
             raise NotImplementedError
 
-        each = np.linspace(-1., 1., resolution)
+        each = np.linspace(-1.0, 1.0, resolution)
         each_grid = np.meshgrid([each for _ in range(self.parameter_dim())], indexing="ij")
         each_grid = [x.flatten() for x in each_grid]
         grid = np.vstack(each_grid).T
