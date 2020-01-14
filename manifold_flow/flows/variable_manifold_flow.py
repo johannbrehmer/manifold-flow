@@ -66,17 +66,17 @@ class VariableDimensionManifoldFlow(BaseFlow):
     def calculate_latent_dim(self, threshold=0.5):
         return torch.sum(self.latent_stds() > threshold)
 
-    def regularizer(self, latent_l1=0.0, latent_l2=0.0):
+    def latent_regularizer(self, l1=0.0, l2=0.0):
         # LAtent regularization
         latent_reg = torch.zeros((1,))
         stds = self.latent_stds()
         offset = torch.where(stds > 0.5, stds - 1.0, stds)
 
-        if latent_l1 > 0.0:
-            latent_reg = latent_reg + latent_l1 * torch.sum(torch.nn.L1Loss(reduction="none")(offset, torch.zeros_like(offset)), dim=1)
+        if l1 > 0.0:
+            latent_reg = latent_reg + l1 * torch.nn.L1Loss(reduction="sum")(offset, torch.zeros_like(offset))
 
-        if latent_l2 > 0.0:
-            latent_reg = latent_reg + 0.5 * latent_l2 * torch.sum(offset ** 2, dim=1)  # Factor 0.5 to agree with weight_decay
+        if l2 > 0.0:
+            latent_reg = latent_reg + 0.5 * l2 * torch.sum(offset ** 2)  # Factor 0.5 to agree with weight_decay
 
         return latent_reg
 

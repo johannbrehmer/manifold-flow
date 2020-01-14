@@ -354,24 +354,25 @@ def train_dough(args, dataset, model, simulator):
         loss_functions=[losses.nll],
         loss_labels=["NLL"],
         loss_weights=[args.nllfactor],
-        epochs=args.epochs // 2,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+        epochs=args.epochs,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        l1=args.doughl1reg,
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
 
-    logger.info("Starting training slice of PIE, phase 2: NLL with latent regularization")
-    learning_curves_ = trainer.train(
-        loss_functions=[losses.nll],
-        loss_labels=["NLL"],
-        loss_weights=[args.nllfactor],
-        epochs=args.epochs - args.epochs // 2,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
-        l1=args.doughl1reg,
-        **common_kwargs,
-    )
-    learning_curves_ = np.vstack(learning_curves_).T
-    learning_curves = np.vstack((learning_curves, learning_curves_))
+    # logger.info("Starting training slice of PIE, phase 2: NLL with latent regularization")
+    # learning_curves_ = trainer.train(
+    #     loss_functions=[losses.nll],
+    #     loss_labels=["NLL"],
+    #     loss_weights=[args.nllfactor],
+    #     epochs=args.epochs - args.epochs // 2,
+    #     callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+    #     l1=args.doughl1reg,
+    #     **common_kwargs,
+    # )
+    # learning_curves_ = np.vstack(learning_curves_).T
+    # learning_curves = np.vstack((learning_curves, learning_curves_))
     return learning_curves
 
 

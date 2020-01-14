@@ -107,7 +107,7 @@ class Trainer(object):
         else:
             logger.debug("No early stopping")
 
-        n_losses = len(loss_functions)
+        n_losses = len(loss_labels)
         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights
 
         # Verbosity
@@ -227,7 +227,7 @@ class Trainer(object):
         return train_loader, val_loader
 
     def epoch(self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=None, forward_kwargs=None, custom_kwargs=None):
-        n_losses = len(loss_functions)
+        n_losses = len(loss_weights)
 
         self.model.train()
         loss_contributions_train = np.zeros(n_losses)
@@ -376,14 +376,14 @@ class Trainer(object):
                 continue
 
             if torch.isnan(tensor).any():
+                n_nans = torch.sum(torch.isnan(tensor))
                 if fix_until is not None:
-                    n_nans = torch.sum(torch.isnan(tensor))
                     if n_nans <= fix_until:
-                        logger.warning("%s contains %s NaNs, setting them to zero", label, n_nans)
+                        logger.debug("%s contains %s NaNs, setting them to zero", label, n_nans)
                         tensor[torch.isnan(tensor)] = replace
                         return
 
-                logger.warning("%s contains NaNs, aborting training! Data:\n%s", label, tensor)
+                logger.warning("%s contains %s NaNs, aborting training! Data:\n%s", label, n_nans, tensor)
                 raise NanException
 
 
@@ -412,7 +412,7 @@ class ManifoldFlowTrainer(Trainer):
             x_reco, log_prob, _ = self.model(x, **forward_kwargs)
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
-            self._check_for_nans("Log likelihood", log_prob, fix_until=2)
+            self._check_for_nans("Log likelihood", log_prob, fix_until=5)
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
@@ -442,7 +442,7 @@ class ConditionalManifoldFlowTrainer(Trainer):
             x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
-            self._check_for_nans("Log likelihood", log_prob, fix_until=2)
+            self._check_for_nans("Log likelihood", log_prob, fix_until=5)
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
