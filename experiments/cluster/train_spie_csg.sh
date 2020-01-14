@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-spie-sg
-#SBATCH --output=log_train_spie_spherical_%a.log
+#SBATCH --job-name=t-spie-csg
+#SBATCH --output=log_train_spie_csg_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
