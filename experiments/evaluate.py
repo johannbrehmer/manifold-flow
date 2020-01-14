@@ -244,7 +244,7 @@ if __name__ == "__main__":
             model_posterior_samples = None
         else:
             model_posterior_samples = _mcmc(
-                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin,
+                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
             )
             np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
@@ -252,7 +252,9 @@ if __name__ == "__main__":
             logger.info("Skipping MCMC based on true likelihood")
         else:
             try:
-                true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin)
+                true_posterior_samples = _mcmc(
+                    simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+                )
                 np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
                 if not args.skipmodelmcmc:

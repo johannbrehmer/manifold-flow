@@ -12,7 +12,7 @@ class SphericalCoordinates(transforms.Transform):
     """ Translates the first d+1 data components from Cartesian to the hyperspherical coordinates of a d-sphere and a radial coordinate, leaving the remaining variables
     invariant. Only supports  """
 
-    def __init__(self, n, r0=0.0):
+    def __init__(self, n, r0=1.0):
         """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. r0 is subtracted from the radial coordinate, so with r = 1 deviations
         from the unit sphere are calculated. """
 
@@ -36,25 +36,29 @@ class SphericalCoordinates(transforms.Transform):
             inputs.requires_grad = True
 
         outputs = self._cartesian_to_spherical(inputs)
-        jacobian = batch_jacobian(outputs, inputs)
 
-        if torch.isnan(jacobian).any():
-            for i in range(jacobian.size(0)):
-                if torch.isnan(jacobian[i]).any():
-                    logger.warning("Spherical Jacobian contains NaNs")
-                    logger.warning("  Cartesian: %s", inputs[i])
-                    logger.warning("  Spherical: %s", outputs[i])
-                    logger.warning("  Jacobian:  %s", jacobian[i])
+        if full_jacobian:
+            jacobian = batch_jacobian(outputs, inputs)
 
-                    self._spherical_to_cartesian(inputs[i : i + 1])
+            if torch.isnan(jacobian).any():
+                for i in range(jacobian.size(0)):
+                    if torch.isnan(jacobian[i]).any():
+                        logger.warning("Spherical Jacobian contains NaNs")
+                        logger.warning("  Cartesian: %s", inputs[i])
+                        logger.warning("  Spherical: %s", outputs[i])
+                        logger.warning("  Jacobian:  %s", jacobian[i])
+                        raise RuntimeError
 
-                    raise RuntimeError
+            return outputs, jacobian
 
-        if not full_jacobian:
-            _, logdet = torch.slogdet(jacobian)
+        else:
+            logdet = self._logdet(outputs, inverse=False)
+
+            # Cross-check
+            jacobian = batch_jacobian(outputs, inputs)
+            logdet_check = torch.slogdet(jacobian)[1]
+
             return outputs, logdet
-
-        return outputs, jacobian
 
     def inverse(self, inputs, context=None, full_jacobian=False):
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
@@ -62,27 +66,29 @@ class SphericalCoordinates(transforms.Transform):
             inputs.requires_grad = True
 
         outputs = self._spherical_to_cartesian(inputs)
-        jacobian = batch_jacobian(outputs, inputs)
 
-        if torch.isnan(jacobian).any():
-            for i in range(jacobian.size(0)):
-                if torch.isnan(jacobian[i]).any():
-                    logger.warning("Spherical inverse Jacobian contains NaNs")
-                    logger.warning("  Spherical: %s", inputs[i])
-                    logger.warning("  Cartesian: %s", outputs[i])
-                    logger.warning("  Jacobian:  %s", jacobian[i])
+        if full_jacobian:
+            jacobian = batch_jacobian(outputs, inputs)
 
-                    self._spherical_to_cartesian(inputs[i : i + 1])
+            if torch.isnan(jacobian).any():
+                for i in range(jacobian.size(0)):
+                    if torch.isnan(jacobian[i]).any():
+                        logger.warning("Spherical inverse Jacobian contains NaNs")
+                        logger.warning("  Spherical: %s", inputs[i])
+                        logger.warning("  Cartesian: %s", outputs[i])
+                        logger.warning("  Jacobian:  %s", jacobian[i])
+                        raise RuntimeError
 
-                    raise RuntimeError
+            return outputs, jacobian
 
-        if not full_jacobian:
-            _, logdet = torch.slogdet(jacobian)
-            if torch.isnan(logdet).any():
-                logger.warning("log det Jacobian contains NaNs: %s", logdet)
+        else:
+            logdet = self._logdet(inputs, inverse=True)
+
+            # Cross-check
+            jacobian = batch_jacobian(outputs, inputs)
+            logdet_check = torch.slogdet(jacobian)[1]
+
             return outputs, logdet
-
-        return outputs, jacobian
 
     def _split_spherical(self, spherical):
         batchsize = spherical.size(0)
@@ -157,3 +163,16 @@ class SphericalCoordinates(transforms.Transform):
         outputs = torch.cat(phis + [dr, others], dim=1)
 
         return outputs
+
+    def _logdet(self, spherical, inverse=False):
+        (batchsize, d), (phi, dr, others) = self._split_spherical(spherical)
+        r = dr + self.r0
+
+        logdet = self.n * torch.log(r)
+        for i, phi_ in enumerate(torch.t(phi)):
+            logdet = logdet + (self.n - i - 1) * torch.log(torch.abs(torch.sin(phi_)))
+
+        if inverse:
+            logdet = -logdet
+
+        return logdet
