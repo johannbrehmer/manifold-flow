@@ -47,10 +47,11 @@ def parse_args():
     # Evaluation settings
     parser.add_argument("--gridresolution", type=int, default=11)
     parser.add_argument("--generate", type=int, default=10000)
-    parser.add_argument("--observedsamples", type=int, default=100)
+    parser.add_argument("--observedsamples", type=int, default=20)
     parser.add_argument("--slicesampler", action="store_true")
-    parser.add_argument("--mcmcstep", type=float, default=0.25)
-    parser.add_argument("--thin", type=int, default=10)
+    parser.add_argument("--mcmcstep", type=float, default=0.1)
+    parser.add_argument("--thin", type=int, default=1)
+    parser.add_argument("--burnin", type=int, default=1000)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -239,7 +240,7 @@ if __name__ == "__main__":
             model_posterior_samples = None
         else:
             model_posterior_samples = _mcmc(
-                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep
+                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin,
             )
             np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
@@ -247,7 +248,7 @@ if __name__ == "__main__":
             logger.info("Skipping MCMC based on true likelihood")
         else:
             try:
-                true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep)
+                true_posterior_samples = _mcmc(simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin)
                 np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
                 if not args.skipmodelmcmc:
