@@ -20,8 +20,11 @@ class SphericalCoordinates(transforms.Transform):
 
         self.n = n
         self.r0 = r0
+        self._mask = None
 
     def forward(self, inputs, context=None, full_jacobian=False):
+        """ Transforms Cartesian to hyperspherical coordinates """
+
         assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
 
         # Avoid NaNs by moving points slightly off the equator
@@ -37,7 +40,7 @@ class SphericalCoordinates(transforms.Transform):
 
         outputs = self._cartesian_to_spherical(inputs)
 
-        if full_jacobian:
+        if full_jacobian:  # Should not be necessary
             jacobian = batch_jacobian(outputs, inputs)
 
             if torch.isnan(jacobian).any():
@@ -61,23 +64,30 @@ class SphericalCoordinates(transforms.Transform):
             return outputs, logdet
 
     def inverse(self, inputs, context=None, full_jacobian=False):
-        assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
-        if not inputs.requires_grad:
-            inputs.requires_grad = True
+        """ Transforms hyperspherical to Cartesian coordinates """
 
-        outputs = self._spherical_to_cartesian(inputs)
+        assert len(inputs.size()) == 2, "Spherical coordinates only support 1-d data"
+        # if not inputs.requires_grad:
+        #     inputs.requires_grad = True
+
+        outputs, jacobian = self._spherical_to_cartesian(inputs, calculate_jacobian=full_jacobian)
 
         if full_jacobian:
-            jacobian = batch_jacobian(outputs, inputs)
+            # check_jacobian = batch_jacobian(outputs, inputs)
 
-            if torch.isnan(jacobian).any():
-                for i in range(jacobian.size(0)):
-                    if torch.isnan(jacobian[i]).any():
-                        logger.warning("Spherical inverse Jacobian contains NaNs")
-                        logger.warning("  Spherical: %s", inputs[i])
-                        logger.warning("  Cartesian: %s", outputs[i])
-                        logger.warning("  Jacobian:  %s", jacobian[i])
-                        raise RuntimeError
+            # old = check_jacobian.detach().numpy()[0]
+            # new = jacobian.detach().numpy()[0]
+            #
+            # diff = new - old
+            #
+            # if torch.isnan(jacobian).any():
+            #     for i in range(jacobian.size(0)):
+            #         if torch.isnan(jacobian[i]).any():
+            #             logger.warning("Spherical inverse Jacobian contains NaNs")
+            #             logger.warning("  Spherical: %s", inputs[i])
+            #             logger.warning("  Cartesian: %s", outputs[i])
+            #             logger.warning("  Jacobian:  %s", jacobian[i])
+            #             raise RuntimeError
 
             return outputs, jacobian
 
@@ -100,24 +110,57 @@ class SphericalCoordinates(transforms.Transform):
 
         return (batchsize, d), (phi, dr, others)
 
-    def _spherical_to_cartesian(self, inputs):
+    def _spherical_to_cartesian(self, inputs, calculate_jacobian=False):
         (batchsize, d), (phi, dr, others) = self._split_spherical(inputs)
         r = dr + self.r0
 
         a1 = torch.cat((0.5 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row is pi, rest are angles
         a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row are 2pi, rest are angles
 
-        sins = torch.sin(a1)  # (batchsize, n+1), first row is ones, others are sin(angles)
-        sins = torch.cumprod(sins, dim=1)  # (batchsize, n+1)
-        coss = torch.cos(a0)  # (batchsize, n+1), first row is ones, others are sin(angles)
-        coss = torch.roll(coss, -1, dims=1)  # (batchsize, n+1), last row is ones
+        sins = torch.sin(a1)  # (batchsize, n+1): 1, sin(phi0), sin(phi1), ...
+        sin_prods = torch.cumprod(sins, dim=1)  # (batchsize, n+1): 1, sin(phi0), sin(phi0) sin(phi1), ...
+        coss = torch.cos(a0)  # (batchsize, n+1): 1, cos(phi0), cos(phi1), ...
+        coss_roll = torch.roll(coss, -1, dims=1)  # (batchsize, n+1): cos(phi0), cos(phi1), ..., 1
 
-        unit_sphere = sins * coss
-        sphere = unit_sphere * r.view((-1, 1))
+        x_unit_sphere = sin_prods * coss_roll
+        x_sphere = x_unit_sphere * r.view((-1, 1))
 
-        outputs = torch.cat((sphere, others), dim=1)
+        outputs = torch.cat((x_sphere, others), dim=1)
 
-        return outputs
+        # Jacobian calculation
+        jacobian = None
+        if calculate_jacobian:
+            # dx / dphi
+            cots = coss / sins  # (batchsize, n + 1): 1, cot(phi0), cot(phi1), ...
+            cots_roll = torch.roll(cots, -1, dims=1)  # (batchsize, n + 1): cot(phi0), cot(phi1), ..., 1
+            sin_prods_roll = torch.roll(sin_prods, -1, dims=1)  # (batchsize, n + 1): sin(phi0), sin(phi0)sin(phi1), ..., 1
+
+            offdiags = torch.einsum("b,bi,bj->bij", r.squeeze(), x_sphere, cots_roll)  # (batchsize, n + 1, n + 1) where dim 1 -> x, dim 2 -> phi
+            diags = torch.diag_embed(-1.0 * r * sin_prods_roll)  # (batchsize, n + 1, n + 1)
+
+            filter = torch.eye(self.n + 1).unsqueeze(0)
+            jac_phi = (1.0 - filter) * offdiags + filter * diags
+            jac_phi = jac_phi[:, :, : self.n]  # (batchsize, n + 1, n)
+
+            if self._mask is None or self._mask.size(0) != batchsize:
+                # Make a matrix with shape (batchsize, n, n+1) that has on/below the diagonal of each (i, :, :n) part zeros elsewhere
+                self._mask = torch.tril(torch.ones((self.n, self.n)))
+                self._mask = torch.cat((self._mask, torch.ones((1, self.n))), dim=0)  # (n + 1, n)
+                self._mask = torch.zeros((batchsize, self.n + 1, self.n)) + self._mask.unsqueeze(0)  # (batchsize, n + 1, n)
+            jac_phi = torch.zeros((batchsize, self.n + 1, self.n)) + self._mask * jac_phi  # (batchsize, n + 1, n)
+
+            # dx / dr
+            jac_r = torch.zeros((batchsize, self.n + 1, 1)) + x_unit_sphere.unsqueeze(2)  # (batchsize, n + 1, 1)
+
+            # dx / dothers
+            jac_rest = torch.zeros((batchsize, d - self.n - 1, d - self.n - 1)) + torch.eye(d - self.n - 1).unsqueeze(0)  # (batchsize, d - (n+1), d - (n+1))
+
+            # Combine
+            jac_upper = torch.cat([jac_phi, jac_r, torch.zeros((batchsize, self.n + 1, d - self.n - 1))], dim=2)  # (batchsize, n+1, d)
+            jac_lower = torch.cat([torch.zeros((batchsize, d - self.n - 1, self.n + 1)), jac_rest], dim=2)  # (batchsize, d - (n+1), d)
+            jacobian = torch.cat([jac_upper, jac_lower], dim=1)  # (batchsize, d, d)
+
+        return outputs, jacobian
 
     def _cartesian_to_spherical(self, inputs):
         # Calculate hyperspherical coordinates one by one
