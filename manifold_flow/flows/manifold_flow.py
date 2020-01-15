@@ -50,6 +50,12 @@ class ManifoldFlow(BaseFlow):
         # Decode
         x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self._decode(u, mode=mode, context=context)
 
+        # Sometimes the inverse log det transformation has NaNs -- not clear why
+        if torch.isnan(inv_log_det_inner).any():
+            _, _, _, _, inv_log_det_inner_fix = self._encode(x, context)
+            logger.debug("Fixing NaN in inverse inner determinant: %s -> %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)], -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
+            inv_log_det_inner = - inv_log_det_inner_fix
+
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
@@ -127,6 +133,17 @@ class ManifoldFlow(BaseFlow):
 
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
             log_prob = log_prob - 0.5 * torch.slogdet(jtj)[1] - inv_log_det_inner
+
+            if torch.isnan(log_prob).any():
+                logger.warning("MF log likelihood contains NaNs")
+                filter = torch.isnan(log_prob).flatten()
+                logger.debug("  u:             %s", u[filter])
+                logger.debug("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
+                logger.debug("  Jacobian:      %s", inv_jacobian_outer[filter])
+                logger.debug("  JTJ:           %s", jtj[filter])
+                logger.debug("  log det outer: %s", torch.slogdet(jtj)[1][filter])
+                logger.debug("  log det inner: %s", inv_log_det_inner[filter])
+                logger.debug("  total:         %s", log_prob[filter])
 
         else:
             log_prob = None
