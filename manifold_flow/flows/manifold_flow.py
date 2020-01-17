@@ -53,8 +53,12 @@ class ManifoldFlow(BaseFlow):
         # Sometimes the inverse log det transformation has NaNs -- not clear why
         if torch.isnan(inv_log_det_inner).any():
             _, _, _, _, inv_log_det_inner_fix = self._encode(x, context)
-            logger.debug("Fixing NaN in inverse inner determinant: %s -> %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)], -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
-            inv_log_det_inner = - inv_log_det_inner_fix
+            logger.debug(
+                "Fixing NaN in inverse inner determinant: %s -> %s",
+                inv_log_det_inner[torch.isnan(inv_log_det_inner)],
+                -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)],
+            )
+            inv_log_det_inner = -inv_log_det_inner_fix
 
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)

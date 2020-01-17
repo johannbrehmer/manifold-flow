@@ -51,16 +51,16 @@ if __name__ == "__main__":
     if args.train > 0:
         logger.info("Generating %s training samples at parameters %s", args.train, parameters_train)
         x_train = simulator.sample(args.train, parameters=parameters_train)
-        # np.save(create_filename("sample", "x_train", args), x_train)
-        # if conditional:
-        #     np.save(create_filename("sample", "parameters_train", args), parameters_train)
+        np.save(create_filename("sample", "x_train", args), x_train)
+        if conditional:
+            np.save(create_filename("sample", "parameters_train", args), parameters_train)
 
     if args.test > 0:
         logger.info("Generating %s test samples at parameters %s", args.test, parameters_test)
         x_test = simulator.sample(args.test, parameters=parameters_test)
-        # np.save(create_filename("sample", "x_test", args), x_test)
-        # if conditional:
-        #     np.save(create_filename("sample", "parameters_test", args), parameters_test)
+        np.save(create_filename("sample", "x_test", args), x_test)
+        if conditional:
+            np.save(create_filename("sample", "parameters_test", args), parameters_test)
 
     if args.ood > 0:
         logger.info("Generating %s ood samples at parameters %s", args.ood, parameters_test)

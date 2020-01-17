@@ -85,13 +85,13 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
-def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100):
+def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100, ood=False):
     if model is None:
         logger.info("Evaluating true log likelihood of test samples")
     else:
         logger.info("Evaluating model likelihood of test samples")
 
-    x = load_test_samples(args)[:samples]
+    x = load_test_samples(args, ood=ood)[:samples]
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
@@ -228,6 +228,14 @@ if __name__ == "__main__":
         np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
     except IntractableLikelihoodError:
         logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
+
+    # Evaluate ood samples
+    try:
+        log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True)
+        np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
+        np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
+    except:
+        pass
 
     # Evaluate either generative or inference performance
     if simulator.parameter_dim() is None:
