@@ -103,12 +103,6 @@ class TopHiggsLoader(BaseLHCLoader):
         9 e_b2
         10 e_a1
         11 e_a2
-        # 12 n_j
-        # 13 n_b
-        # 14 n_l
-        # 15 n_e
-        # 16 n_mu
-        # 17 n_a
         18 eta_l1
         19 eta_l2
         20 eta_b1

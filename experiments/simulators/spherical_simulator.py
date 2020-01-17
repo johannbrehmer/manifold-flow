@@ -42,6 +42,11 @@ class SphericalGaussianSimulator(BaseSimulator):
         x = self._transform_z_to_x(z_phi, z_eps)
         return x
 
+    def sample_ood(self, n, parameters=None):
+        x = self.sample(n, parameters)
+        x = 0.95 * x
+        return x
+
     def distance_from_manifold(self, x):
         z_phi, z_eps = self._transform_x_to_z(x)
         return np.sum(z_eps ** 2, axis=1) ** 0.5

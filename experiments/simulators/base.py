@@ -30,6 +30,14 @@ class BaseSimulator:
     def sample(self, n, parameters=None):
         raise NotImplementedError
 
+    def sample_with_noise(self, n, noise, parameters=None):
+        x = self.sample(n, parameters)
+        x = x + np.random.normal(loc=0., scale=noise, size=(n, self.data_dim()))
+        return x
+
+    def sample_ood(self, n, parameters=None):
+        raise NotImplementedError
+
     def distance_from_manifold(self, x):
         raise NotImplementedError
 
