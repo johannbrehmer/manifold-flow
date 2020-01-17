@@ -48,22 +48,30 @@ class ManifoldFlow(BaseFlow):
         u, h_manifold, h_orthogonal, log_det_outer, log_det_inner = self._encode(x, context)
 
         # Decode
-        x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self._decode(u, mode=mode, context=context)
+        x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self._decode(u, mode=mode, context=context)
 
         # Sometimes the inverse log det transformation has NaNs -- not clear why
         if torch.isnan(inv_log_det_inner).any():
-            _, _, _, _, inv_log_det_inner_fix = self._encode(x, context)
-            logger.debug(
-                "Fixing NaN in inverse inner determinant: %s -> %s",
-                inv_log_det_inner[torch.isnan(inv_log_det_inner)],
-                -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)],
-            )
+            _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
+
+            logger.debug("Fixing NaN in inverse inner determinant")
+            logger.debug("  x       = %s", x[torch.isnan(inv_log_det_inner)])
+            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
+            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
+            logger.debug("  h_orth  = %s", h_orthogonal[torch.isnan(inv_log_det_inner)])
+            logger.debug("  x'      = %s", x_reco[torch.isnan(inv_log_det_inner)])
+            logger.debug("  logdet  = %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)])
+            logger.debug("  logdet' = %s", -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
+
             inv_log_det_inner = -inv_log_det_inner_fix
+
+            # Just for debugging
+            # _ = self(x, mode, context)
 
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
-        return x, log_prob, u
+        return x_reco, log_prob, u
 
     def encode(self, x, context=None):
         u, _, _, _, _ = self._encode(x, context=context)
@@ -111,6 +119,13 @@ class ManifoldFlow(BaseFlow):
             x, inv_jacobian_outer = self.outer_transform.inverse(h, full_jacobian=True, context=context if self.apply_context_to_outer else None)
             inv_log_det_outer = None
 
+        if torch.isnan(x).any():
+            logger.warning("Reconstructed x contains NaN")
+            filter = torch.isnan(x).flatten()
+            logger.warning("  u: %s", u[filter])
+            logger.warning("  h: %s", h[filter])
+            logger.warning("  x: %s", x[filter])
+
         return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer
 
     def _log_prob(self, mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
@@ -141,13 +156,13 @@ class ManifoldFlow(BaseFlow):
             if torch.isnan(log_prob).any():
                 logger.warning("MF log likelihood contains NaNs")
                 filter = torch.isnan(log_prob).flatten()
-                logger.debug("  u:             %s", u[filter])
-                logger.debug("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
-                logger.debug("  Jacobian:      %s", inv_jacobian_outer[filter])
-                logger.debug("  JTJ:           %s", jtj[filter])
-                logger.debug("  log det outer: %s", torch.slogdet(jtj)[1][filter])
-                logger.debug("  log det inner: %s", inv_log_det_inner[filter])
-                logger.debug("  total:         %s", log_prob[filter])
+                logger.warning("  u:             %s", u[filter])
+                logger.warning("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
+                logger.warning("  Jacobian:      %s", inv_jacobian_outer[filter])
+                logger.warning("  JTJ:           %s", jtj[filter])
+                logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
+                logger.warning("  log det inner: %s", inv_log_det_inner[filter])
+                logger.warning("  total:         %s", log_prob[filter])
 
         else:
             log_prob = None

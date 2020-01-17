@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class SphericalCoordinates(transforms.Transform):
     """ Translates the first d+1 data components from Cartesian to the hyperspherical coordinates of a d-sphere and a radial coordinate, leaving the remaining variables
-    invariant. Only supports  """
+    invariant. Spherical angles get linearly rescaled to (-1, 1).  """
 
     def __init__(self, n, r0=1.0):
         """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. r0 is subtracted from the radial coordinate, so with r = 1 deviations
@@ -114,6 +114,11 @@ class SphericalCoordinates(transforms.Transform):
         (batchsize, d), (phi, dr, others) = self._split_spherical(inputs)
         r = dr + self.r0
 
+        # Rescale phi
+        first = (phi[:, :-1] + 1.0) * 0.5 * np.pi
+        last = (phi[:, -1].unsqueeze(1) + 1.0) * np.pi
+        phi = torch.cat((first, last), dim=1)
+
         a1 = torch.cat((0.5 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row is pi, rest are angles
         a0 = torch.cat((2 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row are 2pi, rest are angles
 
@@ -148,6 +153,9 @@ class SphericalCoordinates(transforms.Transform):
                 self._mask = torch.cat((self._mask, torch.ones((1, self.n))), dim=0)  # (n + 1, n)
                 self._mask = torch.zeros((batchsize, self.n + 1, self.n)) + self._mask.unsqueeze(0)  # (batchsize, n + 1, n)
             jac_phi = torch.zeros((batchsize, self.n + 1, self.n)) + self._mask * jac_phi  # (batchsize, n + 1, n)
+
+            # Effect of rescaling
+            jac_phi = torch.cat([0.5 * np.pi * jac_phi[:, :, :-1], np.pi * jac_phi[:, :, -1].unsqueeze(2)], dim=2)
 
             # dx / dr
             jac_r = torch.zeros((batchsize, self.n + 1, 1)) + x_unit_sphere.unsqueeze(2)  # (batchsize, n + 1, 1)
@@ -196,6 +204,9 @@ class SphericalCoordinates(transforms.Transform):
         # Special case for last component, see https://en.wikipedia.org/wiki/N-sphere#Spherical_coordinates
         phis[-1] = torch.where(inputs[:, self.n] < 0.0, 2.0 * np.pi - phis[-1][:, 0], phis[-1][:, 0]).view((-1, 1))
 
+        # Rescale
+        phis = [-1.0 + 2.0 * phi / np.pi if i < self.n - 1 else -1.0 + phi / np.pi for i, phi in enumerate(phis)]
+
         # Radial coordinate
         r = torch.sum(inputs[:, : self.n + 1] ** 2, dim=1) ** 0.5
         dr = r - self.r0
@@ -217,5 +228,11 @@ class SphericalCoordinates(transforms.Transform):
 
         if not inverse:
             logdet = -logdet
+
+        # Rescaling
+        if inverse:
+            logdet = logdet + np.log(np.pi) + (self.n - 1) * np.log(0.5 * np.pi)
+        else:
+            logdet = logdet - np.log(np.pi) - (self.n - 1) * np.log(0.5 * np.pi)
 
         return logdet

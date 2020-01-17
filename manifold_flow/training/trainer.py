@@ -376,7 +376,7 @@ class Trainer(object):
                 continue
 
             if torch.isnan(tensor).any():
-                n_nans = torch.sum(torch.isnan(tensor))
+                n_nans = torch.sum(torch.isnan(tensor)).item()
                 if fix_until is not None:
                     if n_nans <= fix_until:
                         logger.debug("%s contains %s NaNs, setting them to zero", label, n_nans)
@@ -410,7 +410,7 @@ class ManifoldFlowTrainer(Trainer):
             x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
             x_reco, log_prob, _ = self.model(x, **forward_kwargs)
-        self._check_for_nans("Reconstructed data", x_reco)
+        self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
 
