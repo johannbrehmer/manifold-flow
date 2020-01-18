@@ -117,6 +117,15 @@ class CouplingTransform(transforms.Transform):
             outputs[:, self.identity_features, ...] = identity_split
             outputs[:, self.transform_features, ...] = transform_split
 
+            # # debugging
+            # check_inputs, _ = self.inverse(outputs, context=context)
+            # diff = torch.sum((check_inputs - inputs)**2, dim=1)
+            # if torch.max(diff > 0.1):
+            #     logger.debug("Coupling trf inversion imprecise!")
+            #
+            #     inputs_ = inputs[diff > 0.1]
+            #     outputs_ = self.forward(inputs_, context=context)
+
             return outputs, logabsdet
 
     def inverse(self, inputs, context=None, full_jacobian=False):

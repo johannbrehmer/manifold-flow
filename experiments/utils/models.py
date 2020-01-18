@@ -370,6 +370,7 @@ def create_model(args, simulator):
             linear_transform_type=args.lineartransform,
             base_transform_type=args.outertransform,
             context_features=simulator.parameter_dim(),
+            dropout_probability=args.dropout,
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
@@ -395,6 +396,7 @@ def create_model(args, simulator):
             linear_transform_type=args.lineartransform,
             base_transform_type=args.outertransform,
             context_features=simulator.parameter_dim(),
+            dropout_probability=args.dropout,
         )
         model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
 
@@ -427,6 +429,7 @@ def create_model(args, simulator):
             linear_transform_type=args.lineartransform,
             base_transform_type=args.innertransform,
             context_features=simulator.parameter_dim(),
+            dropout_probability=args.dropout,
         )
         model = ManifoldFlow(
             data_dim=args.datadim,
@@ -462,6 +465,7 @@ def create_model(args, simulator):
             linear_transform_type=args.lineartransform,
             base_transform_type=args.outertransform,
             context_features=simulator.parameter_dim() if args.conditionalouter else None,
+            dropout_probability=args.dropout,
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
@@ -469,6 +473,7 @@ def create_model(args, simulator):
             linear_transform_type=args.lineartransform,
             base_transform_type=args.innertransform,
             context_features=simulator.parameter_dim(),
+            dropout_probability=args.dropout,
         )
 
         model = ManifoldFlow(

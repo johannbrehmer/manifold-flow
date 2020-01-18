@@ -41,35 +41,48 @@ class ManifoldFlow(BaseFlow):
 
         assert mode in ["mf", "pie", "slice", "projection", "pie-inv"]
 
-        if mode == "mf":
+        if mode == "mf" and not x.requires_grad:
             x.requires_grad = True
 
         # Encode
         u, h_manifold, h_orthogonal, log_det_outer, log_det_inner = self._encode(x, context)
 
         # Decode
-        x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer = self._decode(u, mode=mode, context=context)
+        x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h_manifold_reco = self._decode(u, mode=mode, context=context)
 
         # Sometimes the inverse log det transformation has NaNs -- not clear why
         if torch.isnan(inv_log_det_inner).any():
             _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
 
-            logger.debug("Fixing NaN in inverse inner determinant")
+            logger.warning("Fixing NaN in inverse inner determinant")
             logger.debug("  x       = %s", x[torch.isnan(inv_log_det_inner)])
-            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
             logger.debug("  h_orth  = %s", h_orthogonal[torch.isnan(inv_log_det_inner)])
+            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
+            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
             logger.debug("  x'      = %s", x_reco[torch.isnan(inv_log_det_inner)])
             logger.debug("  logdet  = %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)])
             logger.debug("  logdet' = %s", -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
 
             inv_log_det_inner = -inv_log_det_inner_fix
 
-            # Just for debugging
-            # _ = self(x, mode, context)
-
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
+
+        # # Debugging
+        # diff = x_reco - x
+        # if torch.max(torch.sum(diff**2, dim=1)).item() > 0.04:
+        #     logger.debug("Large reco error:")
+        #     logger.debug("  x       = %s", x[torch.sum(diff**2, dim=1) > 0.04 ])
+        #     logger.debug("  r       = %s", (torch.sum(x**2, dim=1)**0.5)[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  h_orth  = %s", h_orthogonal[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  h_man   = %s", h_manifold[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  u       = %s", u[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  h_man'  = %s", h_manifold_reco[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  dh_man  = %s", (h_manifold_reco[:,:2] - h_manifold)[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  x'      = %s", x_reco[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  dx      = %s", (x_reco-x)[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  r'      = %s", (torch.sum(x_reco**2, dim=1)**0.5)[torch.sum(diff**2, dim=1) > 0.05 ])
+        #     logger.debug("  logdet  = %s", inv_log_det_inner[torch.sum(diff**2, dim=1) > 0.05 ])
 
         return x_reco, log_prob, u
 
@@ -78,7 +91,7 @@ class ManifoldFlow(BaseFlow):
         return u
 
     def decode(self, u, u_orthogonal=None, context=None):
-        x, _, _, _ = self._decode(u, mode="projection", u_orthogonal=u_orthogonal, context=context)
+        x, _, _, _, _ = self._decode(u, mode="projection", u_orthogonal=u_orthogonal, context=context)
         return x
 
     def log_prob(self, x, mode="mf", context=None):
@@ -98,6 +111,23 @@ class ManifoldFlow(BaseFlow):
         h, log_det_outer = self.outer_transform(x, full_jacobian=False, context=context if self.apply_context_to_outer else None)
         h_manifold, h_orthogonal = self.projection(h)
         u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
+
+        # # Debugging
+        # h_check, inv_log_det_inner = self.inner_transform.inverse(u, full_jacobian=False, context=context)
+        # diff = torch.sum((h_manifold - h_check)**2., dim=1)**0.5
+        # if torch.max(diff) > 0.1:
+        #     logger.debug("Inner inversion didn't work!")
+        #     logger.debug("  h  = %s", h[diff > 0.1])
+        #     logger.debug("  hm = %s", h_manifold[diff > 0.1])
+        #     logger.debug("  u  = %s", u[diff > 0.1])
+        #     logger.debug("  h' = %s", h_check[diff > 0.1])
+        #     logger.debug("  log det  = %s", log_det_inner[diff > 0.1])
+        #     logger.debug("  log det' = %s", - inv_log_det_inner[diff > 0.1])
+
+        #     # For debugging
+        #     h_ = h_manifold[diff > 0.1]
+        #     u_, log_det_inner_ = self.inner_transform(h_, full_jacobian=False, context=context)
+        #     h_check_, inv_log_det_inner_ = self.inner_transform.inverse(u_, full_jacobian=False, context=context)
 
         return u, h_manifold, h_orthogonal, log_det_outer, log_det_inner
 
@@ -126,7 +156,7 @@ class ManifoldFlow(BaseFlow):
             logger.warning("  h: %s", h[filter])
             logger.warning("  x: %s", x[filter])
 
-        return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer
+        return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h
 
     def _log_prob(self, mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
         if mode == "pie":

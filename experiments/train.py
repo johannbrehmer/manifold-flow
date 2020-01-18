@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--outercouplingmlp", action="store_true")
     parser.add_argument("--outercouplinglayers", type=int, default=2)
     parser.add_argument("--outercouplinghidden", type=int, default=100)
+    parser.add_argument("--dropout", type=float, default=0.25)
     parser.add_argument("--pieepsilon", type=float, default=0.01)
 
     # Training
@@ -78,9 +79,9 @@ def train_manifold_flow(args, dataset, model, simulator):
     if args.specified:
         logger.info("Starting training MF with specified manifold on NLL")
         learning_curves = trainer.train(
-            loss_functions=[losses.nll],
-            loss_labels=["NLL"],
-            loss_weights=[args.nllfactor],
+            loss_functions=[losses.mse, losses.nll],
+            loss_labels=["MSE", "NLL"],
+            loss_weights=[0.0, args.nllfactor],
             epochs=args.epochs,
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
             forward_kwargs={"mode": "mf"},
