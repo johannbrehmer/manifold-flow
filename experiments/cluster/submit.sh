@@ -31,26 +31,26 @@
 # sbatch train_mf_tth.sh
 
 
-sbatch evaluate_flow_spherical.sh
-sbatch evaluate_pie_spherical.sh
-sbatch evaluate_gamf_spherical.sh
-sbatch evaluate_spie_spherical.sh
-sbatch evaluate_smf_spherical.sh
-sbatch evaluate_sgamf_spherical.sh
-sbatch evaluate_mf_spherical.sh
+#sbatch evaluate_flow_spherical.sh
+#sbatch evaluate_pie_spherical.sh
+#sbatch evaluate_gamf_spherical.sh
+#sbatch evaluate_spie_spherical.sh
+#sbatch evaluate_smf_spherical.sh
+#sbatch evaluate_sgamf_spherical.sh
+#sbatch evaluate_mf_spherical.sh
 # sbatch evaluate_pie_epsilon_spherical.sh  # not yet trained
 
-sbatch evaluate_flow_csg.sh
-sbatch evaluate_pie_csg.sh
-sbatch evaluate_gamf_csg.sh
-sbatch evaluate_spie_csg.sh
-sbatch evaluate_smf_csg.sh
-sbatch evaluate_sgamf_csg.sh
-sbatch evaluate_mf_csg.sh
+#sbatch evaluate_flow_csg.sh
+#sbatch evaluate_pie_csg.sh
+#sbatch evaluate_gamf_csg.sh
+#sbatch evaluate_spie_csg.sh
+#sbatch evaluate_smf_csg.sh
+#sbatch evaluate_sgamf_csg.sh
+#sbatch evaluate_mf_csg.sh
 # sbatch evaluate_pie_epsilon_csg.sh  # not yet trained
 
-sbatch evaluate_flow_tth2d.sh
-sbatch evaluate_flow_tth.sh
-sbatch evaluate_pie_tth.sh
+#sbatch evaluate_flow_tth2d.sh
+#sbatch evaluate_flow_tth.sh
+#sbatch evaluate_pie_tth.sh
 # sbatch evaluate_gamf_tth.sh
 # sbatch evaluate_mf_tth.sh  # not yet trained
