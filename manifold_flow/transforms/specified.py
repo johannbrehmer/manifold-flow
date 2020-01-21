@@ -222,7 +222,7 @@ class SphericalCoordinates(transforms.Transform):
         (batchsize, d), (phi, dr, others) = self._split_spherical(spherical)
         r = dr + self.r0
 
-        logdet = self.n * torch.log(r)
+        logdet = self.n * torch.log(r).squeeze()
         for i, phi_ in enumerate(torch.t(phi)):
             logdet = logdet + (self.n - i - 1) * torch.log(torch.abs(torch.sin(phi_)))
 
