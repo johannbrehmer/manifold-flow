@@ -12,4 +12,4 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --dataset tth --algorithm gamf --modellatentdim 20 --dir /scratch/jb6504/manifold-flow
+python -u train.py --dataset tth --algorithm gamf --modellatentdim 20 --genbatchsize 1000 --dropout 0 --dir /scratch/jb6504/manifold-flow
