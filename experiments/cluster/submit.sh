@@ -24,10 +24,10 @@ sbatch train_smf_csg.sh
 # sbatch --array=0-2 train_mf_csg.sh
 sbatch train_pie_epsilon_csg.sh
 
-# sbatch train_flow_tth2d.sh
-# sbatch train_flow_tth.sh
-# sbatch train_pie_tth.sh
-# sbatch train_gamf_tth.sh
+sbatch train_flow_tth2d.sh
+sbatch train_flow_tth.sh
+sbatch train_pie_tth.sh
+sbatch train_gamf_tth.sh
 # sbatch train_mf_tth.sh
 
 
