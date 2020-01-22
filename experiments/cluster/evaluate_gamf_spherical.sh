@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=e-gamf-sg
-#SBATCH --output=log_evaluate_gamf_spherical.log
+#SBATCH --output=log_evaluate_gamf_spherical_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
@@ -11,7 +11,17 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
+case ${SLURM_ARRAY_TASK_ID} in
+0) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+esac
 
+
+case ${SLURM_ARRAY_TASK_ID} in
+0) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+esac
