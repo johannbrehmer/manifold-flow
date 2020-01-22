@@ -28,7 +28,7 @@ sbatch train_sgamf_csg.sh
 # sbatch train_flow_tth.sh
 # sbatch train_pie_tth.sh
 sbatch train_gamf_tth.sh
-# sbatch train_mf_tth.sh  # <---
+sbatch train_mf_tth.sh
 
 
 sbatch evaluate_flow_spherical.sh

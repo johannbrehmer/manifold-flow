@@ -11,11 +11,7 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset spherical_gaussian --algorithm gamf --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
 
-python -u evaluate.py --modelname reg0001 --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname reg001 --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname reg01 --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname reg1 --dataset spherical_gaussian --algorithm gamf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow

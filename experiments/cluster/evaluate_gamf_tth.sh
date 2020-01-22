@@ -11,4 +11,4 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset tth --algorithm gamf --modellatentdim 20 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname largebs --dataset tth --algorithm gamf --modellatentdim 20 --dropout 0 --dir /scratch/jb6504/manifold-flow
