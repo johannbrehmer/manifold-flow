@@ -11,6 +11,9 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
+case ${SLURM_ARRAY_TASK_ID} in
+0) python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname largebs --dataset conditional_spherical_gaussian --algorithm gamf --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow ;;
+*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+esac
