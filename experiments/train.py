@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument("--outercouplingmlp", action="store_true")
     parser.add_argument("--outercouplinglayers", type=int, default=2)
     parser.add_argument("--outercouplinghidden", type=int, default=100)
-    parser.add_argument("--dropout", type=float, default=0.25)
+    parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--pieepsilon", type=float, default=0.01)
 
     # Training
@@ -60,11 +60,12 @@ def parse_args():
     parser.add_argument("--samplesize", type=int, default=None)
     parser.add_argument("--l2reg", type=float, default=None)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
+    parser.add_argument("--nopretraining", action="store_true")
+    parser.add_argument("--noposttraining", action="store_true")
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--nopretraining", action="store_true")
 
     return parser.parse_args()
 
@@ -109,7 +110,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
             loss_weights=[args.msefactor, args.addnllfactor],
-            epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 4),
+            epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // 4),
             parameters=model.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "mf"},
@@ -118,19 +119,22 @@ def train_manifold_flow(args, dataset, model, simulator):
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = np.vstack((learning_curves, learning_curves_))
 
-        logger.info("Starting training MF, phase 3: training only inner flow on NLL")
-        learning_curves_ = trainer.train(
-            loss_functions=[losses.mse, losses.nll],
-            loss_labels=["MSE", "NLL"],
-            loss_weights=[0., args.nllfactor],
-            epochs=args.epochs // 4,
-            parameters=model.inner_transform.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
-            forward_kwargs={"mode": "pie"},
-            **common_kwargs,
-        )
-        learning_curves_ = np.vstack(learning_curves_).T
-        learning_curves = np.vstack((learning_curves, learning_curves_))
+        if args.nopretraining or args.epochs // 3 < 1:
+            logger.info("Skipping inner flow phase")
+        else:
+            logger.info("Starting training MF, phase 3: training only inner flow on NLL")
+            learning_curves_ = trainer.train(
+                loss_functions=[losses.mse, losses.nll],
+                loss_labels=["MSE", "NLL"],
+                loss_weights=[0., args.nllfactor],
+                epochs=args.epochs // 4,
+                parameters=model.inner_transform.parameters(),
+                callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
+                forward_kwargs={"mode": "pie"},
+                **common_kwargs,
+            )
+            learning_curves_ = np.vstack(learning_curves_).T
+            learning_curves = np.vstack((learning_curves, learning_curves_))
 
     return learning_curves
 
