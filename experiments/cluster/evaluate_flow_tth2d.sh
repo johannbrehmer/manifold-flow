@@ -11,4 +11,4 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset tth2d --algorithm flow --modellatentdim 2 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset tth2d --algorithm flow --modellatentdim 2 --dropout 0 --dir /scratch/jb6504/manifold-flow
