@@ -11,8 +11,8 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname small_pieepsilon03 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.3 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_pieepsilon01 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_pieepsilon003 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.03 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_pieepsilon0003 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.003 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_pieepsilon0001 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_pieepsilon03 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.3 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_pieepsilon01 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.1 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_pieepsilon003 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.03 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_pieepsilon0003 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.003 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_pieepsilon0001 --dataset spherical_gaussian --epsilon 0.01 --algorithm pie --pieepsilon 0.001 --dir /scratch/jb6504/manifold-flow

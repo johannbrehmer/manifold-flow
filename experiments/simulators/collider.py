@@ -43,7 +43,7 @@ class BaseLHCLoader(BaseSimulator):
             params = params[:limit_samplesize]
 
         # Make sure things are sane
-        logger.info("ttH features before preprocessing:")
+        logger.info("lhc features before preprocessing:")
         for i in range(x.shape[1]):
             logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
 
@@ -51,12 +51,12 @@ class BaseLHCLoader(BaseSimulator):
         x = self._preprocess(x)
 
         # Make sure things are sane
-        logger.info("ttH features after preprocessing:")
+        logger.info("lhc features after preprocessing:")
         for i in range(x.shape[1]):
             logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
 
         # Make sure things are sane
-        logger.info("ttH parameters:")
+        logger.info("lhc parameters:")
         for i in range(params.shape[1]):
             logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
 
@@ -88,55 +88,10 @@ class BaseLHCLoader(BaseSimulator):
         return x
 
 
-class TopHiggsLoader(BaseLHCLoader):
-    """
-    Features:
-        0 pt_l1
-        1 pt_l2
-        2 pt_b1
-        3 pt_b2
-        4 pt_a1
-        5 pt_a2
-        6 e_l1
-        7 e_l2
-        8 e_b1
-        9 e_b2
-        10 e_a1
-        11 e_a2
-        18 eta_l1
-        19 eta_l2
-        20 eta_b1
-        21 eta_b2
-        22 eta_a1
-        23 eta_a2
-        24 phi_l1
-        25 phi_l2
-        26 phi_b1
-        27 phi_b2
-        28 phi_a1
-        29 phi_a2
-        30 met
-        31 m_ll
-        32 pt_ll
-        33 eta_ll
-        34 dphi_ll
-        35 m_bb
-        36 pt_bb
-        37 eta_bb
-        38 dphi_bb
-        39 m_aa
-        40 pt_aa
-        41 eta_aa
-        42 dphi_aa
-        43 dphi_l1aa
-        44 dphi_l2aa
-        45 dphi_b1aa
-        46 dphi_b2aa
-        47 dphi_METaa
-    """
+class WBFLoader(BaseLHCLoader):
 
     def __init__(self):
-        TTH_X_MEANS = np.asarray(
+        lhc_X_MEANS = np.asarray(
             [
                 94.40898, 38.293396, 129.17973, 63.718967, 181.19, 66.270294, 162.78603, 76.85954, 227.52643, 129.116, 313.12534, 129.18875, 0.9078872, 1.0456945, 0.93022776,
                 1.0281563, 0.9229034, 1.065798, -1.1027638e-05, 0.00403136, 0.005703883, 0.006515818, 0.0029550078, 2.660957e-05, 115.53658, 120.22046, 90.383385, 0.010395338,
@@ -144,18 +99,19 @@ class TopHiggsLoader(BaseLHCLoader):
                 -0.0065666684, 0.0036475079
             ]
         )
-        TTH_X_STDS = np.asarray(
+        lhc_X_STDS = np.asarray(
             [
                 56.933517, 29.633202, 66.08287, 37.361572, 73.54688, 26.476595, 168.53899, 100.35491, 193.60933, 143.58432, 220.26591, 102.159164, 0.7301178, 0.8286062, 0.7238323,
                 0.798472, 0.81572974, 0.9066472, 1.8007879, 1.8169788, 1.8021392, 1.8071805, 1.8182082, 1.8168657, 59.218544, 104.02254, 49.477535, 1.694322, 2.0485785, 141.08936,
                 59.68141, 1.8453279, 2.202337, 4.7465997, 89.33402, 1.6982772, 1.9781849, 2.0325553, 1.8577149, 2.12811, 1.8756281, 2.136366,
             ]
         )
-        super().__init__(n_parameters=3, n_observables=42, n_final=8, n_additional_constraints=1, prior_scale=10., x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
+        super().__init__(n_parameters=2, n_observables=48, n_final=4, n_additional_constraints=0, prior_scale=1., x_means=lhc_X_MEANS, x_stds=lhc_X_STDS)
 
 
-class ReducedTopHiggsLoader(BaseLHCLoader):
+class WBF2DLoader(BaseLHCLoader):
     def __init__(self):
-        TTH_X_MEANS = np.asarray([124.96437, 219.41402])  # maa  # ptaa
-        TTH_X_STDS = np.asarray([4.7465997, 89.33402])  # maa  # ptaa
-        super().__init__(n_parameters=3, n_observables=2, n_final=8, n_additional_constraints=1, prior_scale=10., x_means=TTH_X_MEANS, x_stds=TTH_X_STDS)
+        lhc_X_MEANS = np.asarray([124.96437, 219.41402])  # maa  # ptaa
+        lhc_X_STDS = np.asarray([4.7465997, 89.33402])  # maa  # ptaa
+        super().__init__(n_parameters=2, n_observables=2, n_final=4, n_additional_constraints=0, prior_scale=1., x_means=lhc_X_MEANS, x_stds=lhc_X_STDS)
+

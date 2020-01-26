@@ -11,10 +11,10 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
 
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.01 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.001 --dropout 0 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.1 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --dataset conditional_spherical_gaussian --algorithm flow --epsilon 0.1 --dir /scratch/jb6504/manifold-flow

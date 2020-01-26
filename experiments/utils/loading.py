@@ -22,9 +22,9 @@ def load_simulator(args):
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
-    elif args.dataset == "tth":
+    elif args.dataset == "lhc":
         simulator = TopHiggsLoader()
-    elif args.dataset == "tth2d":
+    elif args.dataset == "lhc2d":
         simulator = ReducedTopHiggsLoader()
     elif args.dataset == "cifar10":
         simulator = CIFAR10Loader()

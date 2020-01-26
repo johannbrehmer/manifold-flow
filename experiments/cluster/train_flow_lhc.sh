@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-sf-tth
-#SBATCH --output=log_train_flow_tth.log
+#SBATCH --job-name=t-sf-lhc
+#SBATCH --output=log_train_flow_lhc.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
@@ -12,4 +12,4 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --dataset tth --algorithm flow --modellatentdim 20 --dropout 0 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname small --dataset lhc --algorithm flow --modellatentdim 20 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
