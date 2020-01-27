@@ -12,4 +12,4 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname small --dataset lhc --algorithm mf --modellatentdim 20 --outercouplingmlp --outercouplinglayers 1 --batchsize 50 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname small --dataset lhc --algorithm mf --modellatentdim 9 --outercouplingmlp --outercouplinglayers 1 --batchsize 50 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
