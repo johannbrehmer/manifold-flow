@@ -12,8 +12,8 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname small_ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname small_ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --epochs 400 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --epochs 400 --dir /scratch/jb6504/manifold-flow
 
 #python -u train.py --modelname small_largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
 #python -u train.py --modelname largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --dir /scratch/jb6504/manifold-flow
