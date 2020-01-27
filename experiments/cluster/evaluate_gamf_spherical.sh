@@ -15,13 +15,16 @@ case ${SLURM_ARRAY_TASK_ID} in
 0) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
 1) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
 2) python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
+3) python -u evaluate.py --modelname small_ged_largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --ged --dir /scratch/jb6504/manifold-flow ;;
+4) python -u evaluate.py --modelname small_ged_largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --ged --dir /scratch/jb6504/manifold-flow ;;
+5) python -u evaluate.py --modelname small_ged_largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --ged --dir /scratch/jb6504/manifold-flow ;;
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac
 
 
-case ${SLURM_ARRAY_TASK_ID} in
-0) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
-1) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
-2) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
-*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
-esac
+#case ${SLURM_ARRAY_TASK_ID} in
+#0) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.01 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
+#1) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.001 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
+#2) python -u evaluate.py --modelname largebs --dataset spherical_gaussian --epsilon 0.1 --algorithm gamf --dir /scratch/jb6504/manifold-flow ;;
+#*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+#esac

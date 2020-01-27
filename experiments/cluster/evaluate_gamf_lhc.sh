@@ -11,4 +11,11 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname small_largebs --dataset lhc --algorithm gamf --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow
+
+case ${SLURM_ARRAY_TASK_ID} in
+0) python -u evaluate.py --modelname largebs --dataset lhc --algorithm gamf --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname ged_largebs --dataset lhc --algorithm gamf --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname small_largebs --dataset lhc --algorithm gamf --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow ;;
+3) python -u evaluate.py --modelname small_ged_largebs --dataset lhc --algorithm gamf --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow ;;
+*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+esac
