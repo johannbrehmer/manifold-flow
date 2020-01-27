@@ -11,4 +11,4 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname small --dataset lhc --algorithm mf --outercouplingmlp --outercouplinglayers 1 --modellatentdim 9 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small --dataset lhc --algorithm mf --outercouplingmlp --outercouplinglayers 1 --modellatentdim 9 --samplesize 100000 --observedsamples 100 --dir /scratch/jb6504/manifold-flow
