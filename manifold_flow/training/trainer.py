@@ -264,7 +264,7 @@ class Trainer(object):
 
         loss_contributions_train /= len(train_loader)
         if compute_loss_variance:
-            loss_train = np.array(np.mean(loss_train), np.std(loss_train))
+            loss_train = np.array([np.mean(loss_train), np.std(loss_train)])
         else:
             loss_train /= len(train_loader)
 
@@ -277,7 +277,6 @@ class Trainer(object):
                 batch_loss, batch_loss_contributions = self.batch_val(
                     batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
                 )
-                loss_val += batch_loss
                 if compute_loss_variance:
                     loss_val.append(batch_loss)
                 else:
@@ -289,7 +288,7 @@ class Trainer(object):
 
             loss_contributions_val /= len(val_loader)
             if compute_loss_variance:
-                loss_val = np.array(np.mean(loss_val), np.std(loss_val))
+                loss_val = np.array([np.mean(loss_val), np.std(loss_val)])
             else:
                 loss_val /= len(val_loader)
 
@@ -511,6 +510,7 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
         callbacks=None,
         forward_kwargs=None,
         custom_kwargs=None,
+        compute_loss_variance=False,
         l1=0.0,
         l2=0.0,
     ):
@@ -550,6 +550,7 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
             callbacks,
             forward_kwargs,
             custom_kwargs,
+            compute_loss_variance=compute_loss_variance,
         )
 
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
@@ -595,6 +596,7 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
         callbacks=None,
         forward_kwargs=None,
         custom_kwargs=None,
+        compute_loss_variance=False,
         l1=0.0,
         l2=0.0,
     ):
@@ -634,6 +636,7 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
             callbacks,
             forward_kwargs,
             custom_kwargs,
+            compute_loss_variance=compute_loss_variance,
         )
 
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):

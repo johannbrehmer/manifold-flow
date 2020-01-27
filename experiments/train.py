@@ -154,6 +154,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         batch_size=args.genbatchsize,
+        compute_loss_variance=True,
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves_).T
