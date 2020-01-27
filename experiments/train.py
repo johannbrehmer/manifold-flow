@@ -62,6 +62,7 @@ def parse_args():
     parser.add_argument("--doughl1reg", type=float, default=0.0)
     parser.add_argument("--nopretraining", action="store_true")
     parser.add_argument("--noposttraining", action="store_true")
+    parser.add_argument("--ged", action="store_true")
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -146,17 +147,45 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
-    logger.info("Starting training GAMF: Sinkhorn-GAN")
-    learning_curves_ = gen_trainer.train(
-        loss_functions=[losses.make_sinkhorn_divergence()],
-        loss_labels=["d_Sinkhorn"],
-        loss_weights=[args.sinkhornfactor],
-        epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-        batch_size=args.genbatchsize,
-        compute_loss_variance=True,
-        **common_kwargs,
-    )
+    if args.ged and simulator.parameter_dim() is None:
+        logger.info("Starting training GAMF: OT-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_generalized_energy_distance()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+
+    elif args.ged:
+        logger.info("Starting training GAMF: Conditional OT-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_conditional_generalized_energy_distance()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+
+    else:
+        logger.info("Starting training GAMF: Sinkhorn-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_sinkhorn_divergence()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+
     learning_curves = np.vstack(learning_curves_).T
     return learning_curves
 
