@@ -72,6 +72,7 @@ class Trainer(object):
         callbacks=None,
         forward_kwargs=None,
         custom_kwargs=None,
+        compute_loss_variance=False,
     ):
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
@@ -148,6 +149,7 @@ class Trainer(object):
                     clip_gradient,
                     forward_kwargs=forward_kwargs,
                     custom_kwargs=custom_kwargs,
+                    compute_loss_variance=compute_loss_variance,
                 )
                 losses_train.append(loss_train)
                 losses_val.append(loss_val)
@@ -226,12 +228,24 @@ class Trainer(object):
 
         return train_loader, val_loader
 
-    def epoch(self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=None, forward_kwargs=None, custom_kwargs=None):
+    def epoch(
+        self,
+        i_epoch,
+        train_loader,
+        val_loader,
+        optimizer,
+        loss_functions,
+        loss_weights,
+        clip_gradient=None,
+        forward_kwargs=None,
+        custom_kwargs=None,
+        compute_loss_variance=False,
+    ):
         n_losses = len(loss_weights)
 
         self.model.train()
         loss_contributions_train = np.zeros(n_losses)
-        loss_train = 0.0
+        loss_train = [] if compute_loss_variance else 0.0
 
         for i_batch, batch_data in enumerate(train_loader):
             if i_batch == 0 and i_epoch == 0:
@@ -239,32 +253,45 @@ class Trainer(object):
             batch_loss, batch_loss_contributions = self.batch_train(
                 batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
-            loss_train += batch_loss
+            if compute_loss_variance:
+                loss_train.append(batch_loss)
+            else:
+                loss_train += batch_loss
             for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
             self.report_batch(i_epoch, i_batch, True, batch_data)
 
         loss_contributions_train /= len(train_loader)
-        loss_train /= len(train_loader)
+        if compute_loss_variance:
+            loss_train = np.array(np.mean(loss_train), np.std(loss_train))
+        else:
+            loss_train /= len(train_loader)
 
         if val_loader is not None:
             self.model.eval()
             loss_contributions_val = np.zeros(n_losses)
-            loss_val = 0.0
+            loss_val = [] if compute_loss_variance else 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
                 batch_loss, batch_loss_contributions = self.batch_val(
                     batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
                 )
                 loss_val += batch_loss
+                if compute_loss_variance:
+                    loss_val.append(batch_loss)
+                else:
+                    loss_val += batch_loss
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
                 self.report_batch(i_epoch, i_batch, False, batch_data)
 
             loss_contributions_val /= len(val_loader)
-            loss_val /= len(val_loader)
+            if compute_loss_variance:
+                loss_val = np.array(np.mean(loss_val), np.std(loss_val))
+            else:
+                loss_val /= len(val_loader)
 
         else:
             loss_contributions_val = None
@@ -353,11 +380,21 @@ class Trainer(object):
                 summary += "{}: {:>6.3f}".format(label, value)
             return summary
 
-        train_report = "Epoch {:>3d}: train loss {:>8.5f} ({})".format(i_epoch + 1, loss_train, contribution_summary(loss_labels, loss_contributions_train))
+        try:
+            train_report = "Epoch {:>3d}: train loss {:>8.5f} +/- {:>8.5f} ({})".format(
+                i_epoch + 1, loss_train[0], loss_train[1], contribution_summary(loss_labels, loss_contributions_train)
+            )
+        except:
+            train_report = "Epoch {:>3d}: train loss {:>8.5f} ({})".format(i_epoch + 1, loss_train, contribution_summary(loss_labels, loss_contributions_train))
         logging_fn(train_report)
 
         if loss_val is not None:
-            val_report = "           val. loss  {:>8.5f} ({})".format(loss_val, contribution_summary(loss_labels, loss_contributions_val))
+            try:
+                val_report = "           val. loss  {:>8.5f} +/- {:>8.5f} ({})".format(
+                    loss_val[0], loss_val[1], contribution_summary(loss_labels, loss_contributions_val)
+                )
+            except:
+                val_report = "           val. loss  {:>8.5f} ({})".format(loss_val, contribution_summary(loss_labels, loss_contributions_val))
             logging_fn(val_report)
 
     def wrap_up_early_stopping(self, best_model, currrent_loss, best_loss, best_epoch):

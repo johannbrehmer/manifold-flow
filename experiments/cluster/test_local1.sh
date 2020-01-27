@@ -4,4 +4,4 @@ source activate ml
 basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $basedir/experiments
 
-# python -u evaluate.py --dataset spherical_gaussian --algorithm flow --epsilon 0.01 --dir $basedir
+python -u train.py --modelname debug --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --genbatchsize 100 --samplesize 10000 --dir $basedir
