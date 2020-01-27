@@ -53,7 +53,7 @@ def parse_args():
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--genbatchsize", type=int, default=100)
     parser.add_argument("--lr", type=float, default=3.0e-4)
-    parser.add_argument("--msefactor", type=float, default=100.0)
+    parser.add_argument("--msefactor", type=float, default=1000.0)
     parser.add_argument("--addnllfactor", type=float, default=0.1)
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=10.0)
