@@ -44,7 +44,7 @@ class SphericalGaussianSimulator(BaseSimulator):
 
     def sample_ood(self, n, parameters=None):
         z_phi, _ = self._draw_z(n)
-        z_eps = np.random.uniform(-3. * self._epsilon, 0., size=(n, self._data_dim - self._latent_dim))
+        z_eps = np.random.uniform(-3.0 * self._epsilon, 0.0, size=(n, self._data_dim - self._latent_dim))
         x = self._transform_z_to_x(z_phi, z_eps)
         return x
 

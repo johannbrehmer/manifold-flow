@@ -126,7 +126,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             learning_curves_ = trainer.train(
                 loss_functions=[losses.mse, losses.nll],
                 loss_labels=["MSE", "NLL"],
-                loss_weights=[0., args.nllfactor],
+                loss_weights=[0.0, args.nllfactor],
                 epochs=args.epochs // 4,
                 parameters=model.inner_transform.parameters(),
                 callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
