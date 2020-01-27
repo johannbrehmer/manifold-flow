@@ -6,8 +6,8 @@ from experiments.simulators import (
     ConditionalSphericalGaussianSimulator,
     CIFAR10Loader,
     ImageNetLoader,
-    TopHiggsLoader,
-    ReducedTopHiggsLoader,
+    WBFLoader,
+    WBF2DLoader,
 )
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
@@ -23,9 +23,9 @@ def load_simulator(args):
     elif args.dataset == "conditional_spherical_gaussian":
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "lhc":
-        simulator = TopHiggsLoader()
+        simulator = WBFLoader()
     elif args.dataset == "lhc2d":
-        simulator = ReducedTopHiggsLoader()
+        simulator = WBF2DLoader()
     elif args.dataset == "cifar10":
         simulator = CIFAR10Loader()
     elif args.dataset == "imagenet":
