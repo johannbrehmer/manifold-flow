@@ -91,7 +91,7 @@ def train_manifold_flow(args, dataset, model, simulator):
     else:
         if args.nopretraining or args.epochs // 3 < 1:
             logger.info("Skipping pretraining phase")
-            learning_curves = []
+            learning_curves = None
         else:
             logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
             learning_curves = trainer.train(
@@ -117,7 +117,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             **common_kwargs,
         )
         learning_curves_ = np.vstack(learning_curves_).T
-        learning_curves = np.vstack((learning_curves, learning_curves_))
+        learning_curves = learning_curves_ if learning_curves is None else np.vstack((learning_curves, learning_curves_))
 
         if args.nopretraining or args.epochs // 3 < 1:
             logger.info("Skipping inner flow phase")
