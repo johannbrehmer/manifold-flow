@@ -74,7 +74,13 @@ def parse_args():
 
 def train_manifold_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
-    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
@@ -247,7 +253,13 @@ def train_hybrid(args, dataset, model, simulator):
 
 def train_slice_of_pie(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
-    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
@@ -301,7 +313,13 @@ def train_slice_of_pie(args, dataset, model, simulator):
 def train_flow(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
-    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
@@ -320,7 +338,13 @@ def train_flow(args, dataset, model, simulator):
 def train_pie(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training PIE on NLL")
-    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
@@ -339,7 +363,13 @@ def train_pie(args, dataset, model, simulator):
 
 def train_dough(args, dataset, model, simulator):
     trainer = VariableDimensionManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalVariableDimensionManifoldFlowTrainer(model)
-    common_kwargs = {"dataset": dataset, "batch_size": args.batchsize, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
