@@ -40,34 +40,19 @@ class EncoderManifoldFlow(BaseFlow):
         """ mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
         (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all). """
 
-        assert mode in ["mf", "pie", "slice", "projection", "pie-inv"]
+        assert mode in ["mf", "projection"]
 
         if mode == "mf" and not x.requires_grad:
             x.requires_grad = True
 
         # Encode
-        u, h_manifold, h_orthogonal, log_det_inner = self._encode(x, context)
+        u, h_manifold, log_det_inner = self._encode(x, context)
 
         # Decode
         x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h_manifold_reco = self._decode(u, mode=mode, context=context)
 
-        # Sometimes the inverse log det transformation has NaNs -- not clear why
-        if torch.isnan(inv_log_det_inner).any():
-            _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
-
-            logger.warning("Fixing NaN in inverse inner determinant")
-            logger.debug("  x       = %s", x[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_orth  = %s", h_orthogonal[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
-            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
-            logger.debug("  x'      = %s", x_reco[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet  = %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet' = %s", -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
-
-            inv_log_det_inner = -inv_log_det_inner_fix
-
         # Log prob
-        log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
+        log_prob = self._log_prob(mode, u, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
         return x_reco, log_prob, u
 
@@ -93,11 +78,10 @@ class EncoderManifoldFlow(BaseFlow):
 
     def _encode(self, x, context=None):
         # Encode
-        h = self.encoder(x, context=context if self.apply_context_to_outer else None)
-        h_manifold, h_orthogonal = self.projection(h)
+        h_manifold = self.encoder(x, context=context if self.apply_context_to_outer else None)
         u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
 
-        return u, h_manifold, h_orthogonal, log_det_inner
+        return u, h_manifold, log_det_inner
 
     def _decode(self, u, mode, u_orthogonal=None, context=None):
         if mode == "mf" and not u.requires_grad:
@@ -126,23 +110,8 @@ class EncoderManifoldFlow(BaseFlow):
 
         return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h
 
-    def _log_prob(self, mode, u, h_orthogonal, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
-        if mode == "pie":
-            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
-            log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
-            log_prob = log_prob - inv_log_det_outer + log_det_inner
-
-        elif mode == "pie-inv":
-            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
-            log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(h_orthogonal, context=None)
-            log_prob = log_prob - inv_log_det_outer - inv_log_det_inner
-
-        elif mode == "slice":
-            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
-            log_prob = log_prob + self.orthogonal_latent_distribution._log_prob(torch.zeros_like(h_orthogonal), context=None)
-            log_prob = log_prob - inv_log_det_outer - inv_log_det_inner
-
-        elif mode == "mf":
+    def _log_prob(self, mode, u, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
+        if mode == "mf":
             # inv_jacobian_outer is dx / du, but still need to restrict this to the manifold latents
             inv_jacobian_outer = inv_jacobian_outer[:, :, : self.latent_dim]
             # And finally calculate log det (J^T J)
