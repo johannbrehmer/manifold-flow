@@ -11,9 +11,18 @@
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
+python -u evaluate.py --modelname small_ged_largebs_shallow_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.01  --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_ged_largebs_shallow_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.001  --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_ged_largebs_shallow_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.1  --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow
+
+python -u evaluate.py --modelname small_ged_largebs_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.01  --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_ged_largebs_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.001  --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_ged_largebs_long --dataset conditional_spherical_gaussian --algorithm gamf --specified --ged --epsilon 0.1  --dir /scratch/jb6504/manifold-flow
+
 python -u evaluate.py --modelname small_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
 python -u evaluate.py --modelname small_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
 python -u evaluate.py --modelname small_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
+
 python -u evaluate.py --modelname small_ged_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --ged --dir /scratch/jb6504/manifold-flow
 python -u evaluate.py --modelname small_ged_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --ged --dir /scratch/jb6504/manifold-flow
 python -u evaluate.py --modelname small_ged_largebs --dataset conditional_spherical_gaussian --algorithm gamf --specified --epsilon 0.1 --ged --dir /scratch/jb6504/manifold-flow
