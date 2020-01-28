@@ -103,7 +103,7 @@ class EncoderManifoldFlow(BaseFlow):
 
         if torch.isnan(x).any():
             logger.warning("Reconstructed x contains NaN")
-            filter = torch.isnan(x).flatten()
+            filter = torch.isnan(x).any(dim=-1).flatten()
             logger.warning("  u: %s", u[filter])
             logger.warning("  h: %s", h[filter])
             logger.warning("  x: %s", x[filter])
