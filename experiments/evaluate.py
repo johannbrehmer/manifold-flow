@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--outercouplinghidden", type=int, default=100)
     parser.add_argument("--dropout", type=float, default=0.25)
     parser.add_argument("--pieepsilon", type=float, default=0.01)
+    parser.add_argument("--encoderblocks", type=int, default=5)
 
     # Evaluation settings
     parser.add_argument("--gridresolution", type=int, default=11)

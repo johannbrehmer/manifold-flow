@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 from experiments.utils import ALGORITHMS
 from manifold_flow import nn as nn_, transforms
-from manifold_flow.flows import Flow, ManifoldFlow, VariableDimensionManifoldFlow
+from manifold_flow.flows import Flow, ManifoldFlow, VariableDimensionManifoldFlow, EncoderManifoldFlow
 from manifold_flow.nn import Conv2dSameSize
 from manifold_flow.utils import various
 
@@ -354,6 +354,32 @@ def create_vector_transform(
     return transform
 
 
+def create_vector_encoder(
+    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.25, use_batch_norm=False, context_features=None, resnet=True
+):
+
+    if resnet:
+        encoder = nn_.ResidualNet(
+            in_features=data_dim,
+            out_features=latent_dim,
+            hidden_features=hidden_features,
+            context_features=context_features,
+            num_blocks=num_blocks,
+            activation=F.relu,
+            dropout_probability=dropout_probability,
+            use_batch_norm=use_batch_norm,
+        )
+    else:
+        encoder = nn_.MLP(
+            in_shape=(data_dim,),
+            out_shape=(latent_dim,),
+            hidden_sizes=[hidden_features for _ in range(num_blocks)],
+            context_features=context_features,
+            activation=F.relu,
+        )
+    return encoder
+
+
 def create_model(args, simulator):
     assert args.algorithm in ALGORITHMS
 
@@ -381,6 +407,65 @@ def create_model(args, simulator):
             args.outertransform,
             context_features=simulator.parameter_dim(),
         )
+        raise NotImplementedError
+
+    elif not simulator.is_image() and args.algorithm == "emf":
+        logger.info(
+            "Creating manifold flow + encoder for vector data with %s latent dimensions, %s + %s layers, encoder with %s blocks, transforms %s / %s, %s context features",
+            args.modellatentdim,
+            args.outerlayers,
+            args.innerlayers,
+            args.encoderblocks,
+            args.outertransform,
+            args.innertransform,
+            simulator.parameter_dim(),
+        )
+
+        encoder = create_vector_encoder(
+            args.datadim,
+            args.modellatentdim,
+            args.encoderhidden,
+            args.encoderblocks,
+            dropout_probability=args.dropout,
+            context_features=simulator.parameter_dim() if args.conditionalouter else None,
+            resnet=not args.encodermlp,
+        )
+        outer_transform_kwargs = {}
+        try:
+            outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
+            outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
+            outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
+            logger.info("Additional settings for outer transform: %s", outer_transform_kwargs)
+        except:
+            pass
+        outer_transform = create_vector_transform(
+            args.datadim,
+            args.outerlayers,
+            linear_transform_type=args.lineartransform,
+            base_transform_type=args.outertransform,
+            context_features=simulator.parameter_dim() if args.conditionalouter else None,
+            dropout_probability=args.dropout,
+        )
+        inner_transform = create_vector_transform(
+            args.modellatentdim,
+            args.innerlayers,
+            linear_transform_type=args.lineartransform,
+            base_transform_type=args.innertransform,
+            context_features=simulator.parameter_dim(),
+            dropout_probability=args.dropout,
+        )
+
+        model = EncoderManifoldFlow(
+            data_dim=args.datadim,
+            latent_dim=args.modellatentdim,
+            encoder=encoder,
+            outer_transform=outer_transform,
+            inner_transform=inner_transform,
+            apply_context_to_outer=args.conditionalouter,
+            pie_epsilon=args.pieepsilon,
+        )
+
+    elif simulator.is_image() and args.algorithm == "emf":
         raise NotImplementedError
 
     elif not simulator.is_image() and args.algorithm == "dough":
