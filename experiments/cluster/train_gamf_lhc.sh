@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-gamf-lhc
-#SBATCH --output=log_train_gamf_lhc.log
+#SBATCH --output=log_train_gamf_lhc3.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
@@ -12,7 +12,7 @@ module load cuda/10.1.105
 source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname ged_largebs_long --dataset lhc --algorithm flow --modellatentdim 9 --genbatchsize 2000 --epochs 1000 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname ged_largebs_long --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --epochs 1000 --dir /scratch/jb6504/manifold-flow
 
 #python -u train.py --modelname small_ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --epochs 400 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
 #python -u train.py --modelname ged_largebs --dataset lhc --algorithm gamf --ged --modellatentdim 9 --genbatchsize 2000 --epochs 400 --dir /scratch/jb6504/manifold-flow
