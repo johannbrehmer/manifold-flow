@@ -282,30 +282,63 @@ def train_hybrid(args, dataset, model, simulator):
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
-    # logger.info("Starting training hybrid, phase 2: Sinkhorn divergence")
-    logger.info("Starting training hybrid, phase 1: Sinkhorn divergence")
-    learning_curves_ = gen_trainer.train(
-        loss_functions=[losses.make_sinkhorn_divergence()],
-        loss_labels=["d_Sinkhorn"],
-        loss_weights=[args.sinkhornfactor],
-        # epochs=args.epochs - (2 if args.nopretraining else 3) * (args.epochs // 6),
-        epochs=args.epochs - 2 * (args.epochs // 6),
-        # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_B{}.pt")],
+    logger.info("Starting training hybrid, phase 1: pretraining on reconstruction error")
+    learning_curves = trainer.train(
+        loss_functions=[losses.mse],
+        loss_labels=["MSE"],
+        loss_weights=[args.msefactor],
+        epochs=args.epochs // 4,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
-        batch_size=args.genbatchsize,
+        forward_kwargs={"mode": "projection"},
         **common_kwargs,
     )
-    learning_curves = np.vstack(learning_curves_).T
+    learning_curves = np.vstack(learning_curves).T
 
-    # logger.info("Starting training MF, phase 3: mixed training")
-    logger.info("Starting training MF, phase 2: mixed training")
+    if args.ged and simulator.parameter_dim() is None:
+        logger.info("Starting training hybrid: OT-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_generalized_energy_distance()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs - 3 * args.epochs // 4,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+    elif args.ged:
+        logger.info("Starting training hybrid: Conditional OT-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_conditional_generalized_energy_distance()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs - 3 * args.epochs // 4,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+    else:
+        logger.info("Starting training hybrid: Sinkhorn-GAN")
+        learning_curves_ = gen_trainer.train(
+            loss_functions=[losses.make_sinkhorn_divergence()],
+            loss_labels=["GED"],
+            loss_weights=[args.sinkhornfactor],
+            epochs=args.epochs - 3 * args.epochs // 4,
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+            batch_size=args.genbatchsize,
+            compute_loss_variance=True,
+            **common_kwargs,
+        )
+    learning_curves = np.vstack((learning_curves, learning_curves_))
+
+    logger.info("Starting training hybrid, phase 3: mixed training")
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[args.initialmsefactor, args.initialnllfactor],
-        epochs=args.epochs // 6,
-        # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_C{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        loss_weights=[args.msefactor, args.addnllfactor],
+        epochs=args.epochs - 3 * args.epochs // 4,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -317,15 +350,15 @@ def train_hybrid(args, dataset, model, simulator):
         loss_functions=[losses.mse, losses.nll],
         loss_labels=["MSE", "NLL"],
         loss_weights=[args.msefactor, args.nllfactor],
-        epochs=args.epochs // 6,
+        epochs=args.epochs // 4,
         parameters=model.inner_transform.parameters(),
-        # callbacks=[callbacks.save_model_after_every_epoch(create_filename("model", None, args)[:-3] + "_epoch_D{}.pt")],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
-        forward_kwargs={"mode": "mf"},
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_D{}.pt")],
+        forward_kwargs={"mode": "pie"},
         **common_kwargs,
     )
     learning_curves_ = np.vstack(learning_curves_).T
     learning_curves = np.vstack((learning_curves, learning_curves_))
+
     return learning_curves
 
 

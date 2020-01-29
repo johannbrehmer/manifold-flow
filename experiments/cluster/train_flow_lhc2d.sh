@@ -13,4 +13,5 @@ source activate ml
 cd /scratch/jb6504/manifold-flow/experiments
 
 #python -u train.py --modelname small --dataset lhc2d --algorithm flow --modellatentdim 2 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
-python -u train.py --dataset lhc2d --algorithm flow --modellatentdim 2 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname long --dataset lhc2d --algorithm flow --modellatentdim 2 --epochs 50 --dir /scratch/jb6504/manifold-flow
+# python -u train.py --dataset lhc2d --algorithm flow --modellatentdim 2 --dir /scratch/jb6504/manifold-flow
