@@ -32,5 +32,14 @@ case ${SLURM_ARRAY_TASK_ID} in
 10) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm mf --epsilon 0.001 --dir /scratch/jb6504/manifold-flow ;;
 11) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm mf --epsilon 0.1 --dir /scratch/jb6504/manifold-flow ;;
 
+12) python -u evaluate.py --modelname small_prepie --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+13) python -u evaluate.py --modelname small_prepie --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+14) python -u evaluate.py --modelname small_prepie --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+
+15) python -u evaluate.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+16) python -u evaluate.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+17) python -u evaluate.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --dir /scratch/jb6504/manifold-flow ;;
+
+
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac

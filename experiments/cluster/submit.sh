@@ -37,7 +37,7 @@ sbatch train_gamf_lhc.sh
 #sbatch evaluate_flow_spherical.sh
 #sbatch evaluate_pie_spherical.sh
 #sbatch --array 0-11 evaluate_gamf_spherical.sh
-#sbatch --array 0-11 evaluate_mf_spherical.sh
+#sbatch --array 0-17 evaluate_mf_spherical.sh
 #sbatch --array 0-2 evaluate_emf_spherical.sh
 #sbatch evaluate_spie_spherical.sh
 #sbatch evaluate_smf_spherical.sh
@@ -47,7 +47,7 @@ sbatch train_gamf_lhc.sh
 #sbatch evaluate_flow_csg.sh
 #sbatch evaluate_pie_csg.sh
 #sbatch --array 0-11 evaluate_gamf_csg.sh
-#sbatch --array 0-11 evaluate_mf_csg.sh
+#sbatch --array 0-17 evaluate_mf_csg.sh
 #sbatch --array 0-2 evaluate_emf_csg.sh
 #sbatch evaluate_spie_csg.sh
 #sbatch evaluate_smf_csg.sh
