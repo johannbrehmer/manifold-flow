@@ -57,6 +57,6 @@ sbatch evaluate_sgamf_csg.sh
 sbatch evaluate_flow_lhc2d.sh
 sbatch evaluate_flow_lhc.sh
 sbatch evaluate_pie_lhc.sh
-sbatch --array 0-3 evaluate_gamf_lhc.sh
+sbatch --array 0-4 evaluate_gamf_lhc.sh
 # sbatch evaluate_mf_lhc.sh
 # sbatch evaluate_emf_lhc.sh

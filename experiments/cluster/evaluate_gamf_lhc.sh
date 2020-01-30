@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=e-gamf-lhc
-#SBATCH --output=log_evaluate_gamf_lhc.log
+#SBATCH --output=log_evaluate_gamf_lhc2_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32GB
