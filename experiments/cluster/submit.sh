@@ -8,9 +8,9 @@
 
 #sbatch train_flow_spherical.sh
 #sbatch train_pie_spherical.sh
-# sbatch train_gamf_spherical.sh
+sbatch train_gamf_spherical.sh
 #sbatch train_spie_spherical.sh
-# sbatch train_sgamf_spherical.sh
+sbatch train_sgamf_spherical.sh
 #sbatch train_smf_spherical.sh
 sbatch --array=0-5 train_mf_spherical.sh
 #sbatch --array=0-2 train_emf_spherical.sh
@@ -18,9 +18,9 @@ sbatch --array=0-5 train_mf_spherical.sh
 
 #sbatch train_flow_csg.sh
 #sbatch train_pie_csg.sh
-# sbatch train_gamf_csg.sh
+sbatch train_gamf_csg.sh
 #sbatch train_spie_csg.sh
-# sbatch train_sgamf_csg.sh
+sbatch train_sgamf_csg.sh
 #sbatch train_smf_csg.sh
 sbatch --array=0-5 train_mf_csg.sh
 #sbatch --array=0-2 train_emf_csg.sh
@@ -29,7 +29,7 @@ sbatch --array=0-5 train_mf_csg.sh
 # sbatch train_flow_lhc2d.sh
 # sbatch train_flow_lhc.sh
 # sbatch train_pie_lhc.sh
-# sbatch train_gamf_lhc.sh
+sbatch train_gamf_lhc.sh
 # sbatch train_mf_lhc.sh
 # sbatch train_emf_lhc.sh
 
