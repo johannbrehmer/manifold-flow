@@ -11,7 +11,7 @@ def mse(x_pred, x_true, log_p):
     return MSELoss()(x_pred, x_true)
 
 
-def make_sinkhorn_divergence(blur=0.05, scaling=0.5, p=2, backend="auto"):
+def make_sinkhorn_divergence(blur=0.05, scaling=0.7, p=2, backend="auto"):
     """ See http://www.kernel-operations.io/geomloss/api/pytorch-api.html """
     sinkhorn = SamplesLoss("sinkhorn", p=p, blur=blur, scaling=scaling, backend=backend)
 
