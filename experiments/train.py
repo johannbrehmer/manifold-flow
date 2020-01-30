@@ -67,6 +67,8 @@ def parse_args():
     parser.add_argument("--nopretraining", action="store_true")
     parser.add_argument("--noposttraining", action="store_true")
     parser.add_argument("--clip", type=float, default=1.0)
+    parser.add_argument("--prepie", action="store_true")
+    parser.add_argument("--prepostfraction", type=int, default=4)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -100,91 +102,28 @@ def train_manifold_flow(args, dataset, model, simulator):
         )
         learning_curves = np.vstack(learning_curves).T
     else:
-        if args.nopretraining or args.epochs // 3 < 1:
+        if args.nopretraining or args.epochs // args.prepostfraction < 1:
             logger.info("Skipping pretraining phase")
             learning_curves = None
-        else:
-            logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
+        elif args.prepie:
+            logger.info("Starting training MF, phase 1: pretraining on PIE likelihood")
             learning_curves = trainer.train(
-                loss_functions=[losses.mse],
-                loss_labels=["MSE"],
-                loss_weights=[args.msefactor],
-                epochs=args.epochs // 4,
+                loss_functions=[losses.nll],
+                loss_labels=["NLL"],
+                loss_weights=[args.nllfactor],
+                epochs=args.epochs // args.prepostfraction,
                 callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
-                forward_kwargs={"mode": "projection"},
-                **common_kwargs,
-            )
-            learning_curves = np.vstack(learning_curves).T
-
-        logger.info("Starting training MF, phase 2: mixed training")
-        learning_curves_ = trainer.train(
-            loss_functions=[losses.mse, losses.nll],
-            loss_labels=["MSE", "NLL"],
-            loss_weights=[args.msefactor, args.addnllfactor],
-            epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // 4),
-            parameters=model.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
-            forward_kwargs={"mode": "mf"},
-            **common_kwargs,
-        )
-        learning_curves_ = np.vstack(learning_curves_).T
-        learning_curves = learning_curves_ if learning_curves is None else np.vstack((learning_curves, learning_curves_))
-
-        if args.nopretraining or args.epochs // 3 < 1:
-            logger.info("Skipping inner flow phase")
-        else:
-            logger.info("Starting training MF, phase 3: training only inner flow on NLL")
-            learning_curves_ = trainer.train(
-                loss_functions=[losses.mse, losses.nll],
-                loss_labels=["MSE", "NLL"],
-                loss_weights=[0.0, args.nllfactor],
-                epochs=args.epochs // 4,
-                parameters=model.inner_transform.parameters(),
-                callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
                 forward_kwargs={"mode": "pie"},
                 **common_kwargs,
             )
-            learning_curves_ = np.vstack(learning_curves_).T
-            learning_curves = np.vstack((learning_curves, learning_curves_))
-
-    return learning_curves
-
-
-def train_encoder_manifold_flow(args, dataset, model, simulator):
-    trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
-    common_kwargs = {
-        "dataset": dataset,
-        "batch_size": args.batchsize,
-        "initial_lr": args.lr,
-        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
-        "clip_gradient": args.clip,
-    }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
-
-    if args.specified:
-        logger.info("Starting training MF with specified manifold on NLL")
-        learning_curves = trainer.train(
-            loss_functions=[losses.mse, losses.nll],
-            loss_labels=["MSE", "NLL"],
-            loss_weights=[0.0, args.nllfactor],
-            epochs=args.epochs,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-            forward_kwargs={"mode": "mf"},
-            **common_kwargs,
-        )
-        learning_curves = np.vstack(learning_curves).T
-    else:
-        if args.nopretraining or args.epochs // 3 < 1:
-            logger.info("Skipping pretraining phase")
-            learning_curves = None
+            learning_curves = np.vstack(learning_curves).T
         else:
             logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
             learning_curves = trainer.train(
                 loss_functions=[losses.mse],
                 loss_labels=["MSE"],
                 loss_weights=[args.msefactor],
-                epochs=args.epochs // 4,
+                epochs=args.epochs // args.prepostfraction,
                 callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
                 forward_kwargs={"mode": "projection"},
                 **common_kwargs,
@@ -196,7 +135,7 @@ def train_encoder_manifold_flow(args, dataset, model, simulator):
             loss_functions=[losses.mse, losses.nll],
             loss_labels=["MSE", "NLL"],
             loss_weights=[args.msefactor, args.addnllfactor],
-            epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // 4),
+            epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // args.prepostfraction),
             parameters=model.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
             forward_kwargs={"mode": "mf"},
@@ -205,7 +144,7 @@ def train_encoder_manifold_flow(args, dataset, model, simulator):
         learning_curves_ = np.vstack(learning_curves_).T
         learning_curves = learning_curves_ if learning_curves is None else np.vstack((learning_curves, learning_curves_))
 
-        if args.nopretraining or args.epochs // 3 < 1:
+        if args.nopretraining or args.epochs // args.prepostfraction < 1:
             logger.info("Skipping inner flow phase")
         else:
             logger.info("Starting training MF, phase 3: training only inner flow on NLL")
@@ -213,7 +152,7 @@ def train_encoder_manifold_flow(args, dataset, model, simulator):
                 loss_functions=[losses.mse, losses.nll],
                 loss_labels=["MSE", "NLL"],
                 loss_weights=[0.0, args.nllfactor],
-                epochs=args.epochs // 4,
+                epochs=args.epochs // args.prepostfraction,
                 parameters=model.inner_transform.parameters(),
                 callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
                 forward_kwargs={"mode": "pie"},
@@ -232,44 +171,17 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     if args.l2reg is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
-    if args.ged and simulator.parameter_dim() is None:
-        logger.info("Starting training GAMF: OT-GAN")
-        learning_curves_ = gen_trainer.train(
-            loss_functions=[losses.make_generalized_energy_distance()],
-            loss_labels=["GED"],
-            loss_weights=[args.sinkhornfactor],
-            epochs=args.epochs,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-            batch_size=args.genbatchsize,
-            compute_loss_variance=True,
-            **common_kwargs,
-        )
-
-    elif args.ged:
-        logger.info("Starting training GAMF: Conditional OT-GAN")
-        learning_curves_ = gen_trainer.train(
-            loss_functions=[losses.make_conditional_generalized_energy_distance()],
-            loss_labels=["GED"],
-            loss_weights=[args.sinkhornfactor],
-            epochs=args.epochs,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-            batch_size=args.genbatchsize,
-            compute_loss_variance=True,
-            **common_kwargs,
-        )
-
-    else:
-        logger.info("Starting training GAMF: Sinkhorn-GAN")
-        learning_curves_ = gen_trainer.train(
-            loss_functions=[losses.make_sinkhorn_divergence()],
-            loss_labels=["GED"],
-            loss_weights=[args.sinkhornfactor],
-            epochs=args.epochs,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-            batch_size=args.genbatchsize,
-            compute_loss_variance=True,
-            **common_kwargs,
-        )
+    logger.info("Starting training GAMF: Sinkhorn-GAN")
+    learning_curves_ = gen_trainer.train(
+        loss_functions=[losses.make_sinkhorn_divergence()],
+        loss_labels=["GED"],
+        loss_weights=[args.sinkhornfactor],
+        epochs=args.epochs,
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        batch_size=args.genbatchsize,
+        compute_loss_variance=True,
+        **common_kwargs,
+    )
 
     learning_curves = np.vstack(learning_curves_).T
     return learning_curves
@@ -552,10 +464,8 @@ if __name__ == "__main__":
         learning_curves = train_flow(args, dataset, model, simulator)
     elif args.algorithm == "slice":
         learning_curves = train_slice_of_pie(args, dataset, model, simulator)
-    elif args.algorithm == "mf":
+    elif args.algorithm in ["mf", "emf"]:
         learning_curves = train_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "emf":
-        learning_curves = train_encoder_manifold_flow(args, dataset, model, simulator)
     elif args.algorithm == "gamf":
         learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
     elif args.algorithm == "hybrid":

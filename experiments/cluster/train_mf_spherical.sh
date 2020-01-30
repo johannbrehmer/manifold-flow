@@ -25,13 +25,21 @@ case ${SLURM_ARRAY_TASK_ID} in
 #4) python -u train.py --modelname small_complex --dataset spherical_gaussian --epsilon 0.001 --algorithm mf --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 #5) python -u train.py --modelname small_complex --dataset spherical_gaussian --epsilon 0.1  --algorithm mf --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 
-0) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.01 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-1) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.001 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-2) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.1 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
+#0) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.01 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
+#1) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.001 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
+#2) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm mf --epsilon 0.1 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
+#
+#3) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.01 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
+#4) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.001 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
+#5) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.1 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
 
-3) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.01 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
-4) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.001 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
-5) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm mf --epsilon 0.1 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
+0) python -u train.py --modelname small_prepie --dataset spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+1) python -u train.py --modelname small_prepie --dataset spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+2) python -u train.py --modelname small_prepie --dataset spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+
+3) python -u train.py --modelname small_prepie_long --dataset spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+4) python -u train.py --modelname small_prepie_long --dataset spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+5) python -u train.py --modelname small_prepie_long --dataset spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac
