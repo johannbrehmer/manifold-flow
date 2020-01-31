@@ -37,9 +37,9 @@ case ${SLURM_ARRAY_TASK_ID} in
 1) python -u train.py --modelname small_prepie --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 2) python -u train.py --modelname small_prepie --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 
-3) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
-4) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
-5) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+3) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3  --epochs 50 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+4) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3  --epochs 50 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+5) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3  --epochs 50 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
 
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac
