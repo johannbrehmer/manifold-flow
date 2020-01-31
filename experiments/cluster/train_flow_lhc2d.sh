@@ -10,6 +10,7 @@
 
 module load cuda/10.1.105
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u train.py --dataset lhc2d --algorithm flow --modellatentdim 2 --epochs 100 --dir /scratch/jb6504/manifold-flow

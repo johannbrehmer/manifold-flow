@@ -10,6 +10,7 @@
 
 module load cuda/10.1.105
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 

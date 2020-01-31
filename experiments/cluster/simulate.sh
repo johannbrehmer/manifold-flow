@@ -9,6 +9,7 @@
 # #SBATCH --gres=gpu:1
 
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 # python -u generate_data.py --dataset spherical_gaussian --epsilon 0.001 --dir /scratch/jb6504/manifold-flow

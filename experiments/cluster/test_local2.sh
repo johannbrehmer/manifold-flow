@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 source activate ml
+export OMP_NUM_THREADS=1
 basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $basedir/experiments
 

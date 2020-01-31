@@ -10,6 +10,7 @@
 
 module load cuda/10.1.105
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u train.py --modelname largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --epochs 1000 --dir /scratch/jb6504/manifold-flow

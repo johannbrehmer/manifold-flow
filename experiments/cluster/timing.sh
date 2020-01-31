@@ -9,6 +9,7 @@
 #SBATCH --gres=gpu:1
 
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u timing.py --algorithm flow --dir /scratch/jb6504/manifold-flow

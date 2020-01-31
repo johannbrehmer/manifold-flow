@@ -9,6 +9,7 @@
 # #SBATCH --gres=gpu:1
 
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u evaluate.py --modelname long --dataset lhc --algorithm flow --modellatentdim 9  --observedsamples 100 --dir /scratch/jb6504/manifold-flow

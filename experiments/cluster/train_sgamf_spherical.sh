@@ -10,6 +10,7 @@
 
 module load cuda/10.1.105
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 python -u train.py --modelname small_hugebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --genbatchsize 5000 --epochs 1000 --samplesize 100000 --dir /scratch/jb6504/manifold-flow

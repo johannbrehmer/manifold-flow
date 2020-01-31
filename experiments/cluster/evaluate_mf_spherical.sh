@@ -9,6 +9,7 @@
 # #SBATCH --gres=gpu:1
 
 source activate ml
+export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
 case ${SLURM_ARRAY_TASK_ID} in
