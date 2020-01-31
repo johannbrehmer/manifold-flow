@@ -3,7 +3,7 @@
 #SBATCH --job-name=t-sl-lhc
 #SBATCH --output=log_train_slice_lhc.log
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1

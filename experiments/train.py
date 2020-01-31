@@ -68,7 +68,7 @@ def parse_args():
     parser.add_argument("--noposttraining", action="store_true")
     parser.add_argument("--clip", type=float, default=1.0)
     parser.add_argument("--prepie", action="store_true")
-    parser.add_argument("--prepostfraction", type=int, default=4)
+    parser.add_argument("--prepostfraction", type=int, default=3)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
