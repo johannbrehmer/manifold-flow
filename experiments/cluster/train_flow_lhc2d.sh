@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-sf-t2d
+#SBATCH --job-name=t-sf-l2d
 #SBATCH --output=log_train_flow_lhc2d.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-smf-sg
-#SBATCH --output=log_train_smf_spherical2.log
+#SBATCH --output=log_train_smf_spherical.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB

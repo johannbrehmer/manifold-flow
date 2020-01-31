@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-smf-csg
-#SBATCH --output=log_train_smf_csg2.log
+#SBATCH --output=log_train_smf_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB

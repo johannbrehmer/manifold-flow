@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-sf-sg
-#SBATCH --output=log_train_flow_spherical2.log
+#SBATCH --output=log_train_flow_spherical.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB

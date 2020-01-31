@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-emf-csg
-#SBATCH --output=log_train_emf_csg2_%a.log
+#SBATCH --output=log_train_emf_csg_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB

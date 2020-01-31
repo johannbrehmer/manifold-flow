@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-gamf-sg
-#SBATCH --output=log_train_gamf_spherical3.log
+#SBATCH --output=log_train_gamf_spherical.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB

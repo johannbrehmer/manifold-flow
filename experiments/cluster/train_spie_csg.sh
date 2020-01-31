@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=t-spie-csg
-#SBATCH --output=log_train_spie_csg2.log
+#SBATCH --output=log_train_spie_csg.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
