@@ -25,10 +25,6 @@ python -u evaluate.py --modelname small_largebs_long --dataset spherical_gaussia
 python -u evaluate.py --modelname small_largebs_long --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.001  --dir /scratch/jb6504/manifold-flow
 python -u evaluate.py --modelname small_largebs_long --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.1  --dir /scratch/jb6504/manifold-flow
 
-python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
-
-#python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-#python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-#python -u evaluate.py --modelname largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
+#python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
+#python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
+#python -u evaluate.py --modelname small_largebs --dataset spherical_gaussian --algorithm gamf --specified --epsilon 0.1 --dir /scratch/jb6504/manifold-flow

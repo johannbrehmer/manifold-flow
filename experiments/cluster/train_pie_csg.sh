@@ -24,7 +24,3 @@ cd /scratch/jb6504/manifold-flow/experiments
 #python -u train.py --modelname small --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.01 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
 #python -u train.py --modelname small --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.001 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
 #python -u train.py --modelname small --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.1 --samplesize 100000 --dir /scratch/jb6504/manifold-flow
-#
-#python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.01 --dir /scratch/jb6504/manifold-flow
-#python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.001 --dir /scratch/jb6504/manifold-flow
-#python -u train.py --dataset conditional_spherical_gaussian --algorithm pie --epsilon 0.1 --dir /scratch/jb6504/manifold-flow
