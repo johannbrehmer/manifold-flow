@@ -155,7 +155,7 @@ def train_manifold_flow(args, dataset, model, simulator):
                 epochs=args.epochs // args.prepostfraction,
                 parameters=model.inner_transform.parameters(),
                 callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
-                forward_kwargs={"mode": "pie"},
+                forward_kwargs={"mode": "pie" if args.algorithm == "mf" else "mf"},
                 **common_kwargs,
             )
             learning_curves_ = np.vstack(learning_curves_).T
