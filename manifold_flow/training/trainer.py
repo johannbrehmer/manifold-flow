@@ -717,7 +717,6 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
         return losses
 
 
-
 # class ImageManifoldFlowTrainer(ManifoldFlowTrainer):
 #     def __init__(
 #         self, model, run_on_gpu=True, double_precision=False, output_filename=None

@@ -68,9 +68,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def _sample_from_model(args, model):
+def _sample_from_model(args, model, simulator):
     logger.info("Sampling from model")
-    x_gen = model.sample(n=args.generate).detach().numpy()
+    if simulator.parameter_dim() is None:
+        x_gen = model.sample(n=args.generate).detach().numpy()
+    else:
+        params = simulator.default_parameters()
+        params = np.asarray([params for _ in range(args.generate)])
+        params = torch.tensor(params, dtype=torch.float)
+        x_gen = model.sample(n=args.generate, params=params).detach().numpy()
     np.save(create_filename("results", "samples", args), x_gen)
     return x_gen
 
@@ -254,7 +260,7 @@ if __name__ == "__main__":
 
     # Evaluate generative performance
     if not args.truth:
-        x_gen = _sample_from_model(args, model)
+        x_gen = _sample_from_model(args, model, simulator)
         _evaluate_model_samples(args, simulator, x_gen)
 
     # Truth MCMC

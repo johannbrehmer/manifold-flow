@@ -45,9 +45,7 @@ def create_modelname(args):
     try:
         if args.truth:
             if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-                args.modelname = "truth_{}_{}_{}_{:.3f}{}".format(
-                    args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix
-                )
+                args.modelname = "truth_{}_{}_{}_{:.3f}{}".format(args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix)
             else:
                 args.modelname = "truth_{}{}".format(args.dataset, appendix)
             return

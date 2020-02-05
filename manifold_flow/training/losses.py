@@ -20,6 +20,7 @@ def make_sinkhorn_divergence(blur=0.05, scaling=0.7, p=2, backend="auto"):
 
     return sinkhorn_divergence
 
+
 #
 # def make_generalized_energy_distance(blur=0.05, scaling=0.5, p=2, backend="auto"):
 #     """ See http://www.kernel-operations.io/geomloss/api/pytorch-api.html """
