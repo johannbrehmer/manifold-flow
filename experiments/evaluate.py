@@ -21,6 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # What what what
+    parser.add_argument("--truth", action="store_true")
     parser.add_argument("--modelname", type=str, default=None)
     parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
@@ -207,9 +208,12 @@ if __name__ == "__main__":
     )
     logger.info("Hi!")
 
-    # Model name
-    create_modelname(args)
-    logger.info("Evaluating model %s", args.modelname)
+    if args.truth:
+        create_modelname(args)
+        logger.info("Evaluating simulator truth")
+    else:
+        create_modelname(args)
+        logger.info("Evaluating model %s", args.modelname)
 
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
@@ -217,65 +221,67 @@ if __name__ == "__main__":
     # Data
     simulator = load_simulator(args)
 
-    # Model
-    model = create_model(args, simulator=simulator)
-    model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
+    # Load model
+    if not args.truth:
+        model = create_model(args, simulator=simulator)
+        model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
+    else:
+        model = None
 
-    # Evaluate test samples
-    log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model)
-    np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
-    np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
-    if parameter_grid is not None:
-        np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
-
-    try:
-        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None)
-        np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
-    except IntractableLikelihoodError:
-        logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
-
-    # Evaluate ood samples
-    try:
-        log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True)
-        np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
-        np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
-    except:
-        pass
-
-    # Evaluate either generative or inference performance
-    if simulator.parameter_dim() is None:
-        # Generate data
-        x_gen = _sample_from_model(args, model)
-
-        # Calculate likelihood of data
-        _evaluate_model_samples(args, simulator, x_gen)
+    if args.truth:
+        # Evaluate test samples with true likelihood
+        try:
+            log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None)
+            np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
+        except IntractableLikelihoodError:
+            logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
     else:
-        # Evaluate MMD
-        if args.skipmodelmcmc:
-            logger.info("Skipping MCMC based on model")
-            model_posterior_samples = None
-        else:
-            model_posterior_samples = _mcmc(
-                simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+        # Evaluate test samples
+        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model)
+        np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
+        np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
+        if parameter_grid is not None:
+            np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
+
+        # Evaluate ood samples
+        try:
+            log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True)
+            np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
+            np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
+        except:
+            pass
+
+    # Evaluate generative performance
+    if not args.truth:
+        x_gen = _sample_from_model(args, model)
+        _evaluate_model_samples(args, simulator, x_gen)
+
+    # Truth MCMC
+    if simulator.parameter_dim() is not None and args.truth:
+        # Truth MCMC
+        try:
+            true_posterior_samples = _mcmc(
+                simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
             )
-            np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
+            np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
 
-        if args.skiptruthmcmc:
-            logger.info("Skipping MCMC based on true likelihood")
-        else:
-            try:
-                true_posterior_samples = _mcmc(
-                    simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
-                )
-                np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
+        except IntractableLikelihoodError:
+            logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
 
-                if not args.skipmodelmcmc:
-                    mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-                    np.save(create_filename("results", "mmd", args), mmd)
-                    logger.info("MMD between model and true posterior samples: %s", mmd)
+    # Evaluate inference performance
+    if simulator.parameter_dim() is not None and not args.truth:
+        # MCMC
+        model_posterior_samples = _mcmc(
+            simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+        )
+        np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
 
-            except IntractableLikelihoodError:
-                logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
+        # MMD calculation
+        true_posterior_samples = np.load(create_filename("results", "true_posterior_samples", args))
+
+        mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
+        np.save(create_filename("results", "mmd", args), mmd)
+        logger.info("MMD between model and true posterior samples: %s", mmd)
 
     logger.info("All done! Have a nice day!")
