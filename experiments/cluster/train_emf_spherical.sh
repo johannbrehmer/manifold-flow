@@ -13,18 +13,22 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-case ${SLURM_ARRAY_TASK_ID} in
-0) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.01 --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
-1) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.001 --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
-2) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.1  --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --dir /scratch/jb6504/manifold-flow ;;
+run=$((SLURM_ARRAY_TASK_ID / 9))
+task=$((SLURM_ARRAY_TASK_ID % 9))
+echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
-#0) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.01 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-#1) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.001 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-#2) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.1 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-#
-#3) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.01 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
-#4) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.001 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
-#5) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.1 --samplesize 100000 --epochs 50 --dir /scratch/jb6504/manifold-flow ;;
+case ${task} in
+0) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.01 --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+1) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.001 --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+2) python -u train.py --modelname small --dataset spherical_gaussian --epsilon 0.1  --algorithm emf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
-*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+3) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.01 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+4) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.001 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+5) python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm emf --epsilon 0.1 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+
+6) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.01 --samplesize 100000 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+7) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.001 --samplesize 100000 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+8) python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm emf --epsilon 0.1 --samplesize 100000 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+
+*) echo "Nothing to do for job ${task}" ;;
 esac

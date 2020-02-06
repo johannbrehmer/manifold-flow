@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--modelname", type=str, default=None)
     parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
+    parser.add_argument("-i", type=int, default=0)
 
     # Dataset details
     parser.add_argument("--truelatentdim", type=int, default=2)

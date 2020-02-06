@@ -6,4 +6,10 @@ export OMP_NUM_THREADS=1
 basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $basedir/experiments
 
-python -u train.py --modelname debug --dataset spherical_gaussian --algorithm emf --epsilon 0.01 --samplesize 10000 --dir $basedir
+SLURM_ARRAY_TASK_ID=15
+
+run=$((SLURM_ARRAY_TASK_ID / 12))
+task=$((SLURM_ARRAY_TASK_ID % 12))
+echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
+
+python -u generate_data.py --dataset spherical_gaussian --epsilon 0.001 --ood 10000 -i $run --dir $basedir

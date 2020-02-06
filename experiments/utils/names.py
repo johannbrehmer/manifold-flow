@@ -5,15 +5,17 @@ ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
 
 
 def create_filename(type, label, args):
+    run_label = "_run{}".format(args.i) if args.i > 0 else ""
+
     if type == "dataset":  # Fixed datasets
         filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
     elif type == "sample":  # Dynamically sampled from simulator
         if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-            filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}.npy".format(
-                args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label
+            filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}{}.npy".format(
+                args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label, run_label
             )
         else:
-            filename = "{}/experiments/data/samples/{}/{}.npy".format(args.dir, args.dataset, label)
+            filename = "{}/experiments/data/samples/{}/{}{}.npy".format(args.dir, args.dataset, label, run_label)
     elif type == "model":
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
     elif type == "checkpoint":
@@ -23,7 +25,7 @@ def create_filename(type, label, args):
     elif type == "results":
         filename = "{}/experiments/data/results/{}_{}.npy".format(args.dir, args.modelname, label)
     elif type == "timing":
-        filename = "{}/experiments/data/timing/{}_{}_{}_{}_{}_{}.npy".format(
+        filename = "{}/experiments/data/timing/{}_{}_{}_{}_{}_{}{}.npy".format(
             args.dir,
             args.algorithm,
             args.outerlayers,
@@ -31,6 +33,7 @@ def create_filename(type, label, args):
             "mlp" if args.outercouplingmlp else "resnet",
             args.outercouplinglayers,
             args.outercouplinghidden,
+            run_label
         )
     else:
         raise NotImplementedError
@@ -41,20 +44,22 @@ def create_filename(type, label, args):
 
 
 def create_modelname(args):
+    run_label = "_run{}".format(args.i) if args.i > 0 else ""
     appendix = "" if args.modelname is None else "_" + args.modelname
+
     try:
         if args.truth:
             if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-                args.modelname = "truth_{}_{}_{}_{:.3f}{}".format(args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix)
+                args.modelname = "truth_{}_{}_{}_{:.3f}{}{}".format(args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix, run_label)
             else:
-                args.modelname = "truth_{}{}".format(args.dataset, appendix)
+                args.modelname = "truth_{}{}{}".format(args.dataset, appendix, run_label)
             return
     except:
         pass
 
     if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-        args.modelname = "{}{}_{}_{}_{}_{}_{:.3f}{}".format(
-            args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix
+        args.modelname = "{}{}_{}_{}_{}_{}_{:.3f}{}{}".format(
+            args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix, run_label
         )
     else:
-        args.modelname = "{}{}_{}_{}{}".format(args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, appendix)
+        args.modelname = "{}{}_{}_{}{}{}".format(args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, appendix, run_label)

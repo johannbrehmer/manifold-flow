@@ -12,18 +12,22 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-case ${SLURM_ARRAY_TASK_ID} in
-0) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.01 --dir /scratch/jb6504/manifold-flow ;;
-1) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.001 --dir /scratch/jb6504/manifold-flow ;;
-2) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.1 --dir /scratch/jb6504/manifold-flow ;;
+run=$((SLURM_ARRAY_TASK_ID / 9))
+task=$((SLURM_ARRAY_TASK_ID % 9))
+echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
-#6) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.01 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-#7) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.001 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
-#8) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.1 --outerlayers 3 --innerlayers 3 --dir /scratch/jb6504/manifold-flow ;;
+case ${task} in
+0) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.01 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.001 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname small --dataset conditional_spherical_gaussian --algorithm emf --outercouplingmlp --outercouplinglayers 1 --epsilon 0.1 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
-#9) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.01 --dir /scratch/jb6504/manifold-flow ;;
-#10) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.001 --dir /scratch/jb6504/manifold-flow ;;
-#11) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.1 --dir /scratch/jb6504/manifold-flow ;;
+3) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.01 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+4) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.001 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+5) python -u evaluate.py --modelname small_shallow_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.1 --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
-*) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
+6) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.01 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+7) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.001 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+8) python -u evaluate.py --modelname small_long --dataset conditional_spherical_gaussian --algorithm emf --epsilon 0.1 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+
+*) echo "Nothing to do for job ${task}" ;;
 esac
