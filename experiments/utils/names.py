@@ -33,7 +33,7 @@ def create_filename(type, label, args):
             "mlp" if args.outercouplingmlp else "resnet",
             args.outercouplinglayers,
             args.outercouplinghidden,
-            run_label
+            run_label,
         )
     else:
         raise NotImplementedError
@@ -59,7 +59,15 @@ def create_modelname(args):
 
     if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
         args.modelname = "{}{}_{}_{}_{}_{}_{:.3f}{}{}".format(
-            args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix, run_label
+            args.algorithm,
+            "_specified" if args.specified else "",
+            args.modellatentdim,
+            args.dataset,
+            args.truelatentdim,
+            args.datadim,
+            args.epsilon,
+            appendix,
+            run_label,
         )
     else:
         args.modelname = "{}{}_{}_{}{}{}".format(args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, appendix, run_label)
