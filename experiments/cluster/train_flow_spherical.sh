@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
 #SBATCH --time=7-00:00:00
-# #SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:1
 
 module load cuda/10.1.105
 source activate ml
