@@ -17,10 +17,10 @@ python -u train.py --modelname small_shallow_long --dataset spherical_gaussian -
 python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm pie --epsilon 0.001 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 python -u train.py --modelname small_shallow_long --dataset spherical_gaussian --algorithm pie --epsilon 0.1 --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 
-python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.01 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.001 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.1 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-
-python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.01  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.001  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.1  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.01 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.001 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#python -u train.py --modelname small_long --dataset spherical_gaussian --algorithm pie --epsilon 0.1 --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#
+#python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.01  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.001  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+#python -u train.py --modelname small --dataset spherical_gaussian --algorithm pie --epsilon 0.1  --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow

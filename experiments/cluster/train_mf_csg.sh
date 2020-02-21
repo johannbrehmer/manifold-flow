@@ -46,13 +46,13 @@ case ${task} in
 19) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3  --epochs 50 --samplesize 100000 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 20) python -u train.py --modelname small_prepie_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --prepie --prepostfraction 3  --epochs 50 --samplesize 100000 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
-21) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-22) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-23) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+21) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+22) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+23) python -u train.py --modelname small_morenll --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
-24) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-25) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-26) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 -addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+24) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.01 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+25) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.001 --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+26) python -u train.py --modelname small_morenll_long --dataset conditional_spherical_gaussian --epsilon 0.1  --algorithm mf --outercouplingmlp --outercouplinglayers 1 --samplesize 100000 --addnllfactor 1.0 --epochs 50 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac
