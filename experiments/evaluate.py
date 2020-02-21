@@ -77,7 +77,7 @@ def _sample_from_model(args, model, simulator):
         params = simulator.default_parameters()
         params = np.asarray([params for _ in range(args.generate)])
         params = torch.tensor(params, dtype=torch.float)
-        x_gen = model.sample(n=args.generate, params=params).detach().numpy()
+        x_gen = model.sample(n=args.generate, context=params).detach().numpy()
     np.save(create_filename("results", "samples", args), x_gen)
     return x_gen
 
