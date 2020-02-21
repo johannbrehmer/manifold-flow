@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-sf-t2d
+#SBATCH --job-name=e-sf-l2d
 #SBATCH --output=log_evaluate_flow_lhc2d_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
