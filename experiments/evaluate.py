@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument("--outercouplingmlp", action="store_true")
     parser.add_argument("--outercouplinglayers", type=int, default=2)
     parser.add_argument("--outercouplinghidden", type=int, default=100)
-    parser.add_argument("--dropout", type=float, default=0.25)
+    parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--ged", action="store_true")
     parser.add_argument("--encoderblocks", type=int, default=5)
@@ -232,6 +232,7 @@ if __name__ == "__main__":
     if not args.truth:
         model = create_model(args, simulator=simulator)
         model.load_state_dict(torch.load(create_filename("model", None, args), map_location=torch.device("cpu")))
+        model.eval()
     else:
         model = None
 
