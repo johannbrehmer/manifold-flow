@@ -50,5 +50,8 @@ def load_training_dataset(simulator, args):
     return NumpyDataset(x, params)
 
 
-def load_test_samples(args, ood=False):
-    return np.load(create_filename("sample", "x_ood" if ood else "x_test", args))
+def load_test_samples(simulator, args, ood=False):
+    try:
+        return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize)
+    except NotImplementedError:
+        return np.load(create_filename("sample", "x_ood" if ood else "x_test", args))

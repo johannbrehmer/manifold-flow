@@ -45,15 +45,15 @@
 #sbatch --array 1-2 evaluate_sgamf_spherical.sh
 #sbatch --array 1-2 evaluate_pie_epsilon_spherical.sh
 
-sbatch --array 1-2 evaluate_flow_csg.sh
-sbatch --array 1-2 evaluate_pie_csg.sh
-sbatch --array 12-35 evaluate_gamf_csg.sh
-sbatch --array 27-80 evaluate_mf_csg.sh
-sbatch --array 3-8 evaluate_emf_csg.sh
-sbatch --array 1-2 evaluate_spie_csg.sh
-sbatch --array 1-2 evaluate_smf_csg.sh
-sbatch --array 1-2 evaluate_sgamf_csg.sh
-sbatch --array 1-2 evaluate_pie_epsilon_csg.sh
+#sbatch --array 1-2 evaluate_flow_csg.sh
+#sbatch --array 1-2 evaluate_pie_csg.sh
+#sbatch --array 12-35 evaluate_gamf_csg.sh
+#sbatch --array 27-80 evaluate_mf_csg.sh
+#sbatch --array 3-8 evaluate_emf_csg.sh
+#sbatch --array 1-2 evaluate_spie_csg.sh
+#sbatch --array 1-2 evaluate_smf_csg.sh
+#sbatch --array 1-2 evaluate_sgamf_csg.sh
+#sbatch --array 1-2 evaluate_pie_epsilon_csg.sh
 
 
 sbatch --array 1-2 evaluate_flow_lhc2d.sh
