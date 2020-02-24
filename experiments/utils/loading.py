@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, WBFLoader, WBF2DLoader
+from experiments.simulators import SphericalGaussianSimulator, ConditionalSphericalGaussianSimulator, CIFAR10Loader, ImageNetLoader, WBFLoader, WBF2DLoader, PowerManifoldSimulator
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
 from manifold_flow.training import NumpyDataset
@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 def load_simulator(args):
     assert args.dataset in SIMULATORS
-    if args.dataset == "spherical_gaussian":
+    if args.dataset == "power":
+        simulator = PowerManifoldSimulator(filename=args.basedir + "/experiments/data/power_manifold/manifold.npz")
+    elif args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
         simulator = ConditionalSphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
