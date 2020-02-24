@@ -90,7 +90,7 @@ def _evaluate_model_samples(args, simulator, x_gen):
     else:
         params = simulator.default_parameters()
         params = np.asarray([params for _ in range(args.generate)])
-        log_likelihood_gen = simulator.log_density(x_gen, params=params)
+        log_likelihood_gen = simulator.log_density(x_gen, parameters=params)
     log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.0e-12
     np.save(create_filename("results", "samples_likelihood", args), log_likelihood_gen)
 

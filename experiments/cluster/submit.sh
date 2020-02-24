@@ -52,17 +52,17 @@
 #sbatch --array 0-2 evaluate_sgamf_spherical.sh
 #sbatch --array 0-2 evaluate_pie_epsilon_spherical.sh
 
-sbatch --array 0-2 evaluate_flow_csg.sh
-sbatch --array 0-2 evaluate_pie_csg.sh
-sbatch --array 0-35 evaluate_gamf_csg.sh
-sbatch --array 0-80 evaluate_mf_csg.sh
-sbatch --array 0-26 evaluate_emf_csg.sh
-sbatch --array 0-2 evaluate_spie_csg.sh
-sbatch --array 0-2 evaluate_smf_csg.sh
-sbatch --array 0-2 evaluate_sgamf_csg.sh
-sbatch --array 0-2 evaluate_pie_epsilon_csg.sh
-
-sbatch --array 0-2 evaluate_flow_lhc2d.sh
-sbatch --array 0-2 evaluate_flow_lhc.sh
-sbatch --array 0-2 evaluate_pie_lhc.sh
-sbatch --array 0-5 evaluate_gamf_lhc.sh
+#sbatch --array 0-2 evaluate_flow_csg.sh
+#sbatch --array 0-2 evaluate_pie_csg.sh
+#sbatch --array 0-35 evaluate_gamf_csg.sh
+#sbatch --array 0-80 evaluate_mf_csg.sh
+#sbatch --array 0-26 evaluate_emf_csg.sh
+#sbatch --array 0-2 evaluate_spie_csg.sh
+#sbatch --array 0-2 evaluate_smf_csg.sh
+#sbatch --array 0-2 evaluate_sgamf_csg.sh
+#sbatch --array 0-2 evaluate_pie_epsilon_csg.sh
+#
+#sbatch --array 0-2 evaluate_flow_lhc2d.sh
+#sbatch --array 0-2 evaluate_flow_lhc.sh
+#sbatch --array 0-2 evaluate_pie_lhc.sh
+#sbatch --array 0-5 evaluate_gamf_lhc.sh
