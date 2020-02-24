@@ -113,5 +113,10 @@ venv.bak/
 .idea
 
 # Data
-experiments/data/
 log/
+#experiments/data/
+#!experiments/data/samples
+#experiments/data/samples/*
+#!experiments/data/samples/power
+#experiments/data/samples/power/*
+#!experiments/data/samples/power/manifold.npz
