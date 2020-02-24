@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def load_simulator(args):
     assert args.dataset in SIMULATORS
     if args.dataset == "power":
-        simulator = PowerManifoldSimulator(filename=args.dir + "/experiments/data/power_manifold/manifold.npz")
+        simulator = PowerManifoldSimulator(filename=args.dir + "/experiments/data/samples/power_manifold/manifold.npz")
     elif args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
