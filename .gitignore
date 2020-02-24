@@ -114,7 +114,7 @@ venv.bak/
 
 # Data
 log/
-#experiments/data/
+experiments/data/
 #!experiments/data/samples
 #experiments/data/samples/*
 #!experiments/data/samples/power
