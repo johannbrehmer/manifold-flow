@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["spherical_gaussian", "conditional_spherical_gaussian"])
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["power", "spherical_gaussian", "conditional_spherical_gaussian"])
     parser.add_argument("-i", type=int, default=0)
 
     parser.add_argument("--truelatentdim", type=int, default=2)
