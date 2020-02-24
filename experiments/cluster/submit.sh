@@ -6,6 +6,7 @@
 # sbatch  --array 1-2 simulate.sh
 
 
+
 sbatch --array 0-2 train_flow_power.sh
 sbatch --array 0-2 train_pie_power.sh
 sbatch --array 0-2 train_gamf_power.sh
@@ -43,8 +44,16 @@ sbatch --array 0-9 train_emf_power.sh
 #sbatch --array 3-26 train_emf_csg.sh
 
 
+
 # sbatch --array 0-2 evaluate_truth_spherical.sh
 # sbatch --array 0-2 evaluate_truth_csg.sh
+
+#sbatch --array 0-2 evaluate_flow_power.sh
+#sbatch --array 0-2 evaluate_pie_power.sh
+#sbatch --array 0-2 evaluate_gamf_power.sh
+#sbatch --array 0-2 evaluate_pie_epsilon_power.sh
+#sbatch --array 0-80 evaluate_mf_power.sh
+#sbatch --array 0-9 evaluate_emf_power.sh
 
 #sbatch --array 1-2 evaluate_flow_spherical.sh
 #sbatch --array 0-0 evaluate_pie_spherical.sh
