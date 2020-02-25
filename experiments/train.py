@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument("--load", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batchsize", type=int, default=100)
-    parser.add_argument("--genbatchsize", type=int, default=100)
+    parser.add_argument("--genbatchsize", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=3.0e-4)
     parser.add_argument("--msefactor", type=float, default=1000.0)
     parser.add_argument("--addnllfactor", type=float, default=0.1)
@@ -174,10 +174,8 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
     meta_kwargs = {
         "dataset": dataset,
-        "batch_size": args.batchsize,
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
-        "clip_gradient": args.clip,
     }
     if args.l2reg is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
@@ -198,6 +196,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         loss_labels=["MSE", "NLL"],
         loss_weights=[args.msefactor, args.nllfactor],
         epochs=args.epochs,
+        batch_sizes=[args.batchsize, args.batchsize],
         parameters=[model.parameters(), model.inner_transform.parameters()],
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
@@ -209,7 +208,6 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
-    # trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
     if args.l2reg is not None:
@@ -232,27 +230,44 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator):
-    # # trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
-    # gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
-    # common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
-    # if args.l2reg is not None:
-    #     common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
-    #
-    # logger.info("Starting training GAMF: Sinkhorn-GAN")
-    # learning_curves_ = gen_trainer.train(
-    #     loss_functions=[losses.make_sinkhorn_divergence()],
-    #     loss_labels=["GED"],
-    #     loss_weights=[args.sinkhornfactor],
-    #     epochs=args.epochs,
-    #     callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-    #     batch_size=args.genbatchsize,
-    #     compute_loss_variance=True,
-    #     **common_kwargs,
-    # )
-    #
-    # learning_curves = np.vstack(learning_curves_).T
-    # return learning_curves
-    raise NotImplementedError
+    assert not args.specified
+
+    gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
+    likelihood_trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
+    metatrainer = AlternatingTrainer(model, gen_trainer, likelihood_trainer)
+
+    meta_kwargs = {
+        "dataset": dataset,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+    }
+    if args.l2reg is not None:
+        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+
+    phase1_kwargs = {
+        "clip_gradient": args.clip
+    }
+    phase2_kwargs = {
+        "forward_kwargs": {"mode": "pie"},
+        "clip_gradient": args.clip
+    }
+
+    logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
+    learning_curves_ = metatrainer.train(
+        loss_functions=[losses.make_sinkhorn_divergence(), losses.nll],
+        loss_function_trainers=[0, 1],
+        loss_labels=["GED", "NLL"],
+        loss_weights=[args.sinkhornfactor, args.nllfactor],
+        batch_sizes=[args.genbatchsize, args.batchsize],
+        epochs=args.epochs,
+        parameters=[model.parameters(), model.inner_transform.parameters()],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        trainer_kwargs=[phase1_kwargs, phase2_kwargs],
+        **meta_kwargs,
+    )
+    learning_curves = np.vstack(learning_curves_).T
+
+    return learning_curves
 
 
 def train_slice_of_pie(args, dataset, model, simulator):

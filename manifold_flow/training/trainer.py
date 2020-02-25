@@ -124,16 +124,19 @@ class BaseTrainer(object):
                 raise NanException
 
     @staticmethod
-    def make_dataloader(dataset, validation_split, batch_size):
+    def make_dataloader(dataset, validation_split, batch_sizes):
+        if isinstance(batch_sizes, int):
+            batch_sizes = [batch_sizes]
+
         if validation_split is None or validation_split <= 0.0:
-            train_loader = DataLoader(
+            train_loaders = [DataLoader(
                 dataset,
                 batch_size=batch_size,
                 shuffle=True,
                 # pin_memory=self.run_on_gpu,
-                num_workers=4,
-            )
-            val_loader = None
+                num_workers=max(1, 4//len(batch_sizes)),
+            ) for batch_size in batch_sizes]
+            val_loaders = [None for batch_size in batch_sizes]
 
         else:
             assert 0.0 < validation_split < 1.0, "Wrong validation split: {}".format(validation_split)
@@ -147,22 +150,24 @@ class BaseTrainer(object):
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
 
-            train_loader = DataLoader(
+            train_loaders = [DataLoader(
                 dataset,
                 sampler=train_sampler,
                 batch_size=batch_size,
                 # pin_memory=self.run_on_gpu,
-                num_workers=4,
-            )
-            val_loader = DataLoader(
+                num_workers=max(1, 4//len(batch_sizes)),
+            ) for batch_size in batch_sizes]
+            val_loaders = [DataLoader(
                 dataset,
                 sampler=val_sampler,
                 batch_size=batch_size,
                 # pin_memory=self.run_on_gpu,
-                num_workers=4,
-            )
+                num_workers=max(1, 4//len(batch_sizes)),
+            ) for batch_size in batch_sizes]
 
-        return train_loader, val_loader
+        if len(batch_sizes) == 1:
+            return train_loaders[0], val_loaders[0]
+        return train_loaders, val_loaders
 
     @staticmethod
     def sum_losses(contributions, weights):
@@ -437,10 +442,10 @@ class Trainer(BaseTrainer):
 
 
 class AlternatingTrainer(BaseTrainer):
-    def __init__(self, model, run_on_gpu=True, multi_gpu=True, double_precision=False, *trainers):
+    def __init__(self, model,  *trainers, run_on_gpu=True, multi_gpu=True, double_precision=False):
         super().__init__(model, run_on_gpu, multi_gpu, double_precision)
 
-        assert len(trainers) < 0
+        assert len(trainers) > 0
         for trainer in trainers:
             assert trainer.model == self.model
 
@@ -456,7 +461,7 @@ class AlternatingTrainer(BaseTrainer):
         loss_weights=None,
         loss_labels=None,
         epochs=50,
-        batch_size=100,
+        batch_sizes=100,
         optimizer=optim.Adam,
         optimizer_kwargs=None,
         initial_lr=1.0e-3,
@@ -474,17 +479,21 @@ class AlternatingTrainer(BaseTrainer):
         shuffle_trainer_order=False,
     ):
         # Set up
+        loss_function_trainers = np.array(loss_function_trainers, dtype=np.int)
         if trainer_order is None:
             trainer_order = list(range(len(self.trainers)))
-
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
-
         if trainer_kwargs is None:
             trainer_kwargs = [{} for _ in self.trainers]
+        if isinstance(batch_sizes, int):
+            batch_sizes=[batch_sizes for _ in self.trainers]
 
         logger.debug("Initialising training data")
-        train_loader, val_loader = self.make_dataloader(dataset, validation_split, batch_size)
+        train_loaders, val_loaders = self.make_dataloader(dataset, validation_split, batch_sizes)
+        if len(batch_sizes) == 1:
+            train_loaders = [train_loaders]
+            val_loaders = [val_loaders]
 
         logger.debug("Setting up optimizer")
         optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
@@ -548,8 +557,8 @@ class AlternatingTrainer(BaseTrainer):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
             # LR schedule
-            if sched[0] is not None:
-                logger.debug("Learning rate: %s", sched[0].get_lr()[0])
+            if scheds[0] is not None:
+                logger.debug("Learning rate: %s", scheds[0].get_lr()[0])
 
             loss_train = 0.0
             loss_val = 0.0
@@ -560,14 +569,16 @@ class AlternatingTrainer(BaseTrainer):
             for i_tr_unsrt, i_trainer in enumerate(trainer_order):
                 logger.debug("Trainer %s / %s", i_tr_unsrt + 1, len(self.trainers))
 
-                opt = opts[i_trainer]
                 trainer = self.trainers[i_trainer]
+                opt = opts[i_trainer]
                 trainer_kwargs_ = trainer_kwargs[i_trainer]
-                loss_filter = loss_function_trainers == i_trainer
+                train_loader = train_loaders[i_trainer]
+                val_loader = val_loaders[i_trainer]
+                loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
 
                 try:
                     loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.epoch(
-                        i_epoch, train_loader, val_loader, opt, loss_functions[loss_filter], loss_weights[loss_filter], **trainer_kwargs_
+                        i_epoch, train_loader, val_loader, opt, [loss_functions[i] for i in loss_filter], [loss_weights[i] for i in loss_filter], **trainer_kwargs_
                     )
                     loss_train += loss_train_trainer
                     loss_val += loss_val_trainer
