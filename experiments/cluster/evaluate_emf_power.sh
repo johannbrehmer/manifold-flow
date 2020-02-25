@@ -17,8 +17,8 @@ task=$((SLURM_ARRAY_TASK_ID % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
 case ${task} in
-0) python -u evaluate.py --modelname small --dataset power --algorithm emf --outercouplingmlp --outercouplinglayers 1 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-1) python -u evaluate.py --modelname small_shallow_long --dataset power --algorithm emf --outerlayers 3 --innerlayers 3 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
-2) python -u evaluate.py --modelname small_long --dataset power --algorithm emf -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+0) python -u evaluate.py --modelname small --dataset power --algorithm emf --outercouplingmlp --outercouplinglayers 1 --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+1) python -u evaluate.py --modelname small_shallow_long --dataset power --algorithm emf --outerlayers 3 --innerlayers 3 --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+2) python -u evaluate.py --modelname small_long --dataset power --algorithm emf --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 *) echo "Nothing to do for job ${task}" ;;
 esac

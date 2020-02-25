@@ -12,6 +12,6 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --modelname small_shallow_long --dataset power --algorithm flow  --outerlayers 3 --innerlayers 3 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small_long --dataset power --algorithm flow  -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u evaluate.py --modelname small --dataset power --algorithm flow -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_shallow_long --dataset power --algorithm flow  --outerlayers 3 --innerlayers 3 --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small_long --dataset power --algorithm flow  --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname small --dataset power --algorithm flow --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow

@@ -12,4 +12,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --truth --dataset power -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --truth --dataset power --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
