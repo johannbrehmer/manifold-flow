@@ -5,6 +5,7 @@ import logging
 import sys
 import torch
 import argparse
+import copy
 
 sys.path.append("../")
 
@@ -57,8 +58,9 @@ def parse_args():
     parser.add_argument("--observedsamples", type=int, default=20)
     parser.add_argument("--slicesampler", action="store_true")
     parser.add_argument("--mcmcstep", type=float, default=0.1)
-    parser.add_argument("--thin", type=int, default=1)
-    parser.add_argument("--burnin", type=int, default=1000)
+    parser.add_argument("--thin", type=int, default=2)
+    parser.add_argument("--mcmcsamples", type=int, default=5000)
+    parser.add_argument("--burnin", type=int, default=500)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
@@ -275,9 +277,9 @@ if __name__ == "__main__":
         # Truth MCMC
         try:
             true_posterior_samples = _mcmc(
-                simulator, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+                simulator, n_mcmc_samples=args.mcmcsamples, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
             )
-            np.save(create_filename("results", "true_posterior_samples", args), true_posterior_samples)
+            np.save(create_filename("results", "posterior_samples", args), true_posterior_samples)
 
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
@@ -286,12 +288,14 @@ if __name__ == "__main__":
     if simulator.parameter_dim() is not None and not args.truth:
         # MCMC
         model_posterior_samples = _mcmc(
-            simulator, model, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+            simulator, model, n_mcmc_samples=args.mcmcsamples, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
         )
-        np.save(create_filename("results", "model_posterior_samples", args), model_posterior_samples)
+        np.save(create_filename("results", "posterior_samples", args), model_posterior_samples)
 
         # MMD calculation
-        true_posterior_samples = np.load(create_filename("results", "true_posterior_samples", args))
+        args_ = copy.deepcopy(args)
+        args_.truth = True
+        true_posterior_samples = np.load(create_filename("results", "posterior_samples", args_))
 
         mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
         np.save(create_filename("results", "mmd", args), mmd)
