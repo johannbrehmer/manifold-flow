@@ -58,9 +58,9 @@ def parse_args():
     parser.add_argument("--observedsamples", type=int, default=20)
     parser.add_argument("--slicesampler", action="store_true")
     parser.add_argument("--mcmcstep", type=float, default=0.1)
-    parser.add_argument("--thin", type=int, default=2)
-    parser.add_argument("--mcmcsamples", type=int, default=5000)
-    parser.add_argument("--burnin", type=int, default=500)
+    parser.add_argument("--thin", type=int, default=1)
+    parser.add_argument("--mcmcsamples", type=int, default=1000)
+    parser.add_argument("--burnin", type=int, default=100)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="../")
