@@ -145,7 +145,7 @@ class PowerManifoldSimulator(BaseSimulator):
     def _log_density_z(self, z, parameters):
         mean_fix = np.array([[1.0, -1.0]])
         z_red = (z - mean_fix) / self._const_width
-        logp_fix = np.sum(norm.logpdf(z_red) - np.log(self._const_width, axis=-1))
+        logp_fix = np.sum(norm.logpdf(z_red) - np.log(self._const_width), axis=-1)
 
         mean_var = np.array([[-1.0, 1.0]])
         std_var = self._min_width + (self._max_width - self._min_width) * (0.5 + 0.5 * parameters.reshape((-1, 1)))
