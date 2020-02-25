@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-mf-p
-#SBATCH --output=log_train_mf_power_%a.log
+#SBATCH --job-name=t-mfa-p
+#SBATCH --output=log_train_mf_power_alternate_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
