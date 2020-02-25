@@ -295,6 +295,7 @@ if __name__ == "__main__":
         # MMD calculation
         args_ = copy.deepcopy(args)
         args_.truth = True
+        del args_.modelname
         create_modelname(args_)
         true_posterior_samples = np.load(create_filename("results", "posterior_samples", args_))
 
