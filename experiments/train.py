@@ -252,7 +252,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         "clip_gradient": args.clip
     }
 
-    logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
+    logger.info("Starting training GAMF, alternating between Sinkhorn divergence and log likelihood")
     learning_curves_ = metatrainer.train(
         loss_functions=[losses.make_sinkhorn_divergence(), losses.nll],
         loss_function_trainers=[0, 1],
