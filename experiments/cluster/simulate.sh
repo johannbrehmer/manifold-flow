@@ -20,4 +20,4 @@ cd /scratch/jb6504/manifold-flow/experiments
 #python -u generate_data.py --dataset conditional_spherical_gaussian --epsilon 0.01 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 #python -u generate_data.py --dataset conditional_spherical_gaussian --epsilon 0.1 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 
-python -u generate_data.py --dataset power --epsilon 0.001 --ood 10000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u generate_data.py --dataset power --ood 10000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow

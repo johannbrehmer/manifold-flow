@@ -57,6 +57,14 @@ class PowerManifoldSimulator(BaseSimulator):
         noise = 0.1 * np.random.normal(size=(n, 3))
         return x + noise
 
+    def log_density(self, x, parameters=None):
+        tolerance = 1.e-3
+        z, eps = self._transform_x_to_z(x)
+        log_prob_manifold = self._log_density_z(z, parameters=parameters)
+        log_prob = np.where(eps.flatten()**2 < tolerance**2, log_prob_manifold - np.log(2.*tolerance), np.zeros_like(log_prob_manifold))
+        return log_prob
+
+
     def distance_from_manifold(self, x):
         z, eps = self._transform_x_to_z(x)
         return np.sum(eps ** 2, axis=1) ** 0.5
@@ -120,7 +128,7 @@ class PowerManifoldSimulator(BaseSimulator):
     def _transform_x_to_z(self, x):
         z_fz = np.einsum("ij,nj->ni",self._rotation.T, x)
         z = z_fz[:, :2]
-        offset = z_fz[2] - self._fz(z)
+        offset = z_fz[:, 2, np.newaxis] - self._fz(z)
         return z, offset
 
     def _log_density_z(self, z, parameters):
@@ -133,3 +141,5 @@ class PowerManifoldSimulator(BaseSimulator):
 
         logp_const = np.log((1. - self._weight) * np.exp(logp_fix) + self._weight * np.exp(logp_var))
         return logp_const
+
+
