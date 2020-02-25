@@ -11,7 +11,7 @@ from torch import optim
 sys.path.append("../")
 
 from manifold_flow.training import ManifoldFlowTrainer, losses, ConditionalManifoldFlowTrainer, callbacks, GenerativeTrainer, ConditionalGenerativeTrainer
-from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer
+from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer, AlternatingTrainer
 from experiments.utils.loading import load_training_dataset, load_simulator
 from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
 from experiments.utils.models import create_model
@@ -167,8 +167,12 @@ def train_manifold_flow(args, dataset, model, simulator):
 
 
 def train_manifold_flow_alternating(args, dataset, model, simulator):
+    assert not args.specified
+
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
-    common_kwargs = {
+    metatrainer = AlternatingTrainer(model, trainer, trainer)
+
+    meta_kwargs = {
         "dataset": dataset,
         "batch_size": args.batchsize,
         "initial_lr": args.lr,
@@ -176,32 +180,30 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         "clip_gradient": args.clip,
     }
     if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
 
-    assert not args.specified
+    phase1_kwargs = {
+        "forward_kwargs": {"mode": "projection"},
+        "clip_gradient": args.clip
+    }
+    phase2_kwargs = {
+        "forward_kwargs": {"mode": "pie"},
+        "clip_gradient": args.clip
+    }
 
-    logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
-    learning_curves = trainer.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
-        loss_weights=[args.msefactor],
-        epochs=args.epochs // args.prepostfraction,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
-        forward_kwargs={"mode": "projection"},
-        **common_kwargs,
-    )
-
-    learning_curves_ = trainer.train(
+    logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
+    learning_curves_ = metatrainer.train(
         loss_functions=[losses.mse, losses.nll],
+        loss_function_trainers=[0, 1],
         loss_labels=["MSE", "NLL"],
-        loss_weights=[0.0, args.nllfactor],
-        epochs=args.epochs // args.prepostfraction,
-        parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
-        forward_kwargs={"mode": "pie" if args.algorithm == "mf" else "mf"},
-        **common_kwargs,
+        loss_weights=[args.msefactor, args.nllfactor],
+        epochs=args.epochs,
+        parameters=[model.parameters(), model.inner_transform.parameters()],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        trainer_kwargs=[phase1_kwargs, phase2_kwargs],
+        **meta_kwargs,
     )
-    learning_curves_ = np.vstack(learning_curves_).T
+    learning_curves = np.vstack(learning_curves_).T
 
     return learning_curves
 

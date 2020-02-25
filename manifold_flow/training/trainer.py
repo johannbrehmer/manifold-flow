@@ -181,6 +181,7 @@ class BaseTrainer(object):
 
 class Trainer(BaseTrainer):
     """ Trainer class. Any subclass has to implement the forward_pass() function. """
+
     def train(
         self,
         dataset,
@@ -328,7 +329,7 @@ class Trainer(BaseTrainer):
         optimizer,
         loss_functions,
         loss_weights,
-        clip_gradient=1.,
+        clip_gradient=1.0,
         forward_kwargs=None,
         custom_kwargs=None,
         compute_loss_variance=False,
@@ -393,7 +394,7 @@ class Trainer(BaseTrainer):
     def first_batch(self, batch_data):
         pass
 
-    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=1., forward_kwargs=None, custom_kwargs=None):
+    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=1.0, forward_kwargs=None, custom_kwargs=None):
         loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
@@ -447,7 +448,8 @@ class AlternatingTrainer(BaseTrainer):
 
         logger.debug("Initiated alternating trainer based on %s individual trainers", len(trainers))
 
-    def train(self,
+    def train(
+        self,
         dataset,
         loss_functions,
         loss_function_trainers,
@@ -487,21 +489,29 @@ class AlternatingTrainer(BaseTrainer):
         logger.debug("Setting up optimizer")
         optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
         if parameters is None:
-            parameters = self.model.parameters()
-        opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
+            parameters = [None for _ in self.trainers]
+
+        opts = []
+        for parameters_ in parameters:
+            if parameters_ is None:
+                parameters_ = self.model.parameters()
+            opts.append(optimizer(parameters_, lr=initial_lr, **optimizer_kwargs))
 
         logger.debug("Setting up LR scheduler")
         if epochs < 2:
             scheduler = None
             logger.debug("Deactivating scheduler for only %s epoch", epochs)
         scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
-        sched = None
         epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
-        if scheduler is not None:
-            try:
-                sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
-            except:
-                sched = scheduler(optimizer=opt, **scheduler_kwargs)
+        if scheduler is None:
+            scheds = [None for _ in self.trainers]
+        else:
+            scheds = []
+            for opt in opts:
+                try:
+                    scheds.append(scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs))
+                except:
+                    scheds.append(scheduler(optimizer=opt, **scheduler_kwargs))
 
         early_stopping = early_stopping and (validation_split is not None) and (epochs > 1)
         best_loss, best_model, best_epoch = None, None, None
@@ -538,11 +548,11 @@ class AlternatingTrainer(BaseTrainer):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
             # LR schedule
-            if sched is not None:
-                logger.debug("Learning rate: %s", sched.get_lr()[0])
+            if sched[0] is not None:
+                logger.debug("Learning rate: %s", sched[0].get_lr()[0])
 
-            loss_train = 0.
-            loss_val = 0.
+            loss_train = 0.0
+            loss_val = 0.0
             loss_contributions_train = np.zeros(n_losses)
             loss_contributions_val = np.zeros(n_losses)
 
@@ -550,19 +560,14 @@ class AlternatingTrainer(BaseTrainer):
             for i_tr_unsrt, i_trainer in enumerate(trainer_order):
                 logger.debug("Trainer %s / %s", i_tr_unsrt + 1, len(self.trainers))
 
+                opt = opts[i_trainer]
                 trainer = self.trainers[i_trainer]
                 trainer_kwargs_ = trainer_kwargs[i_trainer]
-                loss_filter = (loss_function_trainers == i_trainer)
+                loss_filter = loss_function_trainers == i_trainer
 
                 try:
                     loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.epoch(
-                        i_epoch,
-                        train_loader,
-                        val_loader,
-                        opt,
-                        loss_functions[loss_filter],
-                        loss_weights[loss_filter],
-                        **trainer_kwargs_
+                        i_epoch, train_loader, val_loader, opt, loss_functions[loss_filter], loss_weights[loss_filter], **trainer_kwargs_
                     )
                     loss_train += loss_train_trainer
                     loss_val += loss_val_trainer
@@ -592,13 +597,14 @@ class AlternatingTrainer(BaseTrainer):
                     callback(i_epoch, self.model, loss_train, loss_val)
 
             # LR scheduler
-            if sched is not None:
-                sched.step(i_epoch)
-                if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
-                    try:
-                        sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
-                    except:
-                        sched = scheduler(optimizer=opt, **scheduler_kwargs)
+            for i_trainer, sched in enumerate(scheds):
+                if sched is not None:
+                    sched.step(i_epoch)
+                    if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
+                        try:
+                            scheds[i_trainer] = scheduler(optimizer=opts[i_trainer], T_max=epochs_per_scheduler, **scheduler_kwargs)
+                        except:
+                            scheds[i_trainer] = scheduler(optimizer=opts[i_trainer], **scheduler_kwargs)
 
             # Shuffle trainer order
             if shuffle_trainer_order:
@@ -962,5 +968,3 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
 #             "{}_reconstruction_epoch{}.pdf".format(self.output_filename, i_epoch)
 #         )
 #         plt.close()
-
-

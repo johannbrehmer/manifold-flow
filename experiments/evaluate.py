@@ -277,7 +277,13 @@ if __name__ == "__main__":
         # Truth MCMC
         try:
             true_posterior_samples = _mcmc(
-                simulator, n_mcmc_samples=args.mcmcsamples, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+                simulator,
+                n_mcmc_samples=args.mcmcsamples,
+                n_samples=args.observedsamples,
+                slice_sampling=args.slicesampler,
+                thin=args.thin,
+                step=args.mcmcstep,
+                burnin=args.burnin,
             )
             np.save(create_filename("results", "posterior_samples", args), true_posterior_samples)
 
@@ -288,7 +294,14 @@ if __name__ == "__main__":
     if simulator.parameter_dim() is not None and not args.truth:
         # MCMC
         model_posterior_samples = _mcmc(
-            simulator, model, n_mcmc_samples=args.mcmcsamples, n_samples=args.observedsamples, slice_sampling=args.slicesampler, thin=args.thin, step=args.mcmcstep, burnin=args.burnin
+            simulator,
+            model,
+            n_mcmc_samples=args.mcmcsamples,
+            n_samples=args.observedsamples,
+            slice_sampling=args.slicesampler,
+            thin=args.thin,
+            step=args.mcmcstep,
+            burnin=args.burnin,
         )
         np.save(create_filename("results", "posterior_samples", args), model_posterior_samples)
 

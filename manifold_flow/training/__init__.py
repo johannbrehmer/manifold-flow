@@ -1,10 +1,11 @@
-from manifold_flow.training import losses
-from manifold_flow.training.trainer import (
+from . import losses
+from .trainer import (
     ManifoldFlowTrainer,
     ConditionalManifoldFlowTrainer,
     GenerativeTrainer,
     ConditionalGenerativeTrainer,
     VariableDimensionManifoldFlowTrainer,
     ConditionalVariableDimensionManifoldFlowTrainer,
+    AlternatingTrainer,
 )
-from manifold_flow.training.datasets import NumpyDataset, UnlabelledImageFolder
+from .datasets import NumpyDataset, UnlabelledImageFolder
