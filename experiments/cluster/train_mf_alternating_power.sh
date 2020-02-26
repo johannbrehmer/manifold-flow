@@ -16,7 +16,3 @@ cd /scratch/jb6504/manifold-flow/experiments
 python -u train.py --modelname small_alternate --dataset power --algorithm mf --alternate --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 python -u train.py --modelname small_alternate_shallow_long --dataset power --algorithm mf --alternate --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 python -u train.py --modelname small_alternate_long --dataset power --algorithm mf --alternate --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-
-python -u train.py --modelname small_alternate --dataset power --algorithm gamf --alternate --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small_alternate_shallow_long --dataset power --algorithm gamf --alternate --samplesize 100000 --epochs 50 --outerlayers 3 --innerlayers 3 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-python -u train.py --modelname small_alternate_long --dataset power --algorithm gamf --alternate --samplesize 100000 --epochs 50 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
