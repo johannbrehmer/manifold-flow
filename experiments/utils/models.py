@@ -318,7 +318,7 @@ def create_vector_transform(
     base_transform_type="rq-coupling",
     hidden_features=100,
     num_transform_blocks=2,
-    dropout_probability=0.25,
+    dropout_probability=0.0,
     use_batch_norm=False,
     num_bins=8,
     tail_bound=3,
@@ -355,7 +355,7 @@ def create_vector_transform(
 
 
 def create_vector_encoder(
-    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.25, use_batch_norm=False, context_features=None, resnet=True
+    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
 ):
 
     if resnet:
