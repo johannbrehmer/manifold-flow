@@ -566,17 +566,17 @@ class AlternatingTrainer(BaseTrainer):
             loss_contributions_val = np.zeros(n_losses)
 
             # Loop over trainers
-            for i_tr_unsrt, i_trainer in enumerate(trainer_order):
-                logger.debug("Trainer %s / %s", i_tr_unsrt + 1, len(self.trainers))
+            try:
+                for i_tr_unsrt, i_trainer in enumerate(trainer_order):
+                    logger.debug("Trainer %s / %s", i_tr_unsrt + 1, len(self.trainers))
 
-                trainer = self.trainers[i_trainer]
-                opt = opts[i_trainer]
-                trainer_kwargs_ = trainer_kwargs[i_trainer]
-                train_loader = train_loaders[i_trainer]
-                val_loader = val_loaders[i_trainer]
-                loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
+                    trainer = self.trainers[i_trainer]
+                    opt = opts[i_trainer]
+                    trainer_kwargs_ = trainer_kwargs[i_trainer]
+                    train_loader = train_loaders[i_trainer]
+                    val_loader = val_loaders[i_trainer]
+                    loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
 
-                try:
                     loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.epoch(
                         i_epoch, train_loader, val_loader, opt, [loss_functions[i] for i in loss_filter], [loss_weights[i] for i in loss_filter], **trainer_kwargs_
                     )
@@ -584,13 +584,14 @@ class AlternatingTrainer(BaseTrainer):
                     loss_val += loss_val_trainer
                     loss_contributions_train[loss_filter] = loss_contributions_train_trainer
                     loss_contributions_val[loss_filter] = loss_contributions_val_trainer
-                except NanException:
-                    logger.info("Ending training during epoch %s because NaNs appeared", i_epoch + 1)
-                    break
 
-            # Wrap up epoch
-            losses_train.append(loss_train)
-            losses_val.append(loss_val)
+                # Wrap up epoch
+                losses_train.append(loss_train)
+                losses_val.append(loss_val)
+
+            except NanException:
+                logger.info("Ending training during epoch %s because NaNs appeared", i_epoch + 1)
+                break
 
             if early_stopping:
                 try:
