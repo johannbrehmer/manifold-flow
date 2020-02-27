@@ -40,7 +40,7 @@ class EncoderManifoldFlow(BaseFlow):
         """ mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
         (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all). """
 
-        assert mode in ["mf", "projection"]
+        assert mode in ["mf", "projection", "pie", "mf-fixed-manifold"]
 
         if mode == "mf" and not x.requires_grad:
             x.requires_grad = True
@@ -94,7 +94,7 @@ class EncoderManifoldFlow(BaseFlow):
         else:
             h = self.projection.inverse(h)
 
-        if mode in ["pie", "slice", "projection"]:
+        if mode in ["pie", "slice", "projection", "mf-fixed-manifold"]:
             x, inv_log_det_outer = self.outer_transform.inverse(h, full_jacobian=False, context=context if self.apply_context_to_outer else None)
             inv_jacobian_outer = None
         else:
@@ -130,6 +130,10 @@ class EncoderManifoldFlow(BaseFlow):
                 logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
                 logger.warning("  log det inner: %s", inv_log_det_inner[filter])
                 logger.warning("  total:         %s", log_prob[filter])
+
+        elif mode == "mf-fixed-manifold":
+            log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
+            log_prob = log_prob - inv_log_det_inner
 
         else:
             log_prob = None
