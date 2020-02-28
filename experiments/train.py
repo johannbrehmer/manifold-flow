@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=10.0)
     parser.add_argument("--samplesize", type=int, default=None)
-    parser.add_argument("--l2reg", type=float, default=None)
+    parser.add_argument("--weightdecay", type=float, default=None)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
     parser.add_argument("--clip", type=float, default=1.0)
     parser.add_argument("--nopretraining", action="store_true")
@@ -88,8 +88,8 @@ def train_manifold_flow(args, dataset, model, simulator):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
     }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     if args.specified:
         logger.info("Starting training MF with specified manifold on NLL")
@@ -177,8 +177,8 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
     }
-    if args.l2reg is not None:
-        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     phase1_kwargs = {
         "forward_kwargs": {"mode": "projection"},
@@ -210,8 +210,8 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     logger.info("Starting training GAMF: Sinkhorn-GAN")
     learning_curves_ = gen_trainer.train(
@@ -241,8 +241,8 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
     }
-    if args.l2reg is not None:
-        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     phase1_kwargs = {
         "clip_gradient": args.clip
@@ -279,8 +279,8 @@ def train_slice_of_pie(args, dataset, model, simulator):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
     }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     if args.nopretraining or args.epochs // 3 < 1:
         logger.info("Skipping pretraining phase")
@@ -339,8 +339,8 @@ def train_flow(args, dataset, model, simulator):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
     }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
@@ -364,8 +364,8 @@ def train_pie(args, dataset, model, simulator):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
     }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     learning_curves = trainer.train(
         loss_functions=[losses.nll],
@@ -389,8 +389,8 @@ def train_dough(args, dataset, model, simulator):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
     }
-    if args.l2reg is not None:
-        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.l2reg)}
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     logger.info("Starting training dough, phase 1: NLL without latent regularization")
     learning_curves = trainer.train(

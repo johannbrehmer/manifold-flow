@@ -33,5 +33,5 @@ sbatch --array 0-2 evaluate_flow_power.sh
 sbatch --array 0-2 evaluate_pie_power.sh
 sbatch --array 0-2 evaluate_gamf_power.sh
 sbatch --array 0-2 evaluate_pie_epsilon_power.sh
-sbatch --array 0-20 evaluate_mf_power.sh
-sbatch --array 0-20 evaluate_emf_power.sh
+sbatch --array 0-20 evaluate_mf_power.sh  <--
+sbatch --array 0-20 evaluate_emf_power.sh  <--
