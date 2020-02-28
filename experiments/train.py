@@ -172,29 +172,19 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     metatrainer = AlternatingTrainer(model, trainer, trainer)
 
-    meta_kwargs = {
-        "dataset": dataset,
-        "initial_lr": args.lr,
-        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
-    }
+    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     if args.weightdecay is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
-    phase1_kwargs = {
-        "forward_kwargs": {"mode": "projection"},
-        "clip_gradient": args.clip
-    }
-    phase2_kwargs = {
-        "forward_kwargs": {"mode": "mf-fixed-manifold"},
-        "clip_gradient": args.clip
-    }
+    phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
+    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
         loss_functions=[losses.mse, losses.nll, losses.mse],
         loss_function_trainers=[0, 1, 1],
         loss_labels=["MSE", "NLL", "MSE_check"],
-        loss_weights=[args.msefactor, args.nllfactor, 0.],
+        loss_weights=[args.msefactor, args.nllfactor, 0.0],
         epochs=args.epochs,
         batch_sizes=[args.batchsize, args.batchsize],
         parameters=[model.outer_transform.parameters(), model.inner_transform.parameters()],
@@ -236,21 +226,12 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
     likelihood_trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     metatrainer = AlternatingTrainer(model, gen_trainer, likelihood_trainer)
 
-    meta_kwargs = {
-        "dataset": dataset,
-        "initial_lr": args.lr,
-        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
-    }
+    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
     if args.weightdecay is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
-    phase1_kwargs = {
-        "clip_gradient": args.clip
-    }
-    phase2_kwargs = {
-        "forward_kwargs": {"mode": "pie"},
-        "clip_gradient": args.clip
-    }
+    phase1_kwargs = {"clip_gradient": args.clip}
+    phase2_kwargs = {"forward_kwargs": {"mode": "pie"}, "clip_gradient": args.clip}
 
     logger.info("Starting training GAMF, alternating between Sinkhorn divergence and log likelihood")
     learning_curves_ = metatrainer.train(

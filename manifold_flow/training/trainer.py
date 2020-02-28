@@ -129,13 +129,16 @@ class BaseTrainer(object):
             batch_sizes = [batch_sizes]
 
         if validation_split is None or validation_split <= 0.0:
-            train_loaders = [DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=True,
-                # pin_memory=self.run_on_gpu,
-                num_workers=max(1, 4//len(batch_sizes)),
-            ) for batch_size in batch_sizes]
+            train_loaders = [
+                DataLoader(
+                    dataset,
+                    batch_size=batch_size,
+                    shuffle=True,
+                    # pin_memory=self.run_on_gpu,
+                    num_workers=max(1, 4 // len(batch_sizes)),
+                )
+                for batch_size in batch_sizes
+            ]
             val_loaders = [None for batch_size in batch_sizes]
 
         else:
@@ -150,20 +153,26 @@ class BaseTrainer(object):
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
 
-            train_loaders = [DataLoader(
-                dataset,
-                sampler=train_sampler,
-                batch_size=batch_size,
-                # pin_memory=self.run_on_gpu,
-                num_workers=max(1, 4//len(batch_sizes)),
-            ) for batch_size in batch_sizes]
-            val_loaders = [DataLoader(
-                dataset,
-                sampler=val_sampler,
-                batch_size=batch_size,
-                # pin_memory=self.run_on_gpu,
-                num_workers=max(1, 4//len(batch_sizes)),
-            ) for batch_size in batch_sizes]
+            train_loaders = [
+                DataLoader(
+                    dataset,
+                    sampler=train_sampler,
+                    batch_size=batch_size,
+                    # pin_memory=self.run_on_gpu,
+                    num_workers=max(1, 4 // len(batch_sizes)),
+                )
+                for batch_size in batch_sizes
+            ]
+            val_loaders = [
+                DataLoader(
+                    dataset,
+                    sampler=val_sampler,
+                    batch_size=batch_size,
+                    # pin_memory=self.run_on_gpu,
+                    num_workers=max(1, 4 // len(batch_sizes)),
+                )
+                for batch_size in batch_sizes
+            ]
 
         if len(batch_sizes) == 1:
             return train_loaders[0], val_loaders[0]
@@ -442,7 +451,7 @@ class Trainer(BaseTrainer):
 
 
 class AlternatingTrainer(BaseTrainer):
-    def __init__(self, model,  *trainers, run_on_gpu=True, multi_gpu=True, double_precision=False):
+    def __init__(self, model, *trainers, run_on_gpu=True, multi_gpu=True, double_precision=False):
         super().__init__(model, run_on_gpu, multi_gpu, double_precision)
 
         assert len(trainers) > 0
@@ -487,7 +496,7 @@ class AlternatingTrainer(BaseTrainer):
         if trainer_kwargs is None:
             trainer_kwargs = [{} for _ in self.trainers]
         if isinstance(batch_sizes, int):
-            batch_sizes=[batch_sizes for _ in self.trainers]
+            batch_sizes = [batch_sizes for _ in self.trainers]
 
         logger.debug("Initialising training data")
         train_loaders, val_loaders = self.make_dataloader(dataset, validation_split, batch_sizes)
@@ -578,7 +587,13 @@ class AlternatingTrainer(BaseTrainer):
                     loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
 
                     loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.epoch(
-                        i_epoch, train_loader, val_loader, opt, [loss_functions[i] for i in loss_filter], [loss_weights[i] for i in loss_filter], **trainer_kwargs_
+                        i_epoch,
+                        train_loader,
+                        val_loader,
+                        opt,
+                        [loss_functions[i] for i in loss_filter],
+                        [loss_weights[i] for i in loss_filter],
+                        **trainer_kwargs_
                     )
                     loss_train += loss_train_trainer
                     loss_val += loss_val_trainer

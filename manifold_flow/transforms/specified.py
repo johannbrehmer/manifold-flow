@@ -12,7 +12,7 @@ class SphericalCoordinates(transforms.Transform):
     """ Translates the first d+1 data components from Cartesian to the hyperspherical coordinates of a d-sphere and a radial coordinate, leaving the remaining variables
     invariant. Spherical angles get linearly rescaled to (-1, 1).  """
 
-    def __init__(self, n, r0=1.0, azimuthal_offset=0.):
+    def __init__(self, n, r0=1.0, azimuthal_offset=0.0):
         """ n is the dimension of the hyperspherical coordinates (as in n-sphere). A circle would be n = 1. r0 is subtracted from the radial coordinate, so with r = 1 deviations
         from the unit sphere are calculated. """
 
@@ -117,7 +117,7 @@ class SphericalCoordinates(transforms.Transform):
 
         # Rescale phi
         first = (phi[:, :-1] + 1.0) * 0.5 * np.pi
-        last = torch.remainder((phi[:, -1].unsqueeze(1) + 1.0) * np.pi + self.azimuthal_offset, 2.*np.pi)
+        last = torch.remainder((phi[:, -1].unsqueeze(1) + 1.0) * np.pi + self.azimuthal_offset, 2.0 * np.pi)
         phi = torch.cat((first, last), dim=1)
 
         a1 = torch.cat((0.5 * np.pi * torch.ones((batchsize, 1)), phi), dim=1)  # (batchsize, n+1), first row is pi, rest are angles
@@ -207,7 +207,7 @@ class SphericalCoordinates(transforms.Transform):
 
         # Rescale
         phis = [
-            -1.0 + 2.0 * phi / np.pi if i < self.n - 1 else -1.0 + torch.remainder(phi - self.azimuthal_offset, 2.*np.pi) / np.pi
+            -1.0 + 2.0 * phi / np.pi if i < self.n - 1 else -1.0 + torch.remainder(phi - self.azimuthal_offset, 2.0 * np.pi) / np.pi
             for i, phi in enumerate(phis)
         ]
 
