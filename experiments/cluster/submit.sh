@@ -24,8 +24,8 @@
 #sbatch --array 0-2 evaluate_flow_lhc2d.sh
 #sbatch --array 0-2 evaluate_flow_lhc.sh
 #sbatch --array 0-2 evaluate_pie_lhc.sh
-sbatch --array 0-2 evaluate_mf_lhc.sh
-sbatch --array 0-2 evaluate_emf_lhc.sh
+#sbatch --array 0-2 evaluate_mf_lhc.sh  <--
+#sbatch --array 0-2 evaluate_emf_lhc.sh  <--
 #sbatch --array 0-9 evaluate_gamf_lhc.sh
 
 #sbatch --array 0-2 evaluate_truth_power.sh
