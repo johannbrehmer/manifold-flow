@@ -191,13 +191,13 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
-        loss_functions=[losses.mse, losses.nll],
-        loss_function_trainers=[0, 1],
-        loss_labels=["MSE", "NLL"],
-        loss_weights=[args.msefactor, args.nllfactor],
+        loss_functions=[losses.mse, losses.nll, losses.mse],
+        loss_function_trainers=[0, 1, 1],
+        loss_labels=["MSE", "NLL", "MSE_check"],
+        loss_weights=[args.msefactor, args.nllfactor, 0.],
         epochs=args.epochs,
         batch_sizes=[args.batchsize, args.batchsize],
-        parameters=[model.parameters(), model.inner_transform.parameters()],
+        parameters=[model.outer_transform.parameters(), model.inner_transform.parameters()],
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         **meta_kwargs,
