@@ -13,6 +13,10 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-#python -u train.py --modelname largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --epochs 1000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
-#python -u train.py --modelname hugebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 5000 --epochs 5000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname wdecay_largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --weightdecay 1.e-5 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname wdecay_hugebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 5000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --weightdecay 1.e-5 --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname wdecay_alternate_largebs --dataset lhc --algorithm gamf --alternate --modellatentdim 9 --genbatchsize 1000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --weightdecay 1.e-5 --dir /scratch/jb6504/manifold-flow
+
+python -u train.py --modelname largebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 1000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u train.py --modelname hugebs --dataset lhc --algorithm gamf --modellatentdim 9 --genbatchsize 5000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 python -u train.py --modelname alternate_largebs --dataset lhc --algorithm gamf --alternate --modellatentdim 9 --genbatchsize 1000 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
