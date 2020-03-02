@@ -12,8 +12,8 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-run=$((SLURM_ARRAY_TASK_ID / 7))
-task=$((SLURM_ARRAY_TASK_ID % 7))
+run=$((SLURM_ARRAY_TASK_ID / 10))
+task=$((SLURM_ARRAY_TASK_ID % 10))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
 case ${task} in
@@ -24,5 +24,8 @@ case ${task} in
 4) python -u evaluate.py --modelname small_alternate --dataset power --algorithm emf --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 5) python -u evaluate.py --modelname small_alternate_shallow_long --dataset power --algorithm emf --outerlayers 3 --innerlayers 3 --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 6) python -u evaluate.py --modelname small_alternate_long --dataset power --algorithm emf --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+7) python -u evaluate.py --modelname small_alternate_wdecay --dataset power --algorithm emf --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+8) python -u evaluate.py --modelname small_alternate_wdecay_shallow_long --dataset power --algorithm emf --outerlayers 3 --innerlayers 3 --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
+9) python -u evaluate.py --modelname small_alternate_wdecay_long --dataset power --algorithm emf --gridresolution 101 -i ${run} --dir /scratch/jb6504/manifold-flow ;;
 *) echo "Nothing to do for job ${SLURM_ARRAY_TASK_ID}" ;;
 esac
