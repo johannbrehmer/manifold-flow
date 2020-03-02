@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import copy
 
 from experiments.simulators import (
     SphericalGaussianSimulator,
@@ -62,6 +63,10 @@ def load_training_dataset(simulator, args):
 
 def load_test_samples(simulator, args, ood=False):
     try:
-        return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args))
+        return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args_))
     except NotImplementedError:
-        return np.load(create_filename("sample", "x_ood" if ood else "x_test", args))
+        # We want to always use the i=0 test samples for a better comparison
+        args_ = copy.deepcopy(args)
+        args_.i = 0
+
+        return np.load(create_filename("sample", "x_ood" if ood else "x_test", args_))
