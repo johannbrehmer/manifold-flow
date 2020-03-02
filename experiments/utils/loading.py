@@ -63,7 +63,7 @@ def load_training_dataset(simulator, args):
 
 def load_test_samples(simulator, args, ood=False):
     try:
-        return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args_))
+        return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args))
     except NotImplementedError:
         # We want to always use the i=0 test samples for a better comparison
         args_ = copy.deepcopy(args)

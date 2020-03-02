@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument("--slicesampler", action="store_true")
     parser.add_argument("--mcmcstep", type=float, default=0.15)
     parser.add_argument("--thin", type=int, default=1)
-    parser.add_argument("--mcmcsamples", type=int, default=4000)
+    parser.add_argument("--mcmcsamples", type=int, default=5000)
     parser.add_argument("--burnin", type=int, default=100)
 
     # Other settings
@@ -221,6 +221,7 @@ if __name__ == "__main__":
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
     logger.info("Hi!")
+    logger.info("Starting evaluate.py with arguments %s", args)
 
     if args.truth:
         create_modelname(args)
