@@ -22,9 +22,11 @@ def print_mf_weight_statistics():
             labels = ["transform weights:"]
 
         for model_, label_ in zip(models, labels):
-            weights = np.hstack([param.detach().numpy().flatten() for param in  model_.parameters()])
-            logger.debug("           {:26.26s} mean {:>8.5f}, std {:>8.5f}, range {:>8.5f} ... {:>8.5f}".format(
-                label_, np.mean(weights), np.std(weights), np.min(weights), np.max(weights))
+            weights = np.hstack([param.detach().numpy().flatten() for param in model_.parameters()])
+            logger.debug(
+                "           {:26.26s} mean {:>8.5f}, std {:>8.5f}, range {:>8.5f} ... {:>8.5f}".format(
+                    label_, np.mean(weights), np.std(weights), np.min(weights), np.max(weights)
+                )
             )
 
     return callback

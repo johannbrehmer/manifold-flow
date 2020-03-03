@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--encoderblocks", type=int, default=5)
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--encodermlp", action="store_true")
-    parser.add_argument("--splinerange", default=3., type=float)
+    parser.add_argument("--splinerange", default=3.0, type=float)
     parser.add_argument("--splinebins", default=8, type=int)
 
     # Training
@@ -64,7 +64,7 @@ def parse_args():
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=10.0)
     parser.add_argument("--samplesize", type=int, default=None)
-    parser.add_argument("--weightdecay", type=float, default=1.e-6)
+    parser.add_argument("--weightdecay", type=float, default=1.0e-6)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
     parser.add_argument("--clip", type=float, default=1.0)
     parser.add_argument("--nopretraining", action="store_true")
@@ -191,7 +191,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         parameters=[model.outer_transform.parameters(), model.inner_transform.parameters()],
         callbacks=[
             callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt"),
-            callbacks.print_mf_weight_statistics()
+            callbacks.print_mf_weight_statistics(),
         ],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         **meta_kwargs,
