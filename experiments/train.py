@@ -51,6 +51,8 @@ def parse_args():
     parser.add_argument("--encoderblocks", type=int, default=5)
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--encodermlp", action="store_true")
+    parser.add_argument("--splinerange", default=3., type=float)
+    parser.add_argument("--splinebins", default=8, type=int)
 
     # Training
     parser.add_argument("--load", type=str, default=None)
