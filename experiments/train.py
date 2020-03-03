@@ -189,10 +189,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         epochs=args.epochs,
         batch_sizes=[args.batchsize, args.batchsize],
         parameters=[model.outer_transform.parameters(), model.inner_transform.parameters()],
-        callbacks=[
-            callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt"),
-            callbacks.print_mf_weight_statistics(),
-        ],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt"),],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         **meta_kwargs,
     )
