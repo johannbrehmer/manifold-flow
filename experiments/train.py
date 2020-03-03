@@ -56,7 +56,7 @@ def parse_args():
 
     # Training
     parser.add_argument("--load", type=str, default=None)
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--genbatchsize", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=3.0e-4)
@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=10.0)
     parser.add_argument("--samplesize", type=int, default=None)
-    parser.add_argument("--weightdecay", type=float, default=None)
+    parser.add_argument("--weightdecay", type=float, default=1.e-6)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
     parser.add_argument("--clip", type=float, default=1.0)
     parser.add_argument("--nopretraining", action="store_true")
