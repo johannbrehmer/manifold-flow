@@ -401,6 +401,31 @@ def train_dough(args, dataset, model, simulator):
     return learning_curves
 
 
+def train_model(args, dataset, model, simulator):
+    if args.algorithm == "pie":
+        learning_curves = train_pie(args, dataset, model, simulator)
+    elif args.algorithm == "flow":
+        learning_curves = train_flow(args, dataset, model, simulator)
+    elif args.algorithm == "slice":
+        learning_curves = train_slice_of_pie(args, dataset, model, simulator)
+    elif args.algorithm in ["mf", "emf"]:
+        if args.alternate:
+            learning_curves = train_manifold_flow_alternating(args, dataset, model, simulator)
+        else:
+            learning_curves = train_manifold_flow(args, dataset, model, simulator)
+    elif args.algorithm == "gamf":
+        if args.alternate:
+            learning_curves = train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator)
+        else:
+            learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
+    elif args.algorithm == "dough":
+        learning_curves = train_dough(args, dataset, model, simulator)
+    else:
+        raise ValueError("Unknown algorithm %s", args.algorithm)
+
+    return learning_curves
+
+
 if __name__ == "__main__":
     # Logger
     args = parse_args()
@@ -434,27 +459,8 @@ if __name__ == "__main__":
         args_.modelname = args.load
         model.load_state_dict(torch.load(create_filename("model", None, args_), map_location=torch.device("cpu")))
 
-    # Train
-    if args.algorithm == "pie":
-        learning_curves = train_pie(args, dataset, model, simulator)
-    elif args.algorithm == "flow":
-        learning_curves = train_flow(args, dataset, model, simulator)
-    elif args.algorithm == "slice":
-        learning_curves = train_slice_of_pie(args, dataset, model, simulator)
-    elif args.algorithm in ["mf", "emf"]:
-        if args.alternate:
-            learning_curves = train_manifold_flow_alternating(args, dataset, model, simulator)
-        else:
-            learning_curves = train_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "gamf":
-        if args.alternate:
-            learning_curves = train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator)
-        else:
-            learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "dough":
-        learning_curves = train_dough(args, dataset, model, simulator)
-    else:
-        raise ValueError("Unknown algorithm %s", args.algorithm)
+    # Train and save
+    learning_curves = train_model(args, dataset, model, simulator)
 
     # Save
     logger.info("Saving model")

@@ -35,6 +35,8 @@ def create_filename(type, label, args):
             args.outercouplinghidden,
             run_label,
         )
+    elif type == "paramscan":
+        filename = "{}/experiments/data/paramscan/{}.pickle".format(args.dir, args.paramscanstudyname)
     else:
         raise NotImplementedError
 
