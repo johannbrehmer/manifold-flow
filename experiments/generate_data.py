@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--test", type=int, default=10000)
     parser.add_argument("--ood", type=int, default=0)
 
-    parser.add_argument("--dir", type=str, default="../")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
 
     return parser.parse_args()

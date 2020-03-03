@@ -64,7 +64,7 @@ def parse_args():
     parser.add_argument("--burnin", type=int, default=100)
 
     # Other settings
-    parser.add_argument("--dir", type=str, default="../")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--skipmodelmcmc", action="store_true")
     parser.add_argument("--skiptruthmcmc", action="store_true")

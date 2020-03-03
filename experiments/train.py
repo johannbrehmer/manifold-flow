@@ -74,7 +74,7 @@ def parse_args():
     parser.add_argument("--alternate", action="store_true")
 
     # Other settings
-    parser.add_argument("--dir", type=str, default="../")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
 
     return parser.parse_args()
