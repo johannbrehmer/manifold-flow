@@ -37,8 +37,8 @@ def parse_args():
     parser.add_argument("--specified", action="store_true")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--lineartransform", type=str, default="permutation"
-    parser.add_argument("--outercouplinghidden", type=int, default=100))
+    parser.add_argument("--lineartransform", type=str, default="permutation")
+    parser.add_argument("--outercouplinghidden", type=int, default=100)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--encoderblocks", type=int, default=5)
@@ -90,13 +90,13 @@ def pick_parameters(args, trial, counter):
     margs.outercouplinglayers = trial.suggest_categorical("outercouplinglayers", [1, 2, 3])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
     margs.splinerange = trial.suggest_categorical("splinerange", [5.0, 6.0, 8.0])
-    margs.splinebins = trial.suggest_categorical("splinebins", [5, 10, 15, 20])
+    margs.splinebins = trial.suggest_categorical("splinebins", [5, 10, 20])
 
     margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 500])
     margs.lr = trial.suggest_loguniform("lr", 1.0e-5, 1.0e-2)
     margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e2, 1.0e4)
     margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-8, 1.0e-4)
-    margs.clip = trial.suggest_loguniform("clip", 0.1, 100.0)
+    margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
 
     create_modelname(margs)
 
