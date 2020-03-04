@@ -59,8 +59,8 @@ if __name__ == "__main__":
 
     if args.paramscan > 0:
         parameters_val = np.array([simulator.default_parameters() for _ in range(args.paramscan)]).reshape((args.paramscan, -1)) if conditional else None
-        logger.info("Generating %s param-scan samples at parameters %s", args.test, parameters_val)
-        x_val = simulator.sample(args.test, parameters=parameters_val)
+        logger.info("Generating %s param-scan samples at parameters %s", args.paramscan, parameters_val)
+        x_val = simulator.sample(args.paramscan, parameters=parameters_val)
         np.save(create_filename("sample", "x_paramscan", args), x_val)
         if conditional:
             np.save(create_filename("sample", "parameters_paramscan", args), parameters_val)
