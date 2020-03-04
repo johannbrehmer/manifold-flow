@@ -154,7 +154,7 @@ if __name__ == "__main__":
         model.eval()
 
         # Evaluate test samples
-        log_likelihood_test, reconstruction_error_test, _ = evaluate._evaluate_test_samples(margs, simulator, model)
+        log_likelihood_test, reconstruction_error_test, _ = evaluate._evaluate_test_samples(margs, simulator, model, paramscan=True)
         mean_log_likelihood_test = np.mean(log_likelihood_test)
         mean_reco_error_test = np.mean(reconstruction_error_test)
 

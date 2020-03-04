@@ -61,7 +61,7 @@ def load_training_dataset(simulator, args):
     return NumpyDataset(x, params)
 
 
-def load_test_samples(simulator, args, ood=False):
+def load_test_samples(simulator, args, ood=False, paramscan=False):
     try:
         return simulator.load_dataset(train=False, dataset_dir=create_filename("dataset", None, args))
     except NotImplementedError:
@@ -69,4 +69,4 @@ def load_test_samples(simulator, args, ood=False):
         args_ = copy.deepcopy(args)
         args_.i = 0
 
-        return np.load(create_filename("sample", "x_ood" if ood else "x_test", args_))
+        return np.load(create_filename("sample", "x_ood" if ood else "x_paramscan" if paramscan else "x_test", args_))
