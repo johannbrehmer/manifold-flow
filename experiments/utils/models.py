@@ -449,6 +449,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            **outer_transform_kwargs
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
@@ -563,6 +564,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            **outer_transform_kwargs
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
