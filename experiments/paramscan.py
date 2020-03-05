@@ -108,7 +108,9 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Output -- silence the normal training output
-    logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO)
+    logging.basicConfig(
+        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
+    )
     if not args.debug:
         for key in logging.Logger.manager.loggerDict:
             if "__main__" not in key and "optuna" not in key:
@@ -119,7 +121,6 @@ if __name__ == "__main__":
     logger.info("Parameter scan study %s", args.paramscanstudyname)
 
     counter = -1
-
 
     def objective(trial):
         global counter
