@@ -76,9 +76,9 @@ class BaseLHCLoader(BaseSimulator):
 
     @staticmethod
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):
-        latent_dim = 3 * n_final  # Four-momenta of final state minus on-shell conditions
-        latent_dim -= 3  # Energy-momentum conservation. We now the initial px, py, and have one constraint E_total = pz1 - pz2.
-        latent_dim -= n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances
+        latent_dim = 4 * n_final  # We don't assume an on-shell condition for the final states (e.g. for jets)
+        latent_dim -= n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
+        # # or if you want to impose energy-momentum conservation
         return latent_dim
 
     def _preprocess(self, x, inverse=False):
@@ -250,42 +250,41 @@ class WBFLoader(BaseLHCLoader):
                 2.5064802,
             ]
         )
-        super().__init__(n_parameters=2, n_observables=48, n_final=4, n_additional_constraints=0, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
+        super().__init__(n_parameters=2, n_observables=48, n_final=4, n_additional_constraints=2, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
 
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
-        return np.abs(x_raw[:, id_e] - e_expected)
+        return np.mean(np.abs(x_raw[:, id_e] - e_expected))
 
     def _conservation_discrepancy(self, x_raw, idx):
         px = np.sum(x_raw[:, idx], axis=1)
-        return np.abs(px)
+        return np.mean(np.abs(px))
 
     def _daughter_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
-        return np.abs(x_raw[:, id] - x_raw[:, id_daughter1] - x_raw[:, id_daughter2])
+        return np.mean(np.abs(x_raw[:, id] - x_raw[:, id_daughter1] - x_raw[:, id_daughter2]))
 
     def _delta_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
-        return np.abs(np.abs(x_raw[:, id]) - np.abs(x_raw[:, id_daughter1] - x_raw[:, id_daughter2]))
+        return np.mean(np.abs(np.abs(x_raw[:, id]) - np.abs(x_raw[:, id_daughter1] - x_raw[:, id_daughter2])))
 
     def _pt_discrepancy(self, x_raw, id_pt, id_px, id_py):
         pt_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2) ** 0.5
-        return np.abs(x_raw[:, id_pt] - pt_expected)
+        return np.mean(np.abs(x_raw[:, id_pt] - pt_expected))
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
-        phi_expected = np.atan2(x_raw[:, id_px] ** 2, x_raw[:, id_py])
-        return np.minimum(
+        phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
+        return np.mean(np.minimum(
             np.abs(x_raw[:, id_phi] - phi_expected),
             np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
             np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        )
+        ))
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
-        m2 = x_raw[:, id_e] ** 2 - x_raw[:, id_px] ** 2 - x_raw[:, id_py] ** 2 - x_raw[:, id_pz] ** 2
-        costheta = x_raw[:, id_pz] / np.abs(m2) ** 0.5
+        costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz]**2) ** 0.5
         eta_expected = -0.5 * np.log((1 - costheta) / (1 + costheta))
-        return np.abs(x_raw[:, id_eta] - eta_expected)
+        return np.mean(np.abs(x_raw[:, id_eta] - eta_expected))
 
     def distance_from_manifold(self, x):
-        """ Closure test for E-p conservation and on-shell conditions and fixed relations between variables. 39 constraints + 9-dimensional manifold = 48-dimensional data space..."""
+        """ Closure test for E-p conservation and on-shell conditions and fixed relations between variables. 34 constraints + 14-dimensional manifold= 48-dimensional data..."""
 
         # Undo scaling
         x_ = self._preprocess(x, inverse=True)
@@ -319,15 +318,12 @@ class WBFLoader(BaseLHCLoader):
         # E vs on-shell and m vs on-shell
         d += self._on_shell_discrepancy(x_, 0, 1, 2, 3)
         d += self._on_shell_discrepancy(x_, 7, 8, 9, 10)
-        d += self._on_shell_discrepancy(x_, 14, 15, 16, 17)
-        d += self._on_shell_discrepancy(x_, 21, 22, 23, 24)
-        d += self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=125.0)
         d += self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=x_[:, 33])
         d += self._on_shell_discrepancy(x_, 38, 39, 40, 41, m=x_[:, 43])
 
         # sum(pT) vs energy-momentum conservation
-        d += self._conservation_discrepancy(x_, [1, 8, 15, 22])
-        d += self._conservation_discrepancy(x_, [2, 9, 16, 23])
+        # d += self._conservation_discrepancy(x_, [1, 8, 15, 22])
+        # d += self._conservation_discrepancy(x_, [2, 9, 16, 23])
 
         # reconstructed particles vs daughters
         for add in [0, 1, 2, 3]:
@@ -338,7 +334,7 @@ class WBFLoader(BaseLHCLoader):
         d += self._delta_discrepancy(x_, 36, 5, 12)
         d += self._delta_discrepancy(x_, 37, 6, 13)
         d += self._delta_discrepancy(x_, 46, 19, 26)
-        d += self._delta_discrepancy(x_, 57, 20, 27)
+        d += self._delta_discrepancy(x_, 47, 20, 27)
 
         return d
 
