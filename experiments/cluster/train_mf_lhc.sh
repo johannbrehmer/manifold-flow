@@ -13,7 +13,7 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname alternate_march --dataset lhc --algorithm mf --alternate --modellatentdim 14 -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py --modelname alternate_march --dataset lhc --algorithm mf --alternate --modellatentdim 14 --splinebins 10 -i ${SLURM_ARRAY_TASK_ID}
 
 # python -u train.py --modelname alternate --dataset lhc --algorithm mf --alternate --modellatentdim 9 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
 # python -u train.py --modelname alternate_wdecay --dataset lhc --algorithm mf --alternate --modellatentdim 9 --weightdecay 1.e-5 --epochs 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
