@@ -130,7 +130,6 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
             log_prob = []
             reco_error_ = []
             n_batches = (samples - 1) // batchsize + 1
-
             for j in range(n_batches):
                 x_ = torch.tensor(x[j * batchsize : (j + 1) * batchsize], dtype=torch.float)
                 if params is None:

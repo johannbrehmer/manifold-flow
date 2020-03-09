@@ -31,7 +31,7 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
         # Load numpy arrays
         x = np.load("{}/x_{}.npy".format(dataset_dir, "train" if train else "test"))
         params = np.load("{}/theta_{}.npy".format(dataset_dir, "train" if train else "test"))
@@ -60,6 +60,8 @@ class BaseLHCLoader(BaseSimulator):
         for i in range(params.shape[1]):
             logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
 
+        if numpy:
+            return x, params
         return NumpyDataset(x, params)
 
     def default_parameters(self):

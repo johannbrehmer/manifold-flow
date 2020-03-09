@@ -24,7 +24,7 @@ class BaseSimulator:
     def log_density(self, x, parameters=None):
         raise IntractableLikelihoodError
 
-    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
         raise NotImplementedError
 
     def sample(self, n, parameters=None):

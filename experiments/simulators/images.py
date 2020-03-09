@@ -297,7 +297,10 @@ class CIFAR10Loader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+        if numpy:
+            raise NotImplementedError
+
         assert limit_samplesize is None
         num_bits = 8
         train_transform = tvt.Compose([RandomHorizontalFlipTensor(), Preprocess(num_bits)])
@@ -315,7 +318,10 @@ class ImageNetLoader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+        if numpy:
+            raise NotImplementedError
+
         assert limit_samplesize is None
         num_bits = 8
         return ImageNet64Fast(root=dataset_dir, train=train, download=True, transform=Preprocess(num_bits))
