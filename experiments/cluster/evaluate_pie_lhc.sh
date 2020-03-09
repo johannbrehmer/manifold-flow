@@ -12,4 +12,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py --dataset lhc --algorithm pie --modellatentdim 9  --observedsamples 100 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u evaluate.py --modelname march --dataset lhc --algorithm pie --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${SLURM_ARRAY_TASK_ID}
