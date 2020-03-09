@@ -77,18 +77,25 @@ class BaseLHCLoader(BaseSimulator):
     @staticmethod
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):
         latent_dim = 4 * n_final  # We don't assume an on-shell condition for the final states (e.g. for jets)
-        latent_dim -= n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
+        latent_dim -= (
+            n_additional_constraints
+        )  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
         # # or if you want to impose energy-momentum conservation
         return latent_dim
 
     def _preprocess(self, x, inverse=False):
+        x = np.copy(x)
         if self._x_means is not None and self._x_stds is not None:
             if inverse:
+                logger.debug("Scaling LHC data back to conventional normalization")
                 x *= self._x_stds
                 x += self._x_means
             else:
+                logger.debug("Scaling LHC data to zero mean and unit variance")
                 x = x - self._x_means
                 x /= self._x_stds
+        else:
+            logger.debug("No preprocessing")
         return x
 
 
@@ -272,19 +279,21 @@ class WBFLoader(BaseLHCLoader):
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.mean(np.minimum(
-            np.abs(x_raw[:, id_phi] - phi_expected),
-            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        ))
+        return np.mean(
+            np.minimum(
+                np.abs(x_raw[:, id_phi] - phi_expected),
+                np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
+                np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
+            )
+        )
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
-        costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz]**2) ** 0.5
+        costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5
         eta_expected = -0.5 * np.log((1 - costheta) / (1 + costheta))
         return np.mean(np.abs(x_raw[:, id_eta] - eta_expected))
 
     def distance_from_manifold(self, x):
-        """ Closure test for E-p conservation and on-shell conditions and fixed relations between variables. 34 constraints + 14-dimensional manifold= 48-dimensional data..."""
+        """ Closure test. 34 constraints + 14-dimensional manifold = 48-dimensional data..."""
 
         # Undo scaling
         x_ = self._preprocess(x, inverse=True)

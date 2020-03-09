@@ -315,10 +315,13 @@ if __name__ == "__main__":
         args_.truth = True
         args_.modelname = None
         create_modelname(args_)
-        true_posterior_samples = np.load(create_filename("results", "posterior_samples", args_))
+        try:
+            true_posterior_samples = np.load(create_filename("results", "posterior_samples", args_))
 
-        mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
-        np.save(create_filename("results", "mmd", args), mmd)
-        logger.info("MMD between model and true posterior samples: %s", mmd)
+            mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
+            np.save(create_filename("results", "mmd", args), mmd)
+            logger.info("MMD between model and true posterior samples: %s", mmd)
+        except FileNotFoundError:
+            logger.info("No true posterior data, skipping MMD calculation!")
 
     logger.info("All done! Have a nice day!")
