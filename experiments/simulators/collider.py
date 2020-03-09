@@ -42,23 +42,21 @@ class BaseLHCLoader(BaseSimulator):
             x = x[:limit_samplesize]
             params = params[:limit_samplesize]
 
-        # Make sure things are sane
-        logger.info("lhc features before preprocessing:")
+        # Debug output
+        logger.debug("lhc features before preprocessing:")
         for i in range(x.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
+            logger.debug("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
 
         # Preprocess to zero mean and unit variance
         x = self._preprocess(x)
 
-        # Make sure things are sane
-        logger.info("lhc features after preprocessing:")
+        # Debug output
+        logger.debug("lhc features after preprocessing:")
         for i in range(x.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
-
-        # Make sure things are sane
-        logger.info("lhc parameters:")
+            logger.debug("  %s: range %s ... %s, mean %s, std %s", i, np.min(x[:, i]), np.max(x[:, i]), np.mean(x[:, i]), np.std(x[:, i]))
+        logger.debug("lhc parameters:")
         for i in range(params.shape[1]):
-            logger.info("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
+            logger.debug("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
 
         if numpy:
             return x, params
