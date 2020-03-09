@@ -4,8 +4,8 @@
 #SBATCH --output=log_evaluate_mf_power_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=32GB
-#SBATCH --time=2-00:00:00
+#SBATCH --mem=16GB
+#SBATCH --time=1-00:00:00
 # #SBATCH --gres=gpu:1
 
 source activate ml
