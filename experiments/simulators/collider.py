@@ -261,36 +261,34 @@ class WBFLoader(BaseLHCLoader):
 
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
-        return np.mean(np.abs(x_raw[:, id_e] - e_expected))
+        return np.abs(x_raw[:, id_e] - e_expected)
 
     def _conservation_discrepancy(self, x_raw, idx):
         px = np.sum(x_raw[:, idx], axis=1)
-        return np.mean(np.abs(px))
+        return np.abs(px)
 
     def _daughter_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
-        return np.mean(np.abs(x_raw[:, id] - x_raw[:, id_daughter1] - x_raw[:, id_daughter2]))
+        return np.abs(x_raw[:, id] - x_raw[:, id_daughter1] - x_raw[:, id_daughter2])
 
     def _delta_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
-        return np.mean(np.abs(np.abs(x_raw[:, id]) - np.abs(x_raw[:, id_daughter1] - x_raw[:, id_daughter2])))
+        return np.abs(np.abs(x_raw[:, id]) - np.abs(x_raw[:, id_daughter1] - x_raw[:, id_daughter2]))
 
     def _pt_discrepancy(self, x_raw, id_pt, id_px, id_py):
         pt_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2) ** 0.5
-        return np.mean(np.abs(x_raw[:, id_pt] - pt_expected))
+        return np.abs(x_raw[:, id_pt] - pt_expected)
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.mean(
-            np.minimum(
-                np.abs(x_raw[:, id_phi] - phi_expected),
-                np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-                np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            )
+        return np.minimum(
+            np.abs(x_raw[:, id_phi] - phi_expected),
+            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
+            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
         )
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
         costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5
         eta_expected = -0.5 * np.log((1 - costheta) / (1 + costheta))
-        return np.mean(np.abs(x_raw[:, id_eta] - eta_expected))
+        return np.abs(x_raw[:, id_eta] - eta_expected)
 
     def distance_from_manifold(self, x):
         """ Closure test. 34 constraints + 14-dimensional manifold = 48-dimensional data..."""
