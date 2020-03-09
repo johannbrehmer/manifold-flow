@@ -248,23 +248,29 @@ if __name__ == "__main__":
     else:
         model = None
 
+    # Evaluate generative performance
+    if not args.truth:
+        x_gen = _sample_from_model(args, model, simulator)
+        _evaluate_model_samples(args, simulator, x_gen)
+
+    # Evaluate test and ood samples
     if args.truth:
-        # Evaluate test samples with true likelihood
         try:
             log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None)
             np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
+
+            log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None)
+            np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
     else:
-        # Evaluate test samples
         log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model)
         np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
         np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
         if parameter_grid is not None:
             np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
 
-        # Evaluate ood samples
         try:
             log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True)
             np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
@@ -272,14 +278,8 @@ if __name__ == "__main__":
         except:
             pass
 
-    # Evaluate generative performance
-    if not args.truth:
-        x_gen = _sample_from_model(args, model, simulator)
-        _evaluate_model_samples(args, simulator, x_gen)
-
     # Truth MCMC
     if simulator.parameter_dim() is not None and args.truth:
-        # Truth MCMC
         try:
             true_posterior_samples = _mcmc(
                 simulator,
@@ -295,9 +295,8 @@ if __name__ == "__main__":
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
 
-    # Evaluate inference performance
+    # Model-based MCMC
     if simulator.parameter_dim() is not None and not args.truth:
-        # MCMC
         model_posterior_samples = _mcmc(
             simulator,
             model,
