@@ -259,6 +259,14 @@ class WBFLoader(BaseLHCLoader):
         )
         super().__init__(n_parameters=2, n_observables=48, n_final=4, n_additional_constraints=2, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
 
+        self.CLOSURE_TEST_WEIGHTS = np.array([
+            0.00017234767401810836, 0.0005783922714525116, 0.00016259763049172245, 0.00039396040969589267, 0.00015075820031400087, 0.0001562493419375276, 0.015987126023302226,
+            0.01602349716389742, 0.01611314735291162, 0.01616692492486796, 0.016141457083371877, 0.0160888830407495, 0.022137587916717407, 0.020006010492279177,
+            0.013929871849686321, 0.010496960116543705, 0.02061493618808313, 0.013495184778320693, 9.996485120018107e-05, 0.0002691092568232338, 8.699078510598126e-05,
+            3.3997744344522745e-05, 7.876062090954876e-05, 2.9880404400068146e-05, 0.00011095633757662716, 0.00010905693020482, 0.00011066510880972344, 0.00010718433789026363,
+            5.686748987083789e-05, 2.2552251124997604e-05, 0.03237518503545737, 0.018425181564003926, 0.013746648322559242, 0.017687711866139863
+        ])
+
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
         return np.abs(x_raw[:, id_e] - e_expected)
@@ -290,60 +298,65 @@ class WBFLoader(BaseLHCLoader):
         eta_expected = -0.5 * np.log((1 - costheta) / (1 + costheta))
         return np.abs(x_raw[:, id_eta] - eta_expected)
 
-    def distance_from_manifold(self, x):
+    def _closure_tests(self, x):
         """ Closure test. 34 constraints + 14-dimensional manifold = 48-dimensional data..."""
 
         # Undo scaling
         x_ = self._preprocess(x, inverse=True)
 
-        d = 0.0
+        # Begin closure tests
+        closure_tests = []
 
         # pT vs px, py
-        d += self._pt_discrepancy(x_, 4, 1, 2)
-        d += self._pt_discrepancy(x_, 11, 8, 9)
-        d += self._pt_discrepancy(x_, 18, 15, 16)
-        d += self._pt_discrepancy(x_, 25, 22, 23)
-        d += self._pt_discrepancy(x_, 32, 29, 30)
-        d += self._pt_discrepancy(x_, 42, 39, 40)
+        closure_tests.append( self._pt_discrepancy(x_, 4, 1, 2) )
+        closure_tests.append( self._pt_discrepancy(x_, 11, 8, 9))
+        closure_tests.append( self._pt_discrepancy(x_, 18, 15, 16))
+        closure_tests.append( self._pt_discrepancy(x_, 25, 22, 23))
+        closure_tests.append( self._pt_discrepancy(x_, 32, 29, 30))
+        closure_tests.append( self._pt_discrepancy(x_, 42, 39, 40))
 
         # phi vs px, py
-        d += self._phi_discrepancy(x_, 6, 1, 2)
-        d += self._phi_discrepancy(x_, 13, 8, 9)
-        d += self._phi_discrepancy(x_, 20, 15, 16)
-        d += self._phi_discrepancy(x_, 27, 22, 23)
-        d += self._phi_discrepancy(x_, 35, 29, 30)
-        d += self._phi_discrepancy(x_, 45, 39, 40)
+        closure_tests.append( self._phi_discrepancy(x_, 6, 1, 2))
+        closure_tests.append( self._phi_discrepancy(x_, 13, 8, 9))
+        closure_tests.append( self._phi_discrepancy(x_, 20, 15, 16))
+        closure_tests.append( self._phi_discrepancy(x_, 27, 22, 23))
+        closure_tests.append( self._phi_discrepancy(x_, 35, 29, 30))
+        closure_tests.append( self._phi_discrepancy(x_, 45, 39, 40))
 
         # eta vs E, px, py, pz
-        d += self._eta_discrepancy(x_, 5, 0, 1, 2, 3)
-        d += self._eta_discrepancy(x_, 12, 7, 8, 9, 10)
-        d += self._eta_discrepancy(x_, 19, 14, 15, 16, 17)
-        d += self._eta_discrepancy(x_, 26, 21, 22, 23, 24)
-        d += self._eta_discrepancy(x_, 34, 28, 29, 30, 31)
-        d += self._eta_discrepancy(x_, 44, 38, 39, 40, 41)
+        closure_tests.append( self._eta_discrepancy(x_, 5, 0, 1, 2, 3))
+        closure_tests.append( self._eta_discrepancy(x_, 12, 7, 8, 9, 10))
+        closure_tests.append( self._eta_discrepancy(x_, 19, 14, 15, 16, 17))
+        closure_tests.append( self._eta_discrepancy(x_, 26, 21, 22, 23, 24))
+        closure_tests.append( self._eta_discrepancy(x_, 34, 28, 29, 30, 31))
+        closure_tests.append( self._eta_discrepancy(x_, 44, 38, 39, 40, 41))
 
         # E vs on-shell and m vs on-shell
-        d += self._on_shell_discrepancy(x_, 0, 1, 2, 3)
-        d += self._on_shell_discrepancy(x_, 7, 8, 9, 10)
-        d += self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=x_[:, 33])
-        d += self._on_shell_discrepancy(x_, 38, 39, 40, 41, m=x_[:, 43])
+        closure_tests.append( self._on_shell_discrepancy(x_, 0, 1, 2, 3))
+        closure_tests.append( self._on_shell_discrepancy(x_, 7, 8, 9, 10))
+        closure_tests.append( self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=x_[:, 33]))
+        closure_tests.append( self._on_shell_discrepancy(x_, 38, 39, 40, 41, m=x_[:, 43]))
 
         # sum(pT) vs energy-momentum conservation
-        # d += self._conservation_discrepancy(x_, [1, 8, 15, 22])
-        # d += self._conservation_discrepancy(x_, [2, 9, 16, 23])
+        # closure_tests.append( self._conservation_discrepancy(x_, [1, 8, 15, 22]))
+        # closure_tests.append( self._conservation_discrepancy(x_, [2, 9, 16, 23]))
 
         # reconstructed particles vs daughters
         for add in [0, 1, 2, 3]:
-            d += self._daughter_discrepancy(x_, 28 + add, 0 + add, 7 + add)
-            d += self._daughter_discrepancy(x_, 38 + add, 14 + add, 21 + add)
+            closure_tests.append( self._daughter_discrepancy(x_, 28 + add, 0 + add, 7 + add))
+            closure_tests.append( self._daughter_discrepancy(x_, 38 + add, 14 + add, 21 + add))
 
         # delta something discrepancies
-        d += self._delta_discrepancy(x_, 36, 5, 12)
-        d += self._delta_discrepancy(x_, 37, 6, 13)
-        d += self._delta_discrepancy(x_, 46, 19, 26)
-        d += self._delta_discrepancy(x_, 47, 20, 27)
+        closure_tests.append( self._delta_discrepancy(x_, 36, 5, 12))
+        closure_tests.append( self._delta_discrepancy(x_, 37, 6, 13))
+        closure_tests.append( self._delta_discrepancy(x_, 46, 19, 26))
+        closure_tests.append( self._delta_discrepancy(x_, 47, 20, 27))
 
-        return d
+        closure_tests = np.asarray(closure_tests)
+        return closure_tests
+
+    def distance_from_manifold(self, x):
+        return self.CLOSURE_TEST_WEIGHTS.dot(self._closure_tests(x))
 
 
 class WBF2DLoader(BaseLHCLoader):
