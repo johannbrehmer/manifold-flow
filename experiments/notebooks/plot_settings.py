@@ -1,19 +1,20 @@
 import matplotlib
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
+from matplotlib import gridspec, cm
 
 import palettable
 
-#CMAP1 = palettable.cartocolors.sequential.Teal_7.mpl_colormap
-#CMAP2 = palettable.cartocolors.sequential.Teal_7.mpl_colormap
-#COLORS = palettable.cartocolors.sequential.Teal_4_r.mpl_colors
-
 TEXTWIDTH = 7.1014  # inches
 
-CMAP = palettable.scientific.sequential.Batlow_20.mpl_colormap
-CMAP_R = palettable.scientific.sequential.Batlow_20_r.mpl_colormap
+# CMAP = palettable.scientific.sequential.Batlow_20.mpl_colormap
+# CMAP = palettable.scientific.sequential.Tokyo_20.mpl_colormap
+# CMAP = palettable.scientific.sequential.LaJolla_20_r.mpl_colormap
+CMAP = cm.plasma
+CMAP_R = cm.plasma_r
 
-COLORS = palettable.scientific.sequential.Batlow_6.mpl_colors
+# COLORS = palettable.scientific.sequential.Batlow_6.mpl_colors
+# COLORS = palettable.scientific.sequential.Tokyo_5.mpl_colors
+COLORS = [CMAP(i/4.) for i in range(5)]
 
 COLOR_EF = COLORS[0]
 COLOR_PIE = COLORS[1]
@@ -35,7 +36,7 @@ def setup():
     # plt.rcParams.update(params)
 
 
-def figure(cbar=False, height=TEXTWIDTH*0.4, large_margin=0.18, mid_margin=0.14, small_margin=0.05, cbar_sep=0.03, cbar_width=0.04):
+def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.18, mid_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04):
     if cbar:
         width = height * (1. + cbar_sep + cbar_width + large_margin - small_margin)
         top = small_margin
@@ -64,7 +65,7 @@ def figure(cbar=False, height=TEXTWIDTH*0.4, large_margin=0.18, mid_margin=0.14,
         return fig, (ax, cax)
     else:
         width = height
-        left = large_margin
+        left = mid_margin
         right = small_margin
         top = small_margin
         bottom = mid_margin
@@ -83,25 +84,25 @@ def figure(cbar=False, height=TEXTWIDTH*0.4, large_margin=0.18, mid_margin=0.14,
         return fig, ax
 
 
-def grid(nx=4, ny=2, height=6., n_caxes=0, large_margin=0.02, small_margin=0.02, sep=0.02, cbar_width=0.03):
-    # Geometry (in multiples of height)
+def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02):
+    # Geometry
     left = large_margin
     right = small_margin
     top = small_margin
     bottom = large_margin
-    panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
 
-    # Absolute width
-    width = height*(left + nx*panel_size+ (nx-1)*sep + right)
+    panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
+    width = height*(left + nx*panel_size + (nx-1)*sep + right)
 
     # wspace and hspace are complicated beasts
-    avg_width_abs = (height*panel_size * nx * ny + n_caxes * cbar_width * height) / (nx * ny + n_caxes)
+    avg_width_abs = (height*panel_size * nx * ny) / (nx * ny + ny)
     avg_height_abs = height*panel_size
     wspace = sep * height / avg_width_abs
     hspace = sep * height / avg_height_abs
 
     # Set up figure
     fig = plt.figure(figsize=(width, height))
+    gs = gridspec.GridSpec(ny, nx, width_ratios=[1.]*nx, height_ratios=[1.] * ny)
     plt.subplots_adjust(
         left=left * height / width,
         right=1. - right * height / width,
@@ -110,39 +111,25 @@ def grid(nx=4, ny=2, height=6., n_caxes=0, large_margin=0.02, small_margin=0.02,
         wspace=wspace,
         hspace=hspace,
     )
-
-    # Colorbar axes in last panel
-    caxes = []
-    if n_caxes > 0:
-        ax = plt.subplot(ny, nx, nx*ny)
-        ax.axis("off")
-        pos = ax.get_position()
-        cax_total_width=pos.width / n_caxes
-        cbar_width_ = cbar_width * height / width
-        for i in range(n_caxes):
-            cax = fig.add_axes([pos.x0 + i * cax_total_width, pos.y0, cbar_width_, pos.height])
-            cax.yaxis.set_ticks_position('right')
-            caxes.append(cax)
-
-    return fig, caxes
+    return fig, gs
 
 
-def grid_width(nx=4, ny=2, width=TEXTWIDTH, n_caxes=0, large_margin=0.025, small_margin=0.025, sep=0.025, cbar_width=0.04):
+def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.03):
     left = large_margin
     right = small_margin
     top = small_margin
     bottom = large_margin
-    panel_size = (1. - top - bottom - (ny - 1) * sep) / ny
-    height = width / (left + nx * panel_size + (nx - 1) * sep + right)
-    return grid(nx, ny, height, n_caxes, large_margin, small_margin, sep, cbar_width)
+    panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
+    height = width / (left + nx*panel_size + (nx - 1)*sep + right)
+    return grid2(nx, ny, height, large_margin, small_margin, sep)
 
 
 def grid2(nx=4, ny=2, height=6., large_margin=0.14, small_margin=0.03, sep=0.03, cbar_width=0.06):
     # Geometry
-    left = large_margin
+    left = small_margin
     right = large_margin
     top = small_margin
-    bottom = large_margin
+    bottom = small_margin
 
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     width = height*(left + nx*panel_size + cbar_width + nx*sep + right)
@@ -168,10 +155,10 @@ def grid2(nx=4, ny=2, height=6., large_margin=0.14, small_margin=0.03, sep=0.03,
 
 
 def grid2_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.03, cbar_width=0.06):
-    left = large_margin
-    right = large_margin
+    left = small_margin
+    right = small_margin
     top = small_margin
-    bottom = large_margin
+    bottom = small_margin
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     height = width / (left + nx*panel_size + cbar_width + nx*sep + right)
     return grid2(nx, ny, height, large_margin, small_margin, sep, cbar_width)
@@ -209,3 +196,58 @@ def two_figures(height=TEXTWIDTH*0.4,  large_margin=0.18, small_margin=0.05, sep
     ax_right = plt.subplot(1,2,2)
 
     return fig, ax_left, ax_right
+
+
+
+# def grid(nx=4, ny=2, height=6., n_caxes=0, large_margin=0.02, small_margin=0.02, sep=0.02, cbar_width=0.03):
+#     # Geometry (in multiples of height)
+#     left = large_margin
+#     right = small_margin
+#     top = small_margin
+#     bottom = large_margin
+#     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
+#
+#     # Absolute width
+#     width = height*(left + nx*panel_size+ (nx-1)*sep + right)
+#
+#     # wspace and hspace are complicated beasts
+#     avg_width_abs = (height*panel_size * nx * ny + n_caxes * cbar_width * height) / (nx * ny + n_caxes)
+#     avg_height_abs = height*panel_size
+#     wspace = sep * height / avg_width_abs
+#     hspace = sep * height / avg_height_abs
+#
+#     # Set up figure
+#     fig = plt.figure(figsize=(width, height))
+#     plt.subplots_adjust(
+#         left=left * height / width,
+#         right=1. - right * height / width,
+#         bottom=bottom,
+#         top=1. - top,
+#         wspace=wspace,
+#         hspace=hspace,
+#     )
+#
+#     # Colorbar axes in last panel
+#     caxes = []
+#     if n_caxes > 0:
+#         ax = plt.subplot(ny, nx, nx*ny)
+#         ax.axis("off")
+#         pos = ax.get_position()
+#         cax_total_width=pos.width / n_caxes
+#         cbar_width_ = cbar_width * height / width
+#         for i in range(n_caxes):
+#             cax = fig.add_axes([pos.x0 + i * cax_total_width, pos.y0, cbar_width_, pos.height])
+#             cax.yaxis.set_ticks_position('right')
+#             caxes.append(cax)
+#
+#     return fig, caxes
+#
+#
+# def grid_width(nx=4, ny=2, width=TEXTWIDTH, n_caxes=0, large_margin=0.025, small_margin=0.025, sep=0.025, cbar_width=0.04):
+#     left = large_margin
+#     right = small_margin
+#     top = small_margin
+#     bottom = large_margin
+#     panel_size = (1. - top - bottom - (ny - 1) * sep) / ny
+#     height = width / (left + nx * panel_size + (nx - 1) * sep + right)
+#     return grid(nx, ny, height, n_caxes, large_margin, small_margin, sep, cbar_width)
