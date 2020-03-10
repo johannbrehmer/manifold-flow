@@ -1,6 +1,8 @@
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import gridspec, cm
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
 import palettable
 
@@ -41,7 +43,7 @@ def setup():
     matplotlib.rcParams.update({'savefig.dpi': 600})
 
 
-def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04):
+def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04, make3d=False):
     """ Single plot, with or without colorbar, size specified by height """
 
     if cbar:
@@ -56,7 +58,10 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
         cheight = 1. - top - bottom
 
         fig = plt.figure(figsize=(width, height))
-        ax = plt.gca()
+        if make3d:
+            ax = Axes3D(fig)
+        else:
+            ax = plt.gca()
         plt.subplots_adjust(
             left=left * height / width,
             right=1. - right * height / width,
@@ -78,7 +83,10 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
         bottom = large_margin
 
         fig = plt.figure(figsize=(width, height))
-        ax = plt.gca()
+        if make3d:
+            ax = Axes3D(fig)
+        else:
+            ax = plt.gca()
         plt.subplots_adjust(
             left=left,
             right=1. - right,
@@ -177,3 +185,12 @@ def grid2_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.0
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     height = width / (left + nx*panel_size + cbar_width + nx*sep + right)
     return grid2(nx, ny, height, large_margin, small_margin, sep, cbar_width)
+
+
+def add_transparancy(color, alpha):
+    color2 = np.copy(np.array(color))
+    if color2.shape[1] == 4:
+        color2[:,3] = alpha
+        return color2
+    elif color2.shape[1] == 3:
+        return np.hstack((color2, alpha*np.ones((color2.shape[0], 1))))
