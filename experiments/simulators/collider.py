@@ -259,15 +259,46 @@ class WBFLoader(BaseLHCLoader):
         )
         super().__init__(n_parameters=2, n_observables=48, n_final=4, n_additional_constraints=2, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
 
-        self.CLOSURE_TEST_WEIGHTS = np.array([
-            0.005733124397251814, 0.019373627498998545, 0.005601847357892751, 0.013246297554593486, 0.0051492718104518736, 0.005285928756022291, 0.5434573654744188,
-            0.5495540233428311, 0.548574528639762, 0.5499645858762766, 0.5443319900983565, 0.5477470269075005, 0.751120437331326, 0.6837450347638595, 0.479495732489328,
-            0.35411560084702814, 0.6944403914297372, 0.4581065620636643, 0.00338315127519218, 0.008990040230563823, 0.0029443731703010264, 0.0011509776322986742,
-            0.0027066953197164415, 0.0010181997312659812, 0.0037623941358973473, 0.003735274410662914, 0.0037745140586529515, 0.0037235471577507923, 0.0018995239678828314,
-            0.0007850227402417481, 1.1083823994444644, 0.6246407123110107, 0.47202092213106334, 0.5863775777004946
-        ])
+        self.CLOSURE_TEST_WEIGHTS = np.array(
+            [
+                0.005733124397251814,
+                0.019373627498998545,
+                0.005601847357892751,
+                0.013246297554593486,
+                0.0051492718104518736,
+                0.005285928756022291,
+                0.5434573654744188,
+                0.5495540233428311,
+                0.548574528639762,
+                0.5499645858762766,
+                0.5443319900983565,
+                0.5477470269075005,
+                0.751120437331326,
+                0.6837450347638595,
+                0.479495732489328,
+                0.35411560084702814,
+                0.6944403914297372,
+                0.4581065620636643,
+                0.00338315127519218,
+                0.008990040230563823,
+                0.0029443731703010264,
+                0.0011509776322986742,
+                0.0027066953197164415,
+                0.0010181997312659812,
+                0.0037623941358973473,
+                0.003735274410662914,
+                0.0037745140586529515,
+                0.0037235471577507923,
+                0.0018995239678828314,
+                0.0007850227402417481,
+                1.1083823994444644,
+                0.6246407123110107,
+                0.47202092213106334,
+                0.5863775777004946,
+            ]
+        )
 
-        self.CLOSURE_LABELS = ["pt"]*6 + ["phi"]*6 + ["eta"]*6 + ["on-shell"]*4 + ["decay"]*8 + ["delta"]*2
+        self.CLOSURE_LABELS = ["pt"] * 6 + ["phi"] * 6 + ["eta"] * 6 + ["on-shell"] * 4 + ["decay"] * 8 + ["delta"] * 2
 
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
@@ -310,34 +341,34 @@ class WBFLoader(BaseLHCLoader):
         closure_tests = []
 
         # pT vs px, py
-        closure_tests.append( self._pt_discrepancy(x_, 4, 1, 2) )
-        closure_tests.append( self._pt_discrepancy(x_, 11, 8, 9))
-        closure_tests.append( self._pt_discrepancy(x_, 18, 15, 16))
-        closure_tests.append( self._pt_discrepancy(x_, 25, 22, 23))
-        closure_tests.append( self._pt_discrepancy(x_, 32, 29, 30))
-        closure_tests.append( self._pt_discrepancy(x_, 42, 39, 40))
+        closure_tests.append(self._pt_discrepancy(x_, 4, 1, 2))
+        closure_tests.append(self._pt_discrepancy(x_, 11, 8, 9))
+        closure_tests.append(self._pt_discrepancy(x_, 18, 15, 16))
+        closure_tests.append(self._pt_discrepancy(x_, 25, 22, 23))
+        closure_tests.append(self._pt_discrepancy(x_, 32, 29, 30))
+        closure_tests.append(self._pt_discrepancy(x_, 42, 39, 40))
 
         # phi vs px, py
-        closure_tests.append( self._phi_discrepancy(x_, 6, 1, 2))
-        closure_tests.append( self._phi_discrepancy(x_, 13, 8, 9))
-        closure_tests.append( self._phi_discrepancy(x_, 20, 15, 16))
-        closure_tests.append( self._phi_discrepancy(x_, 27, 22, 23))
-        closure_tests.append( self._phi_discrepancy(x_, 35, 29, 30))
-        closure_tests.append( self._phi_discrepancy(x_, 45, 39, 40))
+        closure_tests.append(self._phi_discrepancy(x_, 6, 1, 2))
+        closure_tests.append(self._phi_discrepancy(x_, 13, 8, 9))
+        closure_tests.append(self._phi_discrepancy(x_, 20, 15, 16))
+        closure_tests.append(self._phi_discrepancy(x_, 27, 22, 23))
+        closure_tests.append(self._phi_discrepancy(x_, 35, 29, 30))
+        closure_tests.append(self._phi_discrepancy(x_, 45, 39, 40))
 
         # eta vs E, px, py, pz
-        closure_tests.append( self._eta_discrepancy(x_, 5, 0, 1, 2, 3))
-        closure_tests.append( self._eta_discrepancy(x_, 12, 7, 8, 9, 10))
-        closure_tests.append( self._eta_discrepancy(x_, 19, 14, 15, 16, 17))
-        closure_tests.append( self._eta_discrepancy(x_, 26, 21, 22, 23, 24))
-        closure_tests.append( self._eta_discrepancy(x_, 34, 28, 29, 30, 31))
-        closure_tests.append( self._eta_discrepancy(x_, 44, 38, 39, 40, 41))
+        closure_tests.append(self._eta_discrepancy(x_, 5, 0, 1, 2, 3))
+        closure_tests.append(self._eta_discrepancy(x_, 12, 7, 8, 9, 10))
+        closure_tests.append(self._eta_discrepancy(x_, 19, 14, 15, 16, 17))
+        closure_tests.append(self._eta_discrepancy(x_, 26, 21, 22, 23, 24))
+        closure_tests.append(self._eta_discrepancy(x_, 34, 28, 29, 30, 31))
+        closure_tests.append(self._eta_discrepancy(x_, 44, 38, 39, 40, 41))
 
         # E vs on-shell and m vs on-shell
-        closure_tests.append( self._on_shell_discrepancy(x_, 0, 1, 2, 3))
-        closure_tests.append( self._on_shell_discrepancy(x_, 7, 8, 9, 10))
-        closure_tests.append( self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=x_[:, 33]))
-        closure_tests.append( self._on_shell_discrepancy(x_, 38, 39, 40, 41, m=x_[:, 43]))
+        closure_tests.append(self._on_shell_discrepancy(x_, 0, 1, 2, 3))
+        closure_tests.append(self._on_shell_discrepancy(x_, 7, 8, 9, 10))
+        closure_tests.append(self._on_shell_discrepancy(x_, 28, 29, 30, 31, m=x_[:, 33]))
+        closure_tests.append(self._on_shell_discrepancy(x_, 38, 39, 40, 41, m=x_[:, 43]))
 
         # sum(pT) vs energy-momentum conservation
         # closure_tests.append( self._conservation_discrepancy(x_, [1, 8, 15, 22]))
@@ -345,14 +376,14 @@ class WBFLoader(BaseLHCLoader):
 
         # reconstructed particles vs daughters
         for add in [0, 1, 2, 3]:
-            closure_tests.append( self._daughter_discrepancy(x_, 28 + add, 0 + add, 7 + add))
-            closure_tests.append( self._daughter_discrepancy(x_, 38 + add, 14 + add, 21 + add))
+            closure_tests.append(self._daughter_discrepancy(x_, 28 + add, 0 + add, 7 + add))
+            closure_tests.append(self._daughter_discrepancy(x_, 38 + add, 14 + add, 21 + add))
 
         # delta something discrepancies
-        closure_tests.append( self._delta_discrepancy(x_, 36, 5, 12))
-        closure_tests.append( self._delta_discrepancy(x_, 37, 6, 13))
-        closure_tests.append( self._delta_discrepancy(x_, 46, 19, 26))
-        closure_tests.append( self._delta_discrepancy(x_, 47, 20, 27))
+        closure_tests.append(self._delta_discrepancy(x_, 36, 5, 12))
+        closure_tests.append(self._delta_discrepancy(x_, 37, 6, 13))
+        closure_tests.append(self._delta_discrepancy(x_, 46, 19, 26))
+        closure_tests.append(self._delta_discrepancy(x_, 47, 20, 27))
 
         closure_tests = np.asarray(closure_tests)
         return closure_tests
@@ -363,7 +394,7 @@ class WBFLoader(BaseLHCLoader):
         for closure, label in zip(np.mean(weighted_closure_tests, axis=1), self.CLOSURE_LABELS):
             logger.info("  %5.3f - %s", closure, label)
 
-        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0., 1.), axis=0)
+        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0.0, 1.0), axis=0)
         logger.info("Mean closure test result (after clipping and averaging): %s", np.mean(weighted_closure_tests))
         return weighted_closure_tests
 
