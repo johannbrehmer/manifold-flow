@@ -53,7 +53,7 @@ Manifold-learning flow with sep. encoder, alternating training schedule | EMLF-A
 
 See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [experiments/notebooks](experiments/notebooks). Note that the algorithms have different internal names from the acronyms in the paper:
 
-Algorithm | Acronym in paper | Arguments to `train.py`
+Algorithm | Acronym in paper | Arguments to `evaluate.py`
 --- | --- | ---
 Euclidean / standard flow | EF | `--algorithm flow`
 Manifold flow | MF | `--algorithm mf --specified`
@@ -61,7 +61,6 @@ Partially invertible encoder | PIE | `--algorithm pie`
 Manifold-learning flow | MLF-L, MLF-A | `--algorithm mf`
 Manifold-learning flow, Optimal Transport training | MLF-OT | `--algorithm gamf`
 Manifold-learning flow with sep. encoder | EMLF-L, EMLF-A | `--algorithm emf`
-
 
 
 ## Acknowledgements
