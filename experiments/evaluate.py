@@ -66,8 +66,7 @@ def parse_args():
     # Other settings
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--skipmodelmcmc", action="store_true")
-    parser.add_argument("--skiptruthmcmc", action="store_true")
+    parser.add_argument("--skipinference", action="store_true")
 
     return parser.parse_args()
 
@@ -220,6 +219,7 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
 
 
 if __name__ == "__main__":
+    # Parse args
     args = parse_args()
     logging.basicConfig(
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
@@ -227,6 +227,7 @@ if __name__ == "__main__":
     logger.info("Hi!")
     logger.info("Starting evaluate.py with arguments %s", args)
 
+    # Model name
     if args.truth:
         create_modelname(args)
         logger.info("Evaluating simulator truth")
@@ -237,7 +238,7 @@ if __name__ == "__main__":
     # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
     torch.multiprocessing.set_start_method("spawn", force=True)
 
-    # Data
+    # Data set
     simulator = load_simulator(args)
 
     # Load model
@@ -252,6 +253,10 @@ if __name__ == "__main__":
     if not args.truth:
         x_gen = _sample_from_model(args, model, simulator)
         _evaluate_model_samples(args, simulator, x_gen)
+
+    if args.skipinference:
+        logger.info("Skipping inference tasks as per request. Have a nice day!")
+        exit()
 
     # Evaluate test and ood samples
     if args.truth:
