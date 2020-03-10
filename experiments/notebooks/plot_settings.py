@@ -189,8 +189,16 @@ def grid2_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.0
 
 def add_transparancy(color, alpha):
     color2 = np.copy(np.array(color))
-    if color2.shape[1] == 4:
-        color2[:,3] = alpha
-        return color2
-    elif color2.shape[1] == 3:
-        return np.hstack((color2, alpha*np.ones((color2.shape[0], 1))))
+    if len(color2.shape) == 1:
+        if color2.shape[0] == 4:
+            color2[3] = alpha
+            return color2
+        elif color2.shape[0] == 3:
+            return np.hstack((color2, [alpha]))
+
+    else:
+        if color2.shape[1] == 4:
+            color2[:, 3] = alpha
+            return color2
+        elif color2.shape[1] == 3:
+            return np.hstack((color2, alpha * np.ones((color2.shape[0], 1))))
