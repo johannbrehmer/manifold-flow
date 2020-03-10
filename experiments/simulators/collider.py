@@ -267,6 +267,8 @@ class WBFLoader(BaseLHCLoader):
             0.0007850227402417481, 1.1083823994444644, 0.6246407123110107, 0.47202092213106334, 0.5863775777004946
         ])
 
+        self.CLOSURE_LABELS = ["pt"]*6 + ["phi"]*6 + ["eta"]*6 + ["on-shell"]*4 + ["decay"]*8 + ["delta"]*2
+
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
         return np.abs(x_raw[:, id_e] - e_expected)
@@ -358,8 +360,8 @@ class WBFLoader(BaseLHCLoader):
     def distance_from_manifold(self, x):
         weighted_closure_tests = self.CLOSURE_TEST_WEIGHTS[:, np.newaxis] * self._closure_tests(x)
         logger.info("Mean closure test results (before clipping and averaging):")
-        for closure in np.mean(weighted_closure_tests, axis=0):
-            logger.info("  %s", closure)
+        for closure, label in zip(np.mean(weighted_closure_tests, axis=1), self.CLOSURE_LABELS):
+            logger.info("  %5.3f - %s", closure, label)
 
         weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0., 1.), axis=1)
         logger.info("Mean closure test result (after clipping and averaging): %s", np.mean(weighted_closure_tests))
