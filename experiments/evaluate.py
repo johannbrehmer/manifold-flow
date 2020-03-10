@@ -225,7 +225,7 @@ if __name__ == "__main__":
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
     logger.info("Hi!")
-    logger.info("Starting evaluate.py with arguments %s", args)
+    logger.debug("Starting evaluate.py with arguments %s", args)
 
     # Model name
     if args.truth:

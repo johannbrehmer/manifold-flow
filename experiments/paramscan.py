@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     logger.info("Hi!")
     logger.info("Starting paramscan.py with arguments %s", args)
-    logger.info("Parameter scan study %s", args.paramscanstudyname)
+    logger.debug("Parameter scan study %s", args.paramscanstudyname)
 
     counter = -1
 
