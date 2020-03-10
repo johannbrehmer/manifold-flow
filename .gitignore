@@ -120,3 +120,4 @@ experiments/data/
 #!experiments/data/samples/power
 #experiments/data/samples/power/*
 #!experiments/data/samples/power/manifold.npz
+other/
