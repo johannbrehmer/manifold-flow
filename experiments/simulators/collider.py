@@ -363,7 +363,7 @@ class WBFLoader(BaseLHCLoader):
         for closure, label in zip(np.mean(weighted_closure_tests, axis=1), self.CLOSURE_LABELS):
             logger.info("  %5.3f - %s", closure, label)
 
-        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0., 1.), axis=1)
+        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0., 1.), axis=0)
         logger.info("Mean closure test result (after clipping and averaging): %s", np.mean(weighted_closure_tests))
         return weighted_closure_tests
 
