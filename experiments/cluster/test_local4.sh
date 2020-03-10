@@ -4,7 +4,7 @@ source activate ml
 basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $basedir/experiments
 
-i=0
+i=1
 
 # python -u evaluate.py --modelname march --dataset power --algorithm flow --splinebins 10 --splinerange 6.  -i $i --dir $basedir
 # python -u evaluate.py --modelname march --dataset power --algorithm pie --splinebins 10 --splinerange 6.  -i $i --dir $basedir
