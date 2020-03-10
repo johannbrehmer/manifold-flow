@@ -67,6 +67,7 @@ def parse_args():
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--skipinference", action="store_true")
+    parser.add_argument("--skipmcmc", action="store_true")
 
     return parser.parse_args()
 
@@ -279,6 +280,10 @@ if __name__ == "__main__":
             np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
         except:
             pass
+
+    if args.skipmcmc:
+        logger.info("Skipping MCMC as per request. Have a nice day!")
+        exit()
 
     # Truth MCMC
     if simulator.parameter_dim() is not None and args.truth:
