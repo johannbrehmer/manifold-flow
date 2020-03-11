@@ -6,10 +6,10 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=256GB
 #SBATCH --time=2-00:00:00
-##SBATCH --gres=gpu:1
+# #SBATCH --gres=gpu:1
 
-source /home/brehmer/miniconda3/etc/profile.d/conda.sh
 conda activate ml
+export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 
