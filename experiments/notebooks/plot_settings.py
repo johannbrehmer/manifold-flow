@@ -7,7 +7,7 @@ import numpy as np
 import palettable
 
 # General size settings
-TEXTWIDTH = 7.1014  # inches
+TEXTWIDTH = 9.  # inches
 
 FONTSIZE = 9.
 
