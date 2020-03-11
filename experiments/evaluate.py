@@ -62,6 +62,7 @@ def parse_args():
     parser.add_argument("--thin", type=int, default=1)
     parser.add_argument("--mcmcsamples", type=int, default=5000)
     parser.add_argument("--burnin", type=int, default=100)
+    parser.add_argument("--evalbatchsize", type=int, default=100)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
@@ -259,23 +260,23 @@ if __name__ == "__main__":
     # Evaluate test and ood samples
     if args.truth:
         try:
-            log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None)
+            log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
 
-            log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None)
+            log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
     else:
-        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model)
+        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize)
         np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
         np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
         if parameter_grid is not None:
             np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
 
         try:
-            log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True)
+            log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
             np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
         except:
