@@ -13,6 +13,7 @@ dependencies:
   - scipy>=1.2.0
   - torchvision>=0.4.0
   - palettable
+  - requests
   - pip:
     - black
     - geomloss

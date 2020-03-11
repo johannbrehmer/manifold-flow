@@ -8,7 +8,7 @@
 #SBATCH --time=2-00:00:00
 # #SBATCH --gres=gpu:1
 
-source activate ml
+conda activate ml
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 

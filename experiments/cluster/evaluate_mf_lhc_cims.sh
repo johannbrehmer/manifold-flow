@@ -9,7 +9,7 @@
 ##SBATCH --gres=gpu:1
 
 module load cuda/10.1.105
-source activate ml
+conda activate ml
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 
