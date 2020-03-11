@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=e-emf-l
-#SBATCH --output=log_evaluate_mf_lhc_%a.log
+#SBATCH --output=log_evaluate_emf_lhc_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
