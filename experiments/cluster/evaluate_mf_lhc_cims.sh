@@ -4,7 +4,7 @@
 #SBATCH --output=log_evaluate_mf_lhc_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32GB
+#SBATCH --mem=256GB
 #SBATCH --time=2-00:00:00
 ##SBATCH --gres=gpu:1
 
