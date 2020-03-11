@@ -8,6 +8,7 @@
 #SBATCH --time=2-00:00:00
 # #SBATCH --gres=gpu:1
 
+source /home/brehmer/miniconda3/etc/profile.d/conda.sh
 conda activate ml
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
