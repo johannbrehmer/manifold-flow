@@ -64,6 +64,8 @@ def load_training_dataset(simulator, args):
 def load_test_samples(simulator, args, ood=False, paramscan=False):
     try:
         x, _ = simulator.load_dataset(train=False, numpy=True, dataset_dir=create_filename("dataset", None, args))
+
+        # TODO: implement OOD
         return x
 
     except NotImplementedError:

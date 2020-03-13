@@ -20,7 +20,7 @@ task=$((task % 2))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
 case ${task} in
-0) python -u evaluate.py --modelname march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --evalbatchsize 50 --dir $dir ;;
-1) python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --evalbatchsize 50 --dir $dir ;;
+0) python -u evaluate.py --modelname march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --evalbatchsize 50 --skipood --dir $dir ;;
+1) python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --evalbatchsize 50 --skipood --dir $dir ;;
 *) echo "Nothing to do for job ${task}" ;;
 esac

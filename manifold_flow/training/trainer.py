@@ -120,7 +120,7 @@ class BaseTrainer(object):
                         tensor[torch.isnan(tensor)] = replace
                         return
 
-                logger.warning("%s contains %s NaNs, aborting training! Data:\n%s", label, n_nans, tensor)
+                logger.warning("%s contains %s NaNs, aborting training!", label, n_nans)
                 raise NanException
 
     @staticmethod

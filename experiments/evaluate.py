@@ -67,6 +67,9 @@ def parse_args():
     # Other settings
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
+
+    parser.add_argument("--skiplikelihood", action="store_true")
+    parser.add_argument("--skipood", action="store_true")
     parser.add_argument("--skipinference", action="store_true")
     parser.add_argument("--skipmcmc", action="store_true")
 
@@ -254,17 +257,23 @@ if __name__ == "__main__":
         _evaluate_model_samples(args, simulator, x_gen)
 
     if args.skipinference:
-        logger.info("Skipping inference tasks as per request. Have a nice day!")
+        logger.info("Skipping all inference tasks as per request. Have a nice day!")
         exit()
 
     # Evaluate test and ood samples
-    if args.truth:
+    if args.skiplikelihood:
+        logger.info("Skipping likelihood evaluation on test and OOD samples as per request")
+
+    elif args.truth:
         try:
             log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
 
-            log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
-            np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
+            if args.skipood:
+                logger.info("Skipping OOD evaluation")
+            else:
+                log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
+                np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
@@ -275,19 +284,21 @@ if __name__ == "__main__":
         if parameter_grid is not None:
             np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
 
-        try:
-            log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
-            np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
-            np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
-        except:
-            pass
+        if args.skipood:
+            logger.info("Skipping OOD evaluation")
+        else:
+            try:
+                log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
+                np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
+                np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
+            except:
+                pass
 
     if args.skipmcmc:
-        logger.info("Skipping MCMC as per request. Have a nice day!")
-        exit()
+        logger.info("Skipping MCMC as per request")
 
     # Truth MCMC
-    if simulator.parameter_dim() is not None and args.truth:
+    elif simulator.parameter_dim() is not None and args.truth:
         try:
             true_posterior_samples = _mcmc(
                 simulator,
@@ -304,7 +315,7 @@ if __name__ == "__main__":
             logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
 
     # Model-based MCMC
-    if simulator.parameter_dim() is not None and not args.truth:
+    elif simulator.parameter_dim() is not None and not args.truth:
         model_posterior_samples = _mcmc(
             simulator,
             model,

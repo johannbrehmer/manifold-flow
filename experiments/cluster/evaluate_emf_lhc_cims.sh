@@ -14,4 +14,4 @@ export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 
 cd $dir/experiments
-python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm emf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${SLURM_ARRAY_TASK_ID} --evalbatchsize 50 --dir $dir
+python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm emf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${SLURM_ARRAY_TASK_ID} --skipood --dir $dir
