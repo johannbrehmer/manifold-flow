@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-gamf-lhc
-#SBATCH --output=log_evaluate_gamf_lhc_%a.log
+#SBATCH --job-name=e-gamf2-lhc
+#SBATCH --output=log_evaluate_gamf2_lhc_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=64GB
@@ -20,7 +20,7 @@ task=$((task % 2))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
 
 case ${task} in
-0) python -u evaluate.py --modelname march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --skipood --dir $dir ;;
-1) python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --skipood --dir $dir ;;
+0) python -u evaluate.py --modelname march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --skiplikelihood --dir $dir ;;
+1) python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${run} --skiplikelihood --dir $dir ;;
 *) echo "Nothing to do for job ${task}" ;;
 esac
