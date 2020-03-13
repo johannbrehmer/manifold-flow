@@ -187,7 +187,7 @@ def grid2_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.0
     return grid2(nx, ny, height, large_margin, small_margin, sep, cbar_width)
 
 
-def add_transparancy(color, alpha):
+def add_transparency(color, alpha):
     color2 = np.copy(np.array(color))
     if len(color2.shape) == 1:
         if color2.shape[0] == 4:
