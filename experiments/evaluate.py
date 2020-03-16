@@ -63,11 +63,13 @@ def parse_args():
     parser.add_argument("--mcmcsamples", type=int, default=5000)
     parser.add_argument("--burnin", type=int, default=100)
     parser.add_argument("--evalbatchsize", type=int, default=100)
+    parser.add_argument("--chain", type=int, default=0)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
 
+    parser.add_argument("--skipgeneration", action="store_true")
     parser.add_argument("--skiplikelihood", action="store_true")
     parser.add_argument("--skipood", action="store_true")
     parser.add_argument("--skipinference", action="store_true")
@@ -252,7 +254,9 @@ if __name__ == "__main__":
         model = None
 
     # Evaluate generative performance
-    if not args.truth:
+    if args.skipgeneration:
+        logger.info("Skipping generative evaluation as per request.")
+    elif not args.truth:
         x_gen = _sample_from_model(args, model, simulator)
         _evaluate_model_samples(args, simulator, x_gen)
 
@@ -309,7 +313,7 @@ if __name__ == "__main__":
                 step=args.mcmcstep,
                 burnin=args.burnin,
             )
-            np.save(create_filename("results", "posterior_samples", args), true_posterior_samples)
+            np.save(create_filename("mcmcresults", "posterior_samples", args), true_posterior_samples)
 
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
@@ -328,7 +332,7 @@ if __name__ == "__main__":
         )
         np.save(create_filename("results", "posterior_samples", args), model_posterior_samples)
 
-        # MMD calculation
+        # MMD calculation (only accurate if there is only one chain)
         args_ = copy.deepcopy(args)
         args_.truth = True
         args_.modelname = None

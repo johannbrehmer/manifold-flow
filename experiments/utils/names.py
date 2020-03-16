@@ -24,6 +24,9 @@ def create_filename(type, label, args):
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)
     elif type == "results":
         filename = "{}/experiments/data/results/{}_{}.npy".format(args.dir, args.modelname, label)
+    elif type == "mcmcresults":
+        chain_name = "_chain{}".format(args.chain) if args.chain > 0 else ""
+        filename = "{}/experiments/data/results/{}_{}{}.npy".format(args.dir, args.modelname, label, chain_name)
     elif type == "timing":
         filename = "{}/experiments/data/timing/{}_{}_{}_{}_{}_{}{}.npy".format(
             args.dir,
