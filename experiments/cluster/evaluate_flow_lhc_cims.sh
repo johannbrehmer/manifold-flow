@@ -13,5 +13,8 @@ export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 
+run=$((SLURM_ARRAY_TASK_ID / 5))
+chain=$((SLURM_ARRAY_TASK_ID % 5))
+
 cd $dir/experiments
-python -u evaluate.py --modelname march --dataset lhc --algorithm flow --modellatentdim 14 --splinebins 10 --observedsamples 100 -i ${SLURM_ARRAY_TASK_ID} --evalbatchsize 50 --dir $dir
+python -u evaluate.py --modelname march --dataset lhc --algorithm flow --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipgeneration --skiplikelihood --burnin 50 --mcmcsamples 400 --chain $chain -i $run  --dir $dir
