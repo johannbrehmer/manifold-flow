@@ -330,7 +330,7 @@ if __name__ == "__main__":
             step=args.mcmcstep,
             burnin=args.burnin,
         )
-        np.save(create_filename("results", "posterior_samples", args), model_posterior_samples)
+        np.save(create_filename("mcmcresults", "posterior_samples", args), model_posterior_samples)
 
         # MMD calculation (only accurate if there is only one chain)
         args_ = copy.deepcopy(args)
@@ -338,7 +338,7 @@ if __name__ == "__main__":
         args_.modelname = None
         create_modelname(args_)
         try:
-            true_posterior_samples = np.load(create_filename("results", "posterior_samples", args_))
+            true_posterior_samples = np.load(create_filename("mcmcresults", "posterior_samples", args_))
 
             mmd = sq_maximum_mean_discrepancy(model_posterior_samples, true_posterior_samples, scale="ys")
             np.save(create_filename("results", "mmd", args), mmd)
