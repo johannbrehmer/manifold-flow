@@ -13,4 +13,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname march --dataset lhc2d --algorithm flow --modellatentdim 2 -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py --modelname april --dataset lhc2d --algorithm flow --splinebins 10 --modellatentdim 2 -i ${SLURM_ARRAY_TASK_ID}

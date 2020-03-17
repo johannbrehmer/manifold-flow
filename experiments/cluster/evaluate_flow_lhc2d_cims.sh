@@ -17,4 +17,4 @@ run=$((SLURM_ARRAY_TASK_ID / 5))
 chain=$((SLURM_ARRAY_TASK_ID % 5))
 
 cd $dir/experiments
-python -u evaluate.py --modelname march --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 100 -i $run --skiplikelihood --burnin 50 --mcmcsamples 400 --chain $chain  --dir $dir
+python -u evaluate.py --modelname april --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 400 --chain $chain  --dir $dir
