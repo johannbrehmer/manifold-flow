@@ -405,6 +405,103 @@ class Trainer(BaseTrainer):
 
         return loss_train, loss_val, loss_contributions_train, loss_contributions_val
 
+    def partial_epoch(
+        self,
+        n_batches_train,
+        n_batches_val,
+        i_epoch,
+        train_loader,
+        val_loader,
+        optimizer,
+        loss_functions,
+        loss_weights,
+        clip_gradient=1.0,
+        i_batch_start_train=0,
+        i_batch_start_val=0,
+        forward_kwargs=None,
+        custom_kwargs=None,
+        compute_loss_variance=False,
+    ):
+        if compute_loss_variance:
+            raise NotImplementedError
+
+        n_losses = len(loss_weights)
+
+        self.model.train()
+        loss_contributions_train = np.zeros(n_losses)
+        loss_train = [] if compute_loss_variance else 0.0
+
+        i_batch = i_batch_start_train
+
+        try:
+            while i_batch < i_batch_start_train + n_batches_train:
+                batch_data = next(train_loader)
+
+                if i_batch == 0 and i_epoch == 0:
+                    self.first_batch(batch_data)
+                batch_loss, batch_loss_contributions = self.batch_train(
+                    batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                )
+                if compute_loss_variance:
+                    loss_train.append(batch_loss)
+                else:
+                    loss_train += batch_loss
+                for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
+                    loss_contributions_train[i] += batch_loss_contribution
+
+                self.report_batch(i_epoch, i_batch, True, batch_data)
+
+            i_batch += 1
+
+        except StopIteration:
+            pass
+
+        loss_contributions_train /= len(train_loader)
+        if compute_loss_variance:
+            loss_train = np.array([np.mean(loss_train), np.std(loss_train)])
+        else:
+            loss_train /= len(train_loader)
+
+        if val_loader is not None:
+            self.model.eval()
+            loss_contributions_val = np.zeros(n_losses)
+            loss_val = [] if compute_loss_variance else 0.0
+
+            i_batch = i_batch_start_val
+
+            try:
+                while i_batch < i_batch_start_val + n_batches_val:
+                    batch_data = next(val_loader)
+
+                    batch_loss, batch_loss_contributions = self.batch_val(
+                        batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                    )
+                    if compute_loss_variance:
+                        loss_val.append(batch_loss)
+                    else:
+                        loss_val += batch_loss
+                    for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
+                        loss_contributions_val[i] += batch_loss_contribution
+
+                    self.report_batch(i_epoch, i_batch, False, batch_data)
+
+                i_batch += 1
+
+            except StopIteration:
+                pass
+
+            loss_contributions_val /= len(val_loader)
+            if compute_loss_variance:
+                loss_val = np.array([np.mean(loss_val), np.std(loss_val)])
+            else:
+                loss_val /= len(val_loader)
+
+        else:
+            loss_contributions_val = None
+            loss_val = None
+
+        return loss_train, loss_val, loss_contributions_train, loss_contributions_val
+
     def first_batch(self, batch_data):
         pass
 
@@ -470,6 +567,7 @@ class AlternatingTrainer(BaseTrainer):
         loss_weights=None,
         loss_labels=None,
         epochs=50,
+        subsets=1,
         batch_sizes=100,
         optimizer=optim.Adam,
         optimizer_kwargs=None,
@@ -574,31 +672,50 @@ class AlternatingTrainer(BaseTrainer):
             loss_contributions_train = np.zeros(n_losses)
             loss_contributions_val = np.zeros(n_losses)
 
-            # Loop over trainers
             try:
-                for i_tr_unsrt, i_trainer in enumerate(trainer_order):
-                    logger.debug("Trainer %s / %s", i_tr_unsrt + 1, len(self.trainers))
+                batch_counters_train = [0] * len(trainer_order)
+                batch_counters_val = [0] * len(trainer_order)
 
-                    trainer = self.trainers[i_trainer]
-                    opt = opts[i_trainer]
-                    trainer_kwargs_ = trainer_kwargs[i_trainer]
-                    train_loader = train_loaders[i_trainer]
-                    val_loader = val_loaders[i_trainer]
-                    loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
+                # Loop over subsets of data
+                for i_subset in range(subsets):
 
-                    loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.epoch(
-                        i_epoch,
-                        train_loader,
-                        val_loader,
-                        opt,
-                        [loss_functions[i] for i in loss_filter],
-                        [loss_weights[i] for i in loss_filter],
-                        **trainer_kwargs_
-                    )
-                    loss_train += loss_train_trainer
-                    loss_val += loss_val_trainer
-                    loss_contributions_train[loss_filter] = loss_contributions_train_trainer
-                    loss_contributions_val[loss_filter] = loss_contributions_val_trainer
+                    # Loop over phases / trainers
+                    for i_tr_unsrt, i_trainer in enumerate(trainer_order):
+                        trainer = self.trainers[i_trainer]
+                        opt = opts[i_trainer]
+                        trainer_kwargs_ = trainer_kwargs[i_trainer]
+                        train_loader = train_loaders[i_trainer]
+                        val_loader = val_loaders[i_trainer]
+                        loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
+                        batch_counter_train = batch_counters_train[i_trainer]
+                        batch_counter_val = batch_counters_val[i_trainer]
+
+                        # Number of batches for this subset
+                        n_batches_train = len(train_loader) - batch_counter_train if i_subset == subsets - 1 else len(train_loader) // subsets
+                        n_batches_val = len(val_loader) - batch_counter_val if i_subset == subsets - 1 else len(val_loader) // subsets
+
+                        logger.debug("Trainer %s / %s: %s batches", i_tr_unsrt + 1, len(self.trainers), n_batches_train, n_batches_val)
+
+                        # Train
+                        loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.partial_epoch(
+                            i_epoch,
+                            n_batches_train,
+                            n_batches_val,
+                            train_loader,
+                            val_loader,
+                            opt,
+                            [loss_functions[i] for i in loss_filter],
+                            [loss_weights[i] for i in loss_filter],
+                            i_batch_start_train=batch_counter_train,
+                            i_batch_start_val=batch_counter_val,
+                            **trainer_kwargs_
+                        )
+
+                        # Keep track of losses
+                        loss_train += loss_train_trainer
+                        loss_val += loss_val_trainer
+                        loss_contributions_train[loss_filter] += loss_contributions_train_trainer
+                        loss_contributions_val[loss_filter] += loss_contributions_val_trainer
 
                 # Wrap up epoch
                 losses_train.append(loss_train)
@@ -608,6 +725,7 @@ class AlternatingTrainer(BaseTrainer):
                 logger.info("Ending training during epoch %s because NaNs appeared", i_epoch + 1)
                 break
 
+            # Wrap up epoch
             if early_stopping:
                 try:
                     best_loss, best_model, best_epoch = self.check_early_stopping(best_loss, best_model, best_epoch, loss_val, i_epoch, early_stopping_patience)
