@@ -1,5 +1,7 @@
 import numpy as np
 from torch import optim
+from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 
 from .trainer import BaseTrainer, logger, NanException, EarlyStoppingException
 
@@ -219,3 +221,51 @@ class AlternatingTrainer(BaseTrainer):
         logger.debug("Training finished")
 
         return np.array(losses_train), np.array(losses_val)
+
+    @staticmethod
+    def make_dataloaders(dataset, validation_split, batch_sizes, subsets):
+        if isinstance(batch_sizes, int):
+            batch_sizes = [batch_sizes]
+
+        all_train_loaders, all_val_loaders = [], []
+
+        for batch_size in batch_sizes:
+
+            # Prepare split
+            n_samples = len(dataset)
+            indices = list(range(n_samples))
+            if validation_split is not None and 0.0 < validation_split < 1.0:
+                split = int(np.floor(validation_split * n_samples))
+            else:
+                split = 0
+            np.random.shuffle(indices)
+            train_idx, valid_idx = indices[split:], indices[:split]
+
+            train_loaders, val_loaders = [], []
+
+            # Make train loaders
+            last_split = 0
+            for subset in range(subsets):
+                this_split = n_samples if subset == subsets - 1 else last_split + int(np.round(len(train_idx) / subsets))
+                idx = train_idx[last_split:this_split]
+                last_split = this_split
+
+                train_loaders.append(DataLoader(dataset, sampler=SubsetRandomSampler(idx), batch_size=batch_size, num_workers=1))
+
+            all_train_loaders.append(train_loaders)
+
+            # Make val loaders
+            last_split = 0
+            for subset in range(subsets):
+                if split > 0:
+                    this_split = n_samples if subset == subsets - 1 else last_split + int(np.round(len(valid_idx) / subsets))
+                    idx = valid_idx[last_split:this_split]
+                    last_split = this_split
+
+                    val_loaders.append(DataLoader(dataset, sampler=SubsetRandomSampler(idx), batch_size=batch_size, num_workers=1))
+                else:
+                    val_loaders.append(None)
+
+            all_val_loaders.append(val_loaders)
+
+        return all_train_loaders, all_val_loaders
