@@ -247,6 +247,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         parameters=[model.parameters(), model.inner_transform.parameters()],
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
+        subsets=args.subsets,
         **meta_kwargs,
     )
     learning_curves = np.vstack(learning_curves_).T
