@@ -56,6 +56,7 @@ def parse_args():
     # Training
     parser.add_argument("--load", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--subsets", type=int, default=1)
     parser.add_argument("--batchsize", type=int, default=100)
     parser.add_argument("--genbatchsize", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=3.0e-4)
@@ -187,6 +188,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         loss_labels=["MSE", "NLL", "MSE_check"],
         loss_weights=[args.msefactor, args.nllfactor, 0.0],
         epochs=args.epochs,
+        subsets=args.subsets,
         batch_sizes=[args.batchsize, args.batchsize],
         parameters=[model.outer_transform.parameters(), model.inner_transform.parameters()],
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
