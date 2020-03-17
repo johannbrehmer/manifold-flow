@@ -190,7 +190,7 @@ class Trainer(BaseTrainer):
         loss_labels=None,
         epochs=50,
         batch_size=100,
-        optimizer=optim.Adam,
+        optimizer=optim.AdamW,
         optimizer_kwargs=None,
         initial_lr=1.0e-3,
         scheduler=optim.lr_scheduler.CosineAnnealingLR,
