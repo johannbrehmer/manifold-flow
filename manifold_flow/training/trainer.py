@@ -124,22 +124,16 @@ class BaseTrainer(object):
                 raise NanException
 
     @staticmethod
-    def make_dataloader(dataset, validation_split, batch_sizes):
-        if isinstance(batch_sizes, int):
-            batch_sizes = [batch_sizes]
-
+    def make_dataloader(dataset, validation_split, batch_size, n_workers=4):
         if validation_split is None or validation_split <= 0.0:
-            train_loaders = [
-                DataLoader(
-                    dataset,
-                    batch_size=batch_size,
-                    shuffle=True,
-                    # pin_memory=self.run_on_gpu,
-                    num_workers=max(1, 4 // len(batch_sizes)),
-                )
-                for batch_size in batch_sizes
-            ]
-            val_loaders = [None for batch_size in batch_sizes]
+            train_loader = DataLoader(
+                dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                # pin_memory=self.run_on_gpu,
+                num_workers=n_workers,
+            )
+            val_loader = None
 
         else:
             assert 0.0 < validation_split < 1.0, "Wrong validation split: {}".format(validation_split)
@@ -153,30 +147,70 @@ class BaseTrainer(object):
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
 
-            train_loaders = [
-                DataLoader(
-                    dataset,
-                    sampler=train_sampler,
-                    batch_size=batch_size,
-                    # pin_memory=self.run_on_gpu,
-                    num_workers=max(1, 4 // len(batch_sizes)),
-                )
-                for batch_size in batch_sizes
-            ]
-            val_loaders = [
-                DataLoader(
-                    dataset,
-                    sampler=val_sampler,
-                    batch_size=batch_size,
-                    # pin_memory=self.run_on_gpu,
-                    num_workers=max(1, 4 // len(batch_sizes)),
-                )
-                for batch_size in batch_sizes
-            ]
+            train_loader = DataLoader(
+                dataset,
+                sampler=train_sampler,
+                batch_size=batch_size,
+                # pin_memory=self.run_on_gpu,
+                num_workers=n_workers,
+            )
+            val_loader = DataLoader(
+                dataset,
+                sampler=val_sampler,
+                batch_size=batch_size,
+                # pin_memory=self.run_on_gpu,
+                num_workers=n_workers,
+            )
 
-        if len(batch_sizes) == 1:
-            return train_loaders[0], val_loaders[0]
-        return train_loaders, val_loaders
+        return train_loader, val_loader
+
+    @staticmethod
+    def make_dataloaders(dataset, validation_split, batch_sizes, subsets):
+        if isinstance(batch_sizes, int):
+            batch_sizes = [batch_sizes]
+
+        all_train_loaders, all_val_loaders = [], []
+
+        for batch_size in batch_sizes:
+
+            # Prepare split
+            n_samples = len(dataset)
+            indices = list(range(n_samples))
+            if validation_split is not None and 0.0 < validation_split < 1.0:
+                split = int(np.floor(validation_split * n_samples))
+            else:
+                split = 0
+            np.random.shuffle(indices)
+            train_idx, valid_idx = indices[split:], indices[:split]
+
+            train_loaders, val_loaders = [], []
+
+            # Make train loaders
+            last_split = 0
+            for subset in range(subsets):
+                this_split = n_samples if subset == subsets - 1 else last_split + int(np.round(len(train_idx) / subsets))
+                idx = train_idx[last_split:this_split]
+                last_split = this_split
+
+                train_loaders.append(DataLoader(dataset, sampler=SubsetRandomSampler(idx), batch_size=batch_size, num_workers=1))
+
+            all_train_loaders.append(train_loaders)
+
+            # Make val loaders
+            last_split = 0
+            for subset in range(subsets):
+                if split > 0:
+                    this_split = n_samples if subset == subsets - 1 else last_split + int(np.round(len(valid_idx) / subsets))
+                    idx = valid_idx[last_split:this_split]
+                    last_split = this_split
+
+                    val_loaders.append(DataLoader(dataset, sampler=SubsetRandomSampler(idx), batch_size=batch_size, num_workers=1))
+                else:
+                    val_loaders.append(None)
+
+            all_val_loaders.append(val_loaders)
+
+        return all_train_loaders, all_val_loaders
 
     @staticmethod
     def sum_losses(contributions, weights):
@@ -407,13 +441,9 @@ class Trainer(BaseTrainer):
 
     def partial_epoch(
         self,
-        n_batches_train,
-        n_batches_val,
         i_epoch,
         train_loader,
         val_loader,
-        train_iter,
-        val_iter,
         optimizer,
         loss_functions,
         loss_weights,
@@ -435,28 +465,22 @@ class Trainer(BaseTrainer):
 
         i_batch = i_batch_start_train
 
-        try:
-            while i_batch < i_batch_start_train + n_batches_train:
-                batch_data = next(train_iter)
+        for batch_data in train_loader:
+            if i_batch == 0 and i_epoch == 0:
+                self.first_batch(batch_data)
+            batch_loss, batch_loss_contributions = self.batch_train(
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+            )
+            if compute_loss_variance:
+                loss_train.append(batch_loss)
+            else:
+                loss_train += batch_loss
+            for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
+                loss_contributions_train[i] += batch_loss_contribution
 
-                if i_batch == 0 and i_epoch == 0:
-                    self.first_batch(batch_data)
-                batch_loss, batch_loss_contributions = self.batch_train(
-                    batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                )
-                if compute_loss_variance:
-                    loss_train.append(batch_loss)
-                else:
-                    loss_train += batch_loss
-                for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
-                    loss_contributions_train[i] += batch_loss_contribution
+            self.report_batch(i_epoch, i_batch, True, batch_data)
 
-                self.report_batch(i_epoch, i_batch, True, batch_data)
-
-            i_batch += 1
-
-        except StopIteration:
-            pass
+        i_batch += 1
 
         loss_contributions_train /= len(train_loader)
         if compute_loss_variance:
@@ -471,26 +495,20 @@ class Trainer(BaseTrainer):
 
             i_batch = i_batch_start_val
 
-            try:
-                while i_batch < i_batch_start_val + n_batches_val:
-                    batch_data = next(val_iter)
+            for batch_data in val_loader:
+                batch_loss, batch_loss_contributions = self.batch_val(
+                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                )
+                if compute_loss_variance:
+                    loss_val.append(batch_loss)
+                else:
+                    loss_val += batch_loss
+                for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
+                    loss_contributions_val[i] += batch_loss_contribution
 
-                    batch_loss, batch_loss_contributions = self.batch_val(
-                        batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                    )
-                    if compute_loss_variance:
-                        loss_val.append(batch_loss)
-                    else:
-                        loss_val += batch_loss
-                    for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
-                        loss_contributions_val[i] += batch_loss_contribution
+                self.report_batch(i_epoch, i_batch, False, batch_data)
 
-                    self.report_batch(i_epoch, i_batch, False, batch_data)
-
-                i_batch += 1
-
-            except StopIteration:
-                pass
+            i_batch += 1
 
             loss_contributions_val /= len(val_loader)
             if compute_loss_variance:
@@ -599,10 +617,7 @@ class AlternatingTrainer(BaseTrainer):
             batch_sizes = [batch_sizes for _ in self.trainers]
 
         logger.debug("Initialising training data")
-        train_loaders, val_loaders = self.make_dataloader(dataset, validation_split, batch_sizes)
-        if len(batch_sizes) == 1:
-            train_loaders = [train_loaders]
-            val_loaders = [val_loaders]
+        train_loaders, val_loaders = self.make_dataloaders(dataset, validation_split, batch_sizes, subsets)
 
         logger.debug("Setting up optimizer")
         optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
@@ -677,10 +692,6 @@ class AlternatingTrainer(BaseTrainer):
             batch_counters_train = [0] * len(trainer_order)
             batch_counters_val = [0] * len(trainer_order)
 
-            # Initialize iterators
-            train_iters = [iter(train_loader) for train_loader in train_loaders]
-            val_iters = None if val_loaders is None else [iter(val_loader) for val_loader in val_loaders]
-
             try:
 
                 # Loop over subsets of data
@@ -692,29 +703,26 @@ class AlternatingTrainer(BaseTrainer):
                         trainer = self.trainers[i_trainer]
                         opt = opts[i_trainer]
                         trainer_kwargs_ = trainer_kwargs[i_trainer]
-                        train_loader = train_loaders[i_trainer]
-                        val_loader = val_loaders[i_trainer]
-                        train_iter = train_iters[i_trainer]
-                        val_iter = val_iters[i_trainer]
+                        train_loader = train_loaders[i_trainer][i_subset]
+                        val_loader = val_loaders[i_trainer][i_subset]
                         loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
                         batch_counter_train = batch_counters_train[i_trainer]
                         batch_counter_val = batch_counters_val[i_trainer]
 
                         # Number of batches for this subset
-                        n_batches_train = len(train_loader) - batch_counter_train if i_subset == subsets - 1 else len(train_loader) // subsets
-                        n_batches_val = len(val_loader) - batch_counter_val if i_subset == subsets - 1 else len(val_loader) // subsets
-
-                        logger.debug("Trainer %s / %s: %s batches", i_tr_unsrt + 1, len(self.trainers), n_batches_train)
+                        logger.debug(
+                            "Trainer %s / %s: %s (%s) batches",
+                            i_tr_unsrt + 1,
+                            len(self.trainers),
+                            len(train_loader),
+                            "-" if val_loader is None else len(val_loader),
+                        )
 
                         # Train
                         loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.partial_epoch(
-                            n_batches_train,
-                            n_batches_val,
                             i_epoch,
                             train_loader,
                             val_loader,
-                            train_iter,
-                            val_iter,
                             opt,
                             [loss_functions[i] for i in loss_filter],
                             [loss_weights[i] for i in loss_filter],
@@ -724,10 +732,11 @@ class AlternatingTrainer(BaseTrainer):
                         )
 
                         # Keep track of losses
-                        loss_train += loss_train_trainer
-                        loss_val += loss_val_trainer
-                        loss_contributions_train[loss_filter] += loss_contributions_train_trainer
-                        loss_contributions_val[loss_filter] += loss_contributions_val_trainer
+                        loss_train += loss_train_trainer / subsets
+                        loss_contributions_train[loss_filter] += loss_contributions_train_trainer / subsets
+                        if loss_val_trainer is not None:
+                            loss_val += loss_val_trainer / subsets
+                            loss_contributions_val[loss_filter] += loss_contributions_val_trainer / subsets
 
                 # Wrap up epoch
                 losses_train.append(loss_train)
