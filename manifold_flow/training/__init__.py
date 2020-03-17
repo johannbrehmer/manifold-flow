@@ -6,6 +6,6 @@ from .trainer import (
     ConditionalGenerativeTrainer,
     VariableDimensionManifoldFlowTrainer,
     ConditionalVariableDimensionManifoldFlowTrainer,
-    AlternatingTrainer,
 )
+from .alternate import AlternatingTrainer
 from .datasets import NumpyDataset, UnlabelledImageFolder
