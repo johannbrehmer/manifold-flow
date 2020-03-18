@@ -12,23 +12,12 @@ conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
-
 cd $dir/experiments
 
-run=$((SLURM_ARRAY_TASK_ID / 10))
-task=$((SLURM_ARRAY_TASK_ID % 10))
-echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
+run=$((SLURM_ARRAY_TASK_ID / 12))
+task=$((SLURM_ARRAY_TASK_ID % 12))
+chain=$((task / 3))
+true=$((task % 3))
+echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-case ${task} in
-0) python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 0 --dir $dir ;;
-1) python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 1 --dir $dir ;;
-2) python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 2 --dir $dir ;;
-3) python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 3 --dir $dir ;;
-4) python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 4 --dir $dir ;;
-5) python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 0 --dir $dir ;;
-6) python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 1 --dir $dir ;;
-7) python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 2 --dir $dir ;;
-8) python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 3 --dir $dir ;;
-9) python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 50 -i ${run} --skiplikelihood --burnin 50 --mcmcsamples 400 --chain 4 --dir $dir ;;
-*) echo "Nothing to do for task ${task}" ;;
-esac
+python -u evaluate.py --modelname april --dataset lhc --algorithm gamf --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir

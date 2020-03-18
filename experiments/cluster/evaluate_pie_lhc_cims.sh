@@ -12,9 +12,12 @@ conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
-
-run=$((SLURM_ARRAY_TASK_ID / 5))
-chain=$((SLURM_ARRAY_TASK_ID % 5))
-
 cd $dir/experiments
-python -u evaluate.py --modelname april --dataset lhc --algorithm pie --modellatentdim 14 --splinebins 10 --observedsamples 50 --skiplikelihood --burnin 50 --mcmcsamples 400 --chain $chain -i ${run}  --dir $dir
+
+run=$((SLURM_ARRAY_TASK_ID / 12))
+task=$((SLURM_ARRAY_TASK_ID % 12))
+chain=$((task / 3))
+true=$((task % 3))
+echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
+
+python -u evaluate.py --modelname april --dataset lhc --algorithm pie --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir

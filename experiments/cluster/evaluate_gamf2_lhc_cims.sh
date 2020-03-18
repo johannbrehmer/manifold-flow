@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-mf-l
-#SBATCH --output=log_evaluate_mf_lhc_%a.log
+#SBATCH --job-name=e-gamf-lhc
+#SBATCH --output=log_evaluate_gamf_lhc_%a.log
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=64GB
 #SBATCH --time=2-00:00:00
-##SBATCH --gres=gpu:1
+# #SBATCH --gres=gpu:1
 
 conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
@@ -20,4 +20,4 @@ chain=$((task / 3))
 true=$((task % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm mf --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+python -u evaluate.py --modelname alternate_april --dataset lhc --algorithm gamf --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
