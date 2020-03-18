@@ -24,7 +24,7 @@ class BaseSimulator:
     def log_density(self, x, parameters=None):
         raise IntractableLikelihoodError
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
         raise NotImplementedError
 
     def sample(self, n, parameters=None):
@@ -41,7 +41,7 @@ class BaseSimulator:
     def distance_from_manifold(self, x):
         raise NotImplementedError
 
-    def default_parameters(self):
+    def default_parameters(self, true_param_id=0):
         return np.zeros(self.parameter_dim())
 
     def eval_parameter_grid(self, resolution=11):

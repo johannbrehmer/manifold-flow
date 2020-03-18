@@ -31,10 +31,10 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
         # Load numpy arrays
-        x = np.load("{}/x_{}.npy".format(dataset_dir, "train" if train else "test"))
-        params = np.load("{}/theta_{}.npy".format(dataset_dir, "train" if train else "test"))
+        x = np.load("{}/x_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+        params = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
 
         # OPtionally limit sample size
         if limit_samplesize is not None:
@@ -62,7 +62,7 @@ class BaseLHCLoader(BaseSimulator):
             return x, params
         return NumpyDataset(x, params)
 
-    def default_parameters(self):
+    def default_parameters(self, true_param_id=0):
         return np.zeros(self._parameter_dim)
 
     def sample_from_prior(self, n):
@@ -300,6 +300,14 @@ class WBFLoader(BaseLHCLoader):
 
         self.CLOSURE_LABELS = ["pt"] * 6 + ["phi"] * 6 + ["eta"] * 6 + ["on-shell"] * 4 + ["decay"] * 8 + ["delta"] * 2
 
+    def default_parameters(self, true_param_id=0):
+        if true_param_id == 1:
+            return np.array([0.5, 0.0])
+        elif true_param_id == 2:
+            return np.array([-1.0, -1.0])
+        else:
+            return np.zeros(self._parameter_dim)
+
     def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
         e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
         return np.abs(x_raw[:, id_e] - e_expected)
@@ -410,3 +418,11 @@ class WBF2DLoader(BaseLHCLoader):
         X_MEANS = np.array([264.52158, -0.00532419])
         X_STDS = np.array([171.67308, 2.5071378])
         super().__init__(n_parameters=2, n_observables=2, n_final=4, n_additional_constraints=0, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
+
+    def default_parameters(self, true_param_id=0):
+        if true_param_id == 1:
+            return np.array([0.5, 0.0])
+        elif true_param_id == 2:
+            return np.array([-1.0, -1.0])
+        else:
+            return np.zeros(self._parameter_dim)

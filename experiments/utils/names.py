@@ -9,6 +9,7 @@ def create_filename(type, label, args):
 
     if type == "dataset":  # Fixed datasets
         filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
+
     elif type == "sample":  # Dynamically sampled from simulator
         if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
             filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}{}.npy".format(
@@ -16,17 +17,25 @@ def create_filename(type, label, args):
             )
         else:
             filename = "{}/experiments/data/samples/{}/{}{}.npy".format(args.dir, args.dataset, label, run_label)
+
     elif type == "model":
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
+
     elif type == "checkpoint":
         filename = "{}/experiments/data/models/checkpoints/{}.pt".format(args.dir, args.modelname)
+
     elif type == "learning_curve":
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)
+
     elif type == "results":
-        filename = "{}/experiments/data/results/{}_{}.npy".format(args.dir, args.modelname, label)
+        trueparam_name = "_trueparam{}".format(args.trueparam) if args.trueparam > 0 else ""
+        filename = "{}/experiments/data/results/{}_{}{}.npy".format(args.dir, args.modelname, label, trueparam_name)
+
     elif type == "mcmcresults":
+        trueparam_name = "_trueparam{}".format(args.trueparam) if args.trueparam > 0 else ""
         chain_name = "_chain{}".format(args.chain) if args.chain > 0 else ""
-        filename = "{}/experiments/data/results/{}_{}{}.npy".format(args.dir, args.modelname, label, chain_name)
+        filename = "{}/experiments/data/results/{}_{}{}{}.npy".format(args.dir, args.modelname, label, trueparam_name, chain_name)
+
     elif type == "timing":
         filename = "{}/experiments/data/timing/{}_{}_{}_{}_{}_{}{}.npy".format(
             args.dir,

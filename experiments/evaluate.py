@@ -64,6 +64,7 @@ def parse_args():
     parser.add_argument("--burnin", type=int, default=100)
     parser.add_argument("--evalbatchsize", type=int, default=100)
     parser.add_argument("--chain", type=int, default=0)
+    parser.add_argument("--trueparam", type=int, default=0)
 
     # Other settings
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
@@ -83,7 +84,7 @@ def _sample_from_model(args, model, simulator):
     if simulator.parameter_dim() is None:
         x_gen = model.sample(n=args.generate).detach().numpy()
     else:
-        params = simulator.default_parameters()
+        params = simulator.default_parameters(true_param_id=args.trueparam)
         params = np.asarray([params for _ in range(args.generate)])
         params = torch.tensor(params, dtype=torch.float)
         x_gen = model.sample(n=args.generate, context=params).detach().numpy()
@@ -99,7 +100,7 @@ def _evaluate_model_samples(args, simulator, x_gen):
         if simulator.parameter_dim() is None:
             log_likelihood_gen = simulator.log_density(x_gen)
         else:
-            params = simulator.default_parameters()
+            params = simulator.default_parameters(true_param_id=args.trueparam)
             params = np.asarray([params for _ in range(args.generate)])
             log_likelihood_gen = simulator.log_density(x_gen, parameters=params)
         log_likelihood_gen[np.isnan(log_likelihood_gen)] = -1.0e-12
@@ -166,20 +167,18 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
     return np.asarray(log_probs), reco_error, parameter_grid
 
 
-def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampling=False, step=0.2, thin=10, burnin=100):
-    # George's settings: thin = 10, n_mcmc_samples = 5000, burnin = 100
-
+def _mcmc(args, simulator, model=None):
     logger.info(
         "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s",
         "true simulator likelihood" if model is None else "neural likelihood estimate",
-        n_samples,
-        n_mcmc_samples,
-        "slice sampler" if slice_sampling else "Metropolis-Hastings sampler (step = {})".format(step),
+        args.observedsamples,
+        args.mcmcsamples,
+        "slice sampler" if args.slicesampler else "Metropolis-Hastings sampler (step = {})".format(args.mcmcstep),
     )
 
     # Data
-    true_parameters = simulator.default_parameters()
-    x_obs = load_test_samples(simulator, args)[:n_samples]
+    true_parameters = simulator.default_parameters(true_param_id=args.trueparam)
+    x_obs = load_test_samples(simulator, args)[: args.observedsamples]
     x_obs_ = torch.tensor(x_obs, dtype=torch.float)
 
     if model is None:
@@ -205,18 +204,18 @@ def _mcmc(simulator, model=None, n_samples=10, n_mcmc_samples=1000, slice_sampli
             log_prob += simulator.evaluate_log_prior(params)
             return float(log_prob)
 
-    if slice_sampling:
+    if args.slicesampler:
         logger.debug("Initializing slice sampler")
-        sampler = mcmc.SliceSampler(true_parameters, log_posterior, thin=thin)
+        sampler = mcmc.SliceSampler(true_parameters, log_posterior, thin=args.thin)
     else:
         logger.debug("Initializing Gaussian Metropolis-Hastings sampler")
-        sampler = mcmc.GaussianMetropolis(true_parameters, log_posterior, step=step, thin=thin)
+        sampler = mcmc.GaussianMetropolis(true_parameters, log_posterior, step=args.mcmcstep, thin=args.thin)
 
-    if burnin > 0:
+    if args.burnin > 0:
         logger.info("Starting burn in")
-        sampler.gen(burnin)  # burn in
+        sampler.gen(args.burnin)
     logger.info("Burn in done, starting main chain")
-    posterior_samples = sampler.gen(n_mcmc_samples)
+    posterior_samples = sampler.gen(args.mcmcsamples)
     logger.info("MCMC done")
 
     return posterior_samples
@@ -304,15 +303,7 @@ if __name__ == "__main__":
     # Truth MCMC
     elif simulator.parameter_dim() is not None and args.truth:
         try:
-            true_posterior_samples = _mcmc(
-                simulator,
-                n_mcmc_samples=args.mcmcsamples,
-                n_samples=args.observedsamples,
-                slice_sampling=args.slicesampler,
-                thin=args.thin,
-                step=args.mcmcstep,
-                burnin=args.burnin,
-            )
+            true_posterior_samples = _mcmc(args, simulator)
             np.save(create_filename("mcmcresults", "posterior_samples", args), true_posterior_samples)
 
         except IntractableLikelihoodError:
@@ -320,16 +311,7 @@ if __name__ == "__main__":
 
     # Model-based MCMC
     elif simulator.parameter_dim() is not None and not args.truth:
-        model_posterior_samples = _mcmc(
-            simulator,
-            model,
-            n_mcmc_samples=args.mcmcsamples,
-            n_samples=args.observedsamples,
-            slice_sampling=args.slicesampler,
-            thin=args.thin,
-            step=args.mcmcstep,
-            burnin=args.burnin,
-        )
+        model_posterior_samples = _mcmc(args, simulator, model)
         np.save(create_filename("mcmcresults", "posterior_samples", args), model_posterior_samples)
 
         # MMD calculation (only accurate if there is only one chain)
