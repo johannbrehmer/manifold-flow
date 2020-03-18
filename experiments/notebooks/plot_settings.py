@@ -23,18 +23,20 @@ COLORS = [CMAP(i/4.) for i in range(5)]
 # COLORS = palettable.scientific.sequential.Batlow_6.mpl_colors
 # COLORS = palettable.scientific.sequential.Tokyo_5.mpl_colors
 
-COLOR_EF = COLORS[0]
-COLOR_PIE = COLORS[1]
-COLOR_MLFS = COLORS[2]
-COLOR_MLFA = COLORS[3]
-COLOR_MLFOT = COLORS[4]
-COLOR_EMLFS = COLORS[2]
-COLOR_EMLFA = COLORS[3]
-
 COLOR_NEUTRAL1 = "black"
 COLOR_NEUTRAL2 = "0.7"
 COLOR_NEUTRAL3 = "0.4"
 COLOR_NEUTRAL4 = "white"
+
+COLOR_AF2D = COLOR_NEUTRAL2
+# COLOR_FLMS = COLORS[2]
+# COLOR_FLMES = COLORS[2]
+COLOR_AF = COLORS[1]
+COLOR_PIE = COLORS[2]
+COLOR_FLMA = COLORS[3]
+COLOR_FLMOT = COLORS[1]
+COLOR_FLMOTA = COLORS[2]
+COLOR_FLMEA = COLORS[3]
 
 
 def setup():
@@ -140,7 +142,7 @@ def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03
     bottom = large_margin if lb_space else small_margin
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     height = width / (left + nx*panel_size + (nx - 1)*sep + right)
-    return grid(nx, ny, height, large_margin, small_margin, sep)
+    return grid(nx, ny, height, large_margin, small_margin, sep, lb_space=lb_space)
 
 
 def grid2(nx=4, ny=2, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, sep=0.02, cbar_width=0.04):
