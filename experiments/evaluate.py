@@ -169,11 +169,12 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
 
 def _mcmc(args, simulator, model=None):
     logger.info(
-        "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s",
+        "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s for parameter point number %s",
         "true simulator likelihood" if model is None else "neural likelihood estimate",
         args.observedsamples,
         args.mcmcsamples,
         "slice sampler" if args.slicesampler else "Metropolis-Hastings sampler (step = {})".format(args.mcmcstep),
+        args.trueparam
     )
 
     # Data

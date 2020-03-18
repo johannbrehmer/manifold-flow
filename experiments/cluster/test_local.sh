@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
 
 source activate ml
-basedir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
-cd $basedir/experiments
+dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
+cd $dir/experiments
 
-for i in 0 1 2
+
+for task in 0 1 2 3 4 5 6 7 8 9 10 11
 do
-    python -u evaluate.py --modelname march --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname march --dataset lhc --algorithm flow --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname march --dataset lhc --algorithm pie --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm mf --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm gamf --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
-    python -u evaluate.py --modelname alternate_march --dataset lhc --algorithm emf --modellatentdim 14 --splinebins 10 --observedsamples 100 --skipinference -i $i --dir $basedir
+    run=0
+    chain=$((task / 3))
+    true=$((task % 3))
+
+    echo ""
+    echo ""
+    echo ""
+    echo "Starting new job: 48d with true = ${true}, chain = ${chain}, run = ${run}"
+    echo ""
+    python -u evaluate.py --modelname april --dataset lhc --algorithm flow --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+
+    echo ""
+    echo ""
+    echo ""
+    echo "Starting new job: 2d with true = ${true}, chain = ${chain}, run = ${run}"
+    echo ""
+    python -u evaluate.py --modelname april --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
 done
