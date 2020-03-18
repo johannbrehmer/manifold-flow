@@ -16,12 +16,12 @@ do
     echo ""
     echo "Starting new job: 48d with true = ${true}, chain = ${chain}, run = ${run}"
     echo ""
-    python -u evaluate.py --modelname april --dataset lhc --algorithm flow --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+    python -u evaluate.py --modelname april --dataset lhc --algorithm flow --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 750 --trueparam $true --chain $chain --dir $dir
 
     echo ""
     echo ""
     echo ""
     echo "Starting new job: 2d with true = ${true}, chain = ${chain}, run = ${run}"
     echo ""
-    python -u evaluate.py --modelname april --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+    python -u evaluate.py --modelname april --dataset lhc2d --algorithm flow --modellatentdim 2 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 750 --trueparam $true --chain $chain --dir $dir
 done
