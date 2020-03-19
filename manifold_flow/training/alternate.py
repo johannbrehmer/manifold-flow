@@ -43,6 +43,7 @@ class AlternatingTrainer(BaseTrainer):
         trainer_kwargs=None,
         trainer_order=None,
         shuffle_trainer_order=False,
+        subset_callbacks=None,
     ):
         # Set up
         loss_function_trainers = np.array(loss_function_trainers, dtype=np.int)
@@ -135,7 +136,7 @@ class AlternatingTrainer(BaseTrainer):
 
                 # Loop over subsets of data
                 for i_subset in range(subsets):
-                    logger.debug("Training epoch subset %s / %s", i_subset + 1, subsets)
+                    logger.debug("Epoch subset %s / %s", i_subset + 1, subsets)
 
                     # Loop over phases / trainers
                     for i_tr_unsrt, i_trainer in enumerate(trainer_order):
@@ -176,6 +177,11 @@ class AlternatingTrainer(BaseTrainer):
                         if loss_val_trainer is not None:
                             loss_val += loss_val_trainer / subsets
                             loss_contributions_val[loss_filter] += loss_contributions_val_trainer / subsets
+
+                        # Phase callbacks
+                        if subset_callbacks is not None:
+                            for callback in subset_callbacks:
+                                callback(i_epoch, self.model, loss_train, loss_val, subset=i_subset, trainer=i_trainer)
 
                 # Wrap up epoch
                 losses_train.append(loss_train)

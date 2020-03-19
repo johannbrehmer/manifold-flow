@@ -149,12 +149,12 @@ class ManifoldFlow(BaseFlow):
             x, inv_jacobian_outer = self.outer_transform.inverse(h, full_jacobian=True, context=context if self.apply_context_to_outer else None)
             inv_log_det_outer = None
 
-        if torch.isnan(x).any():
-            logger.warning("Reconstructed x contains NaN")
-            filter = torch.isnan(x).any(dim=-1).flatten()
-            logger.warning("  u: %s", u[filter])
-            logger.warning("  h: %s", h[filter])
-            logger.warning("  x: %s", x[filter])
+        # if torch.isnan(x).any():
+        #     logger.warning("Reconstructed x contains NaN")
+        #     filter = torch.isnan(x).any(dim=-1).flatten()
+        #     logger.warning("  u: %s", u[filter])
+        #     logger.warning("  h: %s", h[filter])
+        #     logger.warning("  x: %s", x[filter])
 
         return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h
 
@@ -183,16 +183,16 @@ class ManifoldFlow(BaseFlow):
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
             log_prob = log_prob - 0.5 * torch.slogdet(jtj)[1] - inv_log_det_inner
 
-            if torch.isnan(log_prob).any():
-                logger.warning("MF log likelihood contains NaNs")
-                filter = torch.isnan(log_prob).flatten()
-                logger.warning("  u:             %s", u[filter])
-                logger.warning("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
-                logger.warning("  Jacobian:      %s", inv_jacobian_outer[filter])
-                logger.warning("  JTJ:           %s", jtj[filter])
-                logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
-                logger.warning("  log det inner: %s", inv_log_det_inner[filter])
-                logger.warning("  total:         %s", log_prob[filter])
+            # if torch.isnan(log_prob).any():
+            #     logger.warning("MF log likelihood contains NaNs")
+            #     filter = torch.isnan(log_prob).flatten()
+            #     logger.warning("  u:             %s", u[filter])
+            #     logger.warning("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
+            #     logger.warning("  Jacobian:      %s", inv_jacobian_outer[filter])
+            #     logger.warning("  JTJ:           %s", jtj[filter])
+            #     logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
+            #     logger.warning("  log det inner: %s", inv_log_det_inner[filter])
+            #     logger.warning("  total:         %s", log_prob[filter])
 
         elif mode == "mf-fixed-manifold":
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)

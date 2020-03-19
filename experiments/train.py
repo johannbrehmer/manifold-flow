@@ -215,12 +215,17 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     logger.info("Starting training GAMF: Sinkhorn-GAN")
+
+    callbacks_=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
+    if args.debug:
+        callbacks_.append(callbacks.print_mf_weight_statistics())
+
     learning_curves_ = gen_trainer.train(
         loss_functions=[losses.make_sinkhorn_divergence()],
         loss_labels=["GED"],
         loss_weights=[args.sinkhornfactor],
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=callbacks_,
         batch_size=args.genbatchsize,
         compute_loss_variance=True,
         **common_kwargs,
@@ -242,7 +247,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
     phase1_kwargs = {"clip_gradient": args.clip}
-    phase2_kwargs = {"forward_kwargs": {"mode": "pie"}, "clip_gradient": args.clip}
+    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
     logger.info("Starting training GAMF, alternating between Sinkhorn divergence and log likelihood")
     learning_curves_ = metatrainer.train(
@@ -256,6 +261,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         subsets=args.subsets,
+        subset_callbacks=[callbacks.print_mf_weight_statistics()] if args.debug else None,
         **meta_kwargs,
     )
     learning_curves = np.vstack(learning_curves_).T
@@ -465,7 +471,7 @@ if __name__ == "__main__":
 
     # Maybe load pretrained model
     if args.load is not None:
-        logger.info("Loading model %s")
+        logger.info("Loading model %s", args.load)
         args_ = copy.deepcopy(args)
         args_.modelname = args.load
         model.load_state_dict(torch.load(create_filename("model", None, args_), map_location=torch.device("cpu")))
