@@ -474,6 +474,8 @@ if __name__ == "__main__":
         logger.info("Loading model %s", args.load)
         args_ = copy.deepcopy(args)
         args_.modelname = args.load
+        if args_.i > 0:
+            args_.modelname += "_run{}".format(args_.i)
         model.load_state_dict(torch.load(create_filename("model", None, args_), map_location=torch.device("cpu")))
 
     # Train and save
