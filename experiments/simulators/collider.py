@@ -402,7 +402,195 @@ class WBFLoader(BaseLHCLoader):
         for closure, label in zip(np.mean(weighted_closure_tests, axis=1), self.CLOSURE_LABELS):
             logger.info("  %5.3f - %s", closure, label)
 
-        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0.0, 1.0), axis=0)
+        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0.0, 10.0), axis=1)
+        logger.info("Mean closure test result (after clipping and averaging): %s", np.mean(weighted_closure_tests))
+        return weighted_closure_tests
+
+
+class WBF40DLoader(BaseLHCLoader):
+    """
+    Features:
+    0 e_a1
+    1 px_a1
+    2 py_a1
+    3 pz_a1
+    4 pt_a1
+    5 eta_a1
+    6 e_a2
+    7 px_a2
+    8 py_a2
+    9 pz_a2
+    10 pt_a2
+    11 eta_a2
+    12 e_j1
+    13 px_j1
+    14 py_j1
+    15 pz_j1
+    16 pt_j1
+    17 eta_j1
+    18 e_j2
+    19 px_j2
+    20 py_j2
+    21 pz_j2
+    22 pt_j2
+    23 eta_j2
+    24 e_aa
+    25 px_aa
+    26 py_aa
+    27 pz_aa
+    28 pt_aa
+    29 m_aa
+    30 eta_aa
+    31 deltaeta_aa
+    32 e_jj
+    33 px_jj
+    34 py_jj
+    35 pz_jj
+    36 pt_jj
+    37 m_jj
+    38 eta_jj
+    39 deltaeta_jj
+    """
+
+    def __init__(self):
+        X_MEANS = np.array(
+            [
+                399.37213, -0.43740344, 0.6336686, -0.6348415, 249.49158, -0.003057861, 131.7912, -0.05828116, 0.24816507, -0.7630951, 76.36908, -0.005826209, 757.37, -0.10769359,
+                -0.6086537, -6.178487, 264.52158, -0.008442603, 574.55524, 0.07781012, -0.09404507, 2.8334167, 104.1036, 0.0012078341, 531.1633, -0.49568462, 0.8818339, -1.3979366,
+                304.6138, 127.9752, -0.004153981, 0.0027683484, 1331.9247, -0.029883433, -0.7026987, -3.3450694, 285.39395, 884.056, -0.008315955, -0.009650437
+            ]
+        )
+        X_STDS = np.array(
+            [
+                299.35312, 211.85915, 212.03178, 399.08353, 166.1214, 1.0561188, 111.997505, 64.16174, 64.08385, 147.26929, 48.90089, 1.1154486, 634.2648, 222.84987, 223.1163,
+                935.7079, 171.67308, 1.7555672, 597.842, 90.13577, 90.237915, 819.1639, 73.68713, 2.3172193, 337.30893, 250.67441, 250.83035, 501.64795, 181.56274, 46.119442,
+                1.164671, 0.84049183, 868.1088, 237.49751, 237.65948, 1025.469, 177.30736, 762.6249, 1.8738469, 3.466002
+            ]
+        )
+        super().__init__(n_parameters=2, n_observables=40, n_final=4, n_additional_constraints=2, prior_scale=1.0, x_means=X_MEANS, x_stds=X_STDS)
+
+        self.CLOSURE_TEST_WEIGHTS = np.array(
+            [
+                0.005733124397251814,
+                0.019373627498998545,
+                0.005601847357892751,
+                0.013246297554593486,
+                0.0051492718104518736,
+                0.005285928756022291,
+                0.751120437331326,
+                0.6837450347638595,
+                0.479495732489328,
+                0.35411560084702814,
+                0.6944403914297372,
+                0.4581065620636643,
+                0.00338315127519218,
+                0.008990040230563823,
+                0.0029443731703010264,
+                0.0011509776322986742,
+                0.0027066953197164415,
+                0.0010181997312659812,
+                0.0037623941358973473,
+                0.003735274410662914,
+                0.0037745140586529515,
+                0.0037235471577507923,
+                0.0018995239678828314,
+                0.0007850227402417481,
+                1.1083823994444644,
+                0.47202092213106334,
+            ]
+        )
+
+        self.CLOSURE_LABELS = ["pt"] * 6 + ["eta"] * 6 + ["on-shell"] * 4 + ["decay"] * 8 + ["delta"] * 2
+
+    def default_parameters(self, true_param_id=0):
+        if true_param_id == 1:
+            return np.array([0.5, 0.0])
+        elif true_param_id == 2:
+            return np.array([-1.0, -1.0])
+        else:
+            return np.zeros(self._parameter_dim)
+
+    def _on_shell_discrepancy(self, x_raw, id_e, id_px, id_py, id_pz, m=0.0):
+        e_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2 + m ** 2) ** 0.5
+        return np.abs(x_raw[:, id_e] - e_expected)
+
+    def _conservation_discrepancy(self, x_raw, idx):
+        px = np.sum(x_raw[:, idx], axis=1)
+        return np.abs(px)
+
+    def _daughter_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
+        return np.abs(x_raw[:, id] - x_raw[:, id_daughter1] - x_raw[:, id_daughter2])
+
+    def _delta_discrepancy(self, x_raw, id, id_daughter1, id_daughter2):
+        return np.abs(np.abs(x_raw[:, id]) - np.abs(x_raw[:, id_daughter1] - x_raw[:, id_daughter2]))
+
+    def _pt_discrepancy(self, x_raw, id_pt, id_px, id_py):
+        pt_expected = (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2) ** 0.5
+        return np.abs(x_raw[:, id_pt] - pt_expected)
+
+    def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
+        phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
+        return np.minimum(
+            np.abs(x_raw[:, id_phi] - phi_expected),
+            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
+            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
+        )
+
+    def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
+        costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5
+        eta_expected = -0.5 * np.log((1 - costheta) / (1 + costheta))
+        return np.abs(x_raw[:, id_eta] - eta_expected)
+
+    def _closure_tests(self, x):
+        """ Closure test. 34 constraints + 14-dimensional manifold = 48-dimensional data..."""
+
+        # Undo scaling
+        x_ = self._preprocess(x, inverse=True)
+
+        # Begin closure tests
+        closure_tests = []
+
+        # pT vs px, py
+        closure_tests.append(self._pt_discrepancy(x_, 4, 1, 2))
+        closure_tests.append(self._pt_discrepancy(x_, 10, 7, 8))
+        closure_tests.append(self._pt_discrepancy(x_, 16, 13, 14))
+        closure_tests.append(self._pt_discrepancy(x_, 22, 19, 20))
+        closure_tests.append(self._pt_discrepancy(x_, 28, 25, 26))
+        closure_tests.append(self._pt_discrepancy(x_, 36, 33, 34))
+
+        # eta vs E, px, py, pz
+        closure_tests.append(self._eta_discrepancy(x_, 5, 0, 1, 2, 3))
+        closure_tests.append(self._eta_discrepancy(x_, 11, 6, 7, 8, 9))
+        closure_tests.append(self._eta_discrepancy(x_, 17, 12, 13, 14, 15))
+        closure_tests.append(self._eta_discrepancy(x_, 23, 18, 19, 20, 21))
+        closure_tests.append(self._eta_discrepancy(x_, 30, 24, 25, 26, 27))
+        closure_tests.append(self._eta_discrepancy(x_, 38, 32, 33, 34, 35))
+
+        # E vs on-shell and m vs on-shell
+        closure_tests.append(self._on_shell_discrepancy(x_, 0, 1, 2, 3))
+        closure_tests.append(self._on_shell_discrepancy(x_, 6, 7, 8, 9))
+        closure_tests.append(self._on_shell_discrepancy(x_, 24, 25, 26, 27, m=x_[:, 29]))
+        closure_tests.append(self._on_shell_discrepancy(x_, 32, 33, 34, 35, m=x_[:, 37]))
+
+        # reconstructed particles vs daughters
+        for add in [0, 1, 2, 3]:
+            closure_tests.append(self._daughter_discrepancy(x_, 24 + add, 0 + add, 6 + add))
+            closure_tests.append(self._daughter_discrepancy(x_, 32 + add, 12 + add, 18 + add))
+
+        # delta something discrepancies
+        closure_tests.append(self._delta_discrepancy(x_, 31, 5, 11))
+        closure_tests.append(self._delta_discrepancy(x_, 39, 17, 23))
+
+        closure_tests = np.asarray(closure_tests)
+        return closure_tests
+
+    def distance_from_manifold(self, x):
+        weighted_closure_tests = self.CLOSURE_TEST_WEIGHTS[:, np.newaxis] * self._closure_tests(x)
+        logger.info("Mean closure test results (before clipping and averaging):")
+        for closure, label in zip(np.mean(weighted_closure_tests, axis=1), self.CLOSURE_LABELS):
+            logger.info("  %5.3f - %s", closure, label)
+
+        weighted_closure_tests = np.mean(np.clip(weighted_closure_tests, 0.0, 10.0), axis=0)
         logger.info("Mean closure test result (after clipping and averaging): %s", np.mean(weighted_closure_tests))
         return weighted_closure_tests
 

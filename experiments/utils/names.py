@@ -1,6 +1,6 @@
 import os
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc2d", "cifar10", "imagenet"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet"]
 ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
 
 

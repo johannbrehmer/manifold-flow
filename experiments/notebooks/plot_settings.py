@@ -29,14 +29,15 @@ COLOR_NEUTRAL3 = "0.4"
 COLOR_NEUTRAL4 = "white"
 
 COLOR_AF2D = COLOR_NEUTRAL2
+COLOR_MADMINER = COLOR_NEUTRAL3
 # COLOR_FLMS = COLORS[2]
 # COLOR_FLMES = COLORS[2]
-COLOR_AF = COLORS[1]
+COLOR_AF = COLORS[3]
 COLOR_PIE = COLORS[2]
-COLOR_FLMA = COLORS[3]
-COLOR_FLMOT = COLORS[1]
+COLOR_FLMA = COLORS[1]
+COLOR_FLMOT = COLORS[3]
 COLOR_FLMOTA = COLORS[2]
-COLOR_FLMEA = COLORS[3]
+COLOR_FLMEA = COLORS[1]
 
 
 def setup():
@@ -190,7 +191,11 @@ def grid2_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.0
 
 
 def add_transparency(color, alpha):
-    color2 = np.copy(np.array(color))
+    if isinstance(color, str):
+        color2 = np.array(matplotlib.colors.to_rgba(color))
+    else:
+        color2 = np.copy(np.array(color))
+
     if len(color2.shape) == 1:
         if color2.shape[0] == 4:
             color2[3] = alpha

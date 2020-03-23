@@ -9,6 +9,7 @@ from experiments.simulators import (
     ImageNetLoader,
     WBFLoader,
     WBF2DLoader,
+    WBF40DLoader,
     PowerManifoldSimulator,
 )
 from experiments.utils import SIMULATORS
@@ -30,6 +31,8 @@ def load_simulator(args):
         simulator = WBFLoader()
     elif args.dataset == "lhc2d":
         simulator = WBF2DLoader()
+    elif args.dataset == "lhc40d":
+        simulator = WBF40DLoader()
     elif args.dataset == "cifar10":
         simulator = CIFAR10Loader()
     elif args.dataset == "imagenet":
