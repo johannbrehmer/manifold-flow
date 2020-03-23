@@ -11,17 +11,23 @@
 #sbatch --array 6-9 train_emf_power.sh
 
 #sbatch --array 0-2 train_flow_lhc2d.sh
-sbatch --array 0-2 train_flow_lhc.sh
-sbatch --array 0-2 train_pie_lhc.sh
-sbatch --array 0-2 train_mf_lhc.sh
-#sbatch --array 0-5 train_gamf_lhc.sh
-sbatch --array 0-2 train_emf_lhc.sh
+sbatch --array 0-2 train_flow_lhc40d.sh
+sbatch --array 0-2 train_pie_lhc40d.sh
+sbatch --array 0-2 train_mf_lhc40d.sh
+sbatch --array 0-2 train_emf_lhc40d.sh
+#sbatch --array 0-2 train_flow_lhc.sh
+#sbatch --array 0-2 train_pie_lhc.sh
+#sbatch --array 0-2 train_mf_lhc.sh
+#sbatch --array 0-2 train_emf_lhc.sh
 
 #sbatch --array 3-4 train_flow_lhc2d.sh
-sbatch --array 3-4 train_flow_lhc.sh
-sbatch --array 3-4 train_pie_lhc.sh
+sbatch --array 3-4 train_flow_lhc40d.sh
+sbatch --array 3-4 train_pie_lhc40d.sh
+sbatch --array 3-4 train_mf_lhc40d.sh
+sbatch --array 3-4 train_emf_lhc40d.sh
+#sbatch --array 3-4 train_flow_lhc.sh
+#sbatch --array 3-4 train_pie_lhc.sh
 #sbatch --array 3-4 train_mf_lhc.sh
-#sbatch --array 6-9 train_gamf_lhc.sh
 #sbatch --array 3-4 train_emf_lhc.sh
 
 
