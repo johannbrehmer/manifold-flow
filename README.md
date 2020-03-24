@@ -21,9 +21,10 @@ Data set | Data dimension | Manifold dimension | Model parameters | Arguments to
 --- | --- | --- | --- | ---
 Gaussian on an `n`-sphere | `n` | `d` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
 Conditional Gaussian on a `n`-sphere | `n` | `d` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
-Power-law manifold | 3 | 2 | 1 | `--dataset power`
-Particle physics data | 48 | 14 | 2 | `--dataset lhc`
-Particle physics data compressed to summary stats | 2 | 2 | 2 | `--dataset lhc2d`
+Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
+Particle physics data (48D) | 48 | 14 | 2 | `--dataset lhc`
+Particle physics data (40D, no angular features) | 2 | 2 | 2 | `--dataset lhc2d`
+Particle physics data (2D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
 CIFAR10 | 3 * 32 * 32 | ? | - | `--dataset cifar10`
 ImageNet | 3 * 64 * 64 | ? | - | `--dataset imagenet`
 
@@ -39,14 +40,15 @@ See [experiments/train.py -h](experiments/train.py). Note that the algorithms ha
 
 Algorithm | Acronym in paper | Arguments to `train.py`
 --- | --- | ---
-Euclidean / standard flow | EF | `--algorithm flow`
-Manifold flow | MF | `--algorithm mf --specified`
-Partially invertible encoder | PIE | `--algorithm pie`
-Manifold-learning flow, simultaneous training | MLF-L | `--algorithm mf`
-Manifold-learning flow, alternating training schedule | MLF-A | `--algorithm mf --alternate`
-Manifold-learning flow, Optimal Transport training | MLF-OT | `--algorithm gamf`
-Manifold-learning flow with sep. encoder, simultaneous training | EMLF-L | `--algorithm emf`
-Manifold-learning flow with sep. encoder, alternating training schedule | EMLF-A | `--algorithm emf --alternate`
+Ambient flow | AF | `--algorithm flow`
+Flow on manifold | FOM | `--algorithm mf --specified`
+Pseudo-invertible encoder | PIE | `--algorithm pie`
+Manifold-modeling flow, simultaneous training | MFMF-S | `--algorithm mf`
+Manifold-modeling flow, alternating training | MFMF-A | `--algorithm mf --alternate`
+Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
+Manifold-modeling flow, alternating Optimal Transport training | MFMF-OTA | `--algorithm gamf --alternate`
+Manifold-modeling flow with sep. encoder, simultaneous training | MFMF'-S | `--algorithm emf`
+Manifold-modeling flow with sep. encoder, alternating training schedule | MFMF'-A | `--algorithm emf --alternate`
 
 
 ### Evaluation 
@@ -55,12 +57,13 @@ See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [
 
 Algorithm | Acronym in paper | Arguments to `evaluate.py`
 --- | --- | ---
-Euclidean / standard flow | EF | `--algorithm flow`
-Manifold flow | MF | `--algorithm mf --specified`
-Partially invertible encoder | PIE | `--algorithm pie`
-Manifold-learning flow | MLF-L, MLF-A | `--algorithm mf`
-Manifold-learning flow, Optimal Transport training | MLF-OT | `--algorithm gamf`
-Manifold-learning flow with sep. encoder | EMLF-L, EMLF-A | `--algorithm emf`
+Ambient flow | AF | `--algorithm flow`
+Flow on manifold | FOM | `--algorithm mf --specified`
+Pseudo-invertible encoder | PIE | `--algorithm pie`
+Manifold-modeling flow (except OT training) | MFMF | `--algorithm mf`
+Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
+Manifold-modeling flow with sep. encoder | MFMF' | `--algorithm emf`
+
 
 
 ## Acknowledgements
