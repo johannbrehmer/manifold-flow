@@ -35,9 +35,7 @@ COLOR_MADMINER = COLOR_NEUTRAL3
 COLOR_AF = COLORS[3]
 COLOR_PIE = COLORS[2]
 COLOR_FLMA = COLORS[1]
-COLOR_FLMOT = COLORS[3]
-COLOR_FLMOTA = COLORS[2]
-COLOR_FLMEA = COLORS[1]
+COLOR_FLMEA = COLORS[0]
 
 
 def setup():
@@ -154,6 +152,7 @@ def grid2(nx=4, ny=2, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03
     right = large_margin
     top = small_margin
     bottom = small_margin
+
 
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     width = height*(left + nx*panel_size + cbar_width + nx*sep + right)

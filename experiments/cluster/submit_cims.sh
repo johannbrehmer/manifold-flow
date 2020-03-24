@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Run 1
+sbatch --array 0-4 evaluate_missing_lhc_cims.sh
+
+# Run 1
 # sbatch --array 0-11 evaluate_flow_lhc2d_cims.sh  # done
 # sbatch --array 0-11 evaluate_flow_lhc_cims.sh  # done
 # sbatch --array 0-11 evaluate_pie_lhc_cims.sh  # done
