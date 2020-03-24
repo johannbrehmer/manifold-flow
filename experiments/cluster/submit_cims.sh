@@ -31,6 +31,6 @@ sbatch --array 0-4 evaluate_missing_lhc_cims.sh
 # sbatch --array 36-59 evaluate_flow_lhc_cims.sh  # submitted
 # sbatch --array 36-59 evaluate_pie_lhc_cims.sh  # submitted
 sbatch --array 36-59 evaluate_mf_lhc_cims.sh
-sbatch --array 36-59 evaluate_emf_lhc_cims.sh
+# sbatch --array 36-59 evaluate_emf_lhc_cims.sh
 # sbatch --array 36-59 evaluate_gamf_lhc_cims.sh
 # sbatch --array 36-59 evaluate_gamf2_lhc_cims.sh
