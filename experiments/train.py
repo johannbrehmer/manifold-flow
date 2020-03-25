@@ -28,68 +28,97 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
+    """ Parses command line arguments for the training """
+
     parser = argparse.ArgumentParser()
 
     # What what what
-    parser.add_argument("--modelname", type=str, default=None)
-    parser.add_argument("--algorithm", type=str, default="flow", choices=ALGORITHMS)
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
-    parser.add_argument("-i", type=int, default=0)
+    parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        default="flow",
+        choices=ALGORITHMS,
+        help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
+    )
+    parser.add_argument(
+        "--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others"
+    )
+    parser.add_argument("-i", type=int, default=0, help="Run number")
 
     # Dataset details
-    parser.add_argument("--truelatentdim", type=int, default=2)
-    parser.add_argument("--datadim", type=int, default=3)
-    parser.add_argument("--epsilon", type=float, default=0.01)
+    parser.add_argument("--truelatentdim", type=int, default=2, help="True manifold dimensionality (for datasets where that is variable)")
+    parser.add_argument("--datadim", type=int, default=3, help="True data dimensionality (for datasets where that is variable)")
+    parser.add_argument("--epsilon", type=float, default=0.01, help="Noise term (for datasets where that is variable)")
 
     # Model details
-    parser.add_argument("--modellatentdim", type=int, default=2)
-    parser.add_argument("--specified", action="store_true")
-    parser.add_argument("--outertransform", type=str, default="rq-coupling")
-    parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--lineartransform", type=str, default="permutation")
-    parser.add_argument("--outerlayers", type=int, default=5)
-    parser.add_argument("--innerlayers", type=int, default=5)
-    parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--outercouplingmlp", action="store_true")
-    parser.add_argument("--outercouplinglayers", type=int, default=2)
-    parser.add_argument("--outercouplinghidden", type=int, default=100)
-    parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument("--pieepsilon", type=float, default=0.01)
-    parser.add_argument("--encoderblocks", type=int, default=5)
-    parser.add_argument("--encoderhidden", type=int, default=100)
-    parser.add_argument("--encodermlp", action="store_true")
-    parser.add_argument("--splinerange", default=3.0, type=float)
-    parser.add_argument("--splinebins", default=8, type=int)
+    parser.add_argument("--modellatentdim", type=int, default=2, help="Model manifold dimensionality")
+    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of MFMF")
+    parser.add_argument(
+        "--outertransform",
+        type=str,
+        default="rq-coupling",
+        help="Type of transformations for f: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
+    )
+    parser.add_argument(
+        "--innertransform",
+        type=str,
+        default="rq-coupling",
+        help="Type of transformations for h: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
+    )
+    parser.add_argument(
+        "--lineartransform",
+        type=str,
+        default="permutation",
+        help="Type of linear transformations inserted between the base transformations: linear, permutation. See Neural Spline Flow paper.",
+    )
+    parser.add_argument("--outerlayers", type=int, default=5, help="Number of transformations in f (not counting linear transformations)")
+    parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
+    parser.add_argument(
+        "--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)"
+    )
+    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
+    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
+    parser.add_argument("--outercouplinghidden", type=int, default=100, help="Number of hidden units for coupling layers")
+    parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
+    parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
+    parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
+    parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
+    parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
 
     # Training
-    parser.add_argument("--load", type=str, default=None)
-    parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--subsets", type=int, default=1)
-    parser.add_argument("--batchsize", type=int, default=100)
-    parser.add_argument("--genbatchsize", type=int, default=1000)
-    parser.add_argument("--lr", type=float, default=1.0e-3)
-    parser.add_argument("--msefactor", type=float, default=1000.0)
-    parser.add_argument("--addnllfactor", type=float, default=0.1)
-    parser.add_argument("--nllfactor", type=float, default=1.0)
-    parser.add_argument("--sinkhornfactor", type=float, default=10.0)
-    parser.add_argument("--samplesize", type=int, default=None)
-    parser.add_argument("--weightdecay", type=float, default=1.0e-4)
-    parser.add_argument("--doughl1reg", type=float, default=0.0)
-    parser.add_argument("--clip", type=float, default=1.0)
-    parser.add_argument("--nopretraining", action="store_true")
-    parser.add_argument("--noposttraining", action="store_true")
-    parser.add_argument("--prepie", action="store_true")
-    parser.add_argument("--prepostfraction", type=int, default=3)
-    parser.add_argument("--alternate", action="store_true")
+    parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-A instead of MFMF-S)")
+    parser.add_argument("--load", type=str, default=None, help="Model name to load rather than training from scratch, run is affixed automatically")
+    parser.add_argument("--samplesize", type=int, default=None, help="If not None, number of samples used for training")
+    parser.add_argument("--epochs", type=int, default=50, help="Maximum number of epochs")
+    parser.add_argument("--subsets", type=int, default=1, help="Number of subsets per epoch in an alternating training")
+    parser.add_argument("--batchsize", type=int, default=100, help="Batch size for everything except OT training")
+    parser.add_argument("--genbatchsize", type=int, default=1000, help="Batch size for OT training")
+    parser.add_argument("--lr", type=float, default=1.0e-3, help="Initial learning rate")
+    parser.add_argument("--msefactor", type=float, default=1000.0, help="Reco error multiplier in loss")
+    parser.add_argument("--addnllfactor", type=float, default=0.1, help="Negative log likelihood multiplier in loss for MFMF-S training")
+    parser.add_argument("--nllfactor", type=float, default=1.0, help="Negative log likelihood multiplier in loss (except for MFMF-S training)")
+    parser.add_argument("--sinkhornfactor", type=float, default=10.0, help="Sinkhorn divergence multiplier in loss")
+    parser.add_argument("--weightdecay", type=float, default=1.0e-4, help="Weight decay")
+    parser.add_argument("--clip", type=float, default=1.0, help="Gradient norm clipping parameter")
+    parser.add_argument("--doughl1reg", type=float, default=0.0, help="L1 reg on epsilon when learning epsilons for PIE")
+    parser.add_argument("--nopretraining", action="store_true", help="Skip pretraining in MFMF-S training")
+    parser.add_argument("--noposttraining", action="store_true", help="Skip posttraining in MFMF-S training")
+    parser.add_argument("--prepie", action="store_true", help="Pretrain with PIE rather than on reco error (MFMF-S only)")
+    parser.add_argument("--prepostfraction", type=int, default=3, help="Fraction of epochs reserved for pretraining and posttraining (MFMF-S only)")
 
     # Other settings
-    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
+    parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
 
     return parser.parse_args()
 
 
 def train_manifold_flow(args, dataset, model, simulator):
+    """ MFMF-S training """
+
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {
         "dataset": dataset,
@@ -177,6 +206,8 @@ def train_manifold_flow(args, dataset, model, simulator):
 
 
 def train_manifold_flow_alternating(args, dataset, model, simulator):
+    """ MFMF-A training """
+
     assert not args.specified
 
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
@@ -209,6 +240,8 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
+    """ MFMF-OT training """
+
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
     common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
     if args.weightdecay is not None:
@@ -216,7 +249,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
 
     logger.info("Starting training GAMF: Sinkhorn-GAN")
 
-    callbacks_=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
+    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
     if args.debug:
         callbacks_.append(callbacks.print_mf_weight_statistics())
 
@@ -236,6 +269,8 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator):
+    """ MFMF-OTA training """
+
     assert not args.specified
 
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
@@ -270,6 +305,8 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
 
 
 def train_slice_of_pie(args, dataset, model, simulator):
+    """ SLICE training """
+
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     common_kwargs = {
         "dataset": dataset,
@@ -329,6 +366,8 @@ def train_slice_of_pie(args, dataset, model, simulator):
 
 
 def train_flow(args, dataset, model, simulator):
+    """ AF training """
+
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
     common_kwargs = {
@@ -354,6 +393,8 @@ def train_flow(args, dataset, model, simulator):
 
 
 def train_pie(args, dataset, model, simulator):
+    """ PIE training """
+
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training PIE on NLL")
     common_kwargs = {
@@ -380,6 +421,8 @@ def train_pie(args, dataset, model, simulator):
 
 
 def train_dough(args, dataset, model, simulator):
+    """ PIE with variable epsilons training """
+
     trainer = VariableDimensionManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalVariableDimensionManifoldFlowTrainer(model)
     common_kwargs = {
         "dataset": dataset,
@@ -402,23 +445,12 @@ def train_dough(args, dataset, model, simulator):
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
-
-    # logger.info("Starting training slice of PIE, phase 2: NLL with latent regularization")
-    # learning_curves_ = trainer.train(
-    #     loss_functions=[losses.nll],
-    #     loss_labels=["NLL"],
-    #     loss_weights=[args.nllfactor],
-    #     epochs=args.epochs - args.epochs // 2,
-    #     callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
-    #     l1=args.doughl1reg,
-    #     **common_kwargs,
-    # )
-    # learning_curves_ = np.vstack(learning_curves_).T
-    # learning_curves = np.vstack((learning_curves, learning_curves_))
     return learning_curves
 
 
 def train_model(args, dataset, model, simulator):
+    """ Starts appropriate training """
+
     if args.algorithm == "pie":
         learning_curves = train_pie(args, dataset, model, simulator)
     elif args.algorithm == "flow":

@@ -174,7 +174,7 @@ def _mcmc(args, simulator, model=None):
         args.observedsamples,
         args.mcmcsamples,
         "slice sampler" if args.slicesampler else "Metropolis-Hastings sampler (step = {})".format(args.mcmcstep),
-        args.trueparam
+        args.trueparam,
     )
 
     # Data
