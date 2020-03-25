@@ -25,8 +25,6 @@ Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
 Particle physics data (48D) | 48 | 14 | 2 | `--dataset lhc`
 Particle physics data (40D, no angular features) | 2 | 2 | 2 | `--dataset lhc2d`
 Particle physics data (2D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
-CIFAR10 | 3 * 32 * 32 | ? | - | `--dataset cifar10`
-ImageNet | 3 * 64 * 64 | ? | - | `--dataset imagenet`
 
 
 ### Simulating data
@@ -47,8 +45,8 @@ Manifold-modeling flow, simultaneous training | MFMF-S | `--algorithm mf`
 Manifold-modeling flow, alternating training | MFMF-A | `--algorithm mf --alternate`
 Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
 Manifold-modeling flow, alternating Optimal Transport training | MFMF-OTA | `--algorithm gamf --alternate`
-Manifold-modeling flow with sep. encoder, simultaneous training | MFMF'-S | `--algorithm emf`
-Manifold-modeling flow with sep. encoder, alternating training schedule | MFMF'-A | `--algorithm emf --alternate`
+Manifold-modeling flow with sep. encoder, simultaneous training | MFMFE-S | `--algorithm emf`
+Manifold-modeling flow with sep. encoder, alternating training schedule | MFMFE-A | `--algorithm emf --alternate`
 
 
 ### Evaluation 
@@ -62,7 +60,7 @@ Flow on manifold | FOM | `--algorithm mf --specified`
 Pseudo-invertible encoder | PIE | `--algorithm pie`
 Manifold-modeling flow (except OT training) | MFMF | `--algorithm mf`
 Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow with sep. encoder | MFMF' | `--algorithm emf`
+Manifold-modeling flow with sep. encoder | MFMFE | `--algorithm emf`
 
 
 
