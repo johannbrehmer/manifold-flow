@@ -14,21 +14,30 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
+    """ Parses command-line arguments for data generation """
+
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=["power", "spherical_gaussian", "conditional_spherical_gaussian"])
     parser.add_argument("-i", type=int, default=0)
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="spherical_gaussian",
+        choices=["power", "spherical_gaussian", "conditional_spherical_gaussian"],
+        help="Dataset: spherical_gaussian, power, and conditional_spherical_gaussian",
+    )
+    parser.add_argument("-i", type=int, default=0, help="Run number")
 
-    parser.add_argument("--truelatentdim", type=int, default=2)
-    parser.add_argument("--datadim", type=int, default=3)
-    parser.add_argument("--epsilon", type=float, default=0.01)
-    parser.add_argument("--train", type=int, default=1000000)
-    parser.add_argument("--paramscan", type=int, default=0)
-    parser.add_argument("--test", type=int, default=10000)
-    parser.add_argument("--ood", type=int, default=0)
+    parser.add_argument("--truelatentdim", type=int, default=2, help="True manifold dimensionality (for datasets where that is variable)")
+    parser.add_argument("--datadim", type=int, default=3, help="True data dimensionality (for datasets where that is variable)")
+    parser.add_argument("--epsilon", type=float, default=0.01, help="Noise term (for datasets where that is variable)")
+    parser.add_argument("--train", type=int, default=1000000, help="Number of training samples")
+    parser.add_argument("--paramscan", type=int, default=0, help="Number of additional test samples for parameter tuning")
+    parser.add_argument("--test", type=int, default=10000, help="Number of test samples")
+    parser.add_argument("--ood", type=int, default=0, help="Number of OOD samples")
 
-    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
+    parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
 
     return parser.parse_args()
 

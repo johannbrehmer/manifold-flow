@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
+    """ Parses command line arguments for the evaluation """
+
     parser = argparse.ArgumentParser()
 
     # What what what
