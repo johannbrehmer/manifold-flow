@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class VariableDimensionManifoldFlow(BaseFlow):
+    """ PIE with variable manifold dimensions (learnable epsilons). Work in progress! """
+
     def __init__(self, data_dim, transform):
         super(VariableDimensionManifoldFlow, self).__init__()
 
@@ -23,6 +25,8 @@ class VariableDimensionManifoldFlow(BaseFlow):
         self._report_model_parameters()
 
     def forward(self, x, context=None):
+        """ Transforms data point to latent space and evaluates likelihood """
+
         # Encode
         u, log_det = self._encode(x, context=context)
 
@@ -36,14 +40,20 @@ class VariableDimensionManifoldFlow(BaseFlow):
         return x, log_prob, u
 
     def encode(self, x, context=None):
+        """ Transforms data point to latent space. """
+
         u, _ = self._encode(x, context=context)
         return u
 
     def decode(self, u, context=None):
+        """ Decodes latent variable to data space."""
+
         x, _ = self.transform.inverse(u, context=context)
         return x
 
     def log_prob(self, x, context=None):
+        """ Evaluates log likelihood for given data point."""
+
         # Encode
         u, log_det = self._encode(x, context)
 
@@ -54,20 +64,26 @@ class VariableDimensionManifoldFlow(BaseFlow):
         return log_prob
 
     def sample(self, u=None, n=1, context=None):
-        """ Note: this is normal flow sampling, including off-the-manifold latents different from 0! """
+        """ Generates samples from model. """
+
         if u is None:
             u = self.latent_distribution.sample(n, context=None)
         x = self.decode(u, context=context)
         return x
 
     def latent_stds(self):
+        """ Returns PIE epsilons """
+
         return torch.exp(self.latent_distribution.log_stds)
 
     def calculate_latent_dim(self, threshold=0.5):
+        """ Computes learned manifold dimensionality """
+
         return torch.sum(self.latent_stds() > threshold)
 
     def latent_regularizer(self, l1=0.0, l2=0.0):
-        # LAtent regularization
+        """ Computes regularization term to force epsilon close to 0 or close to 1 """
+
         latent_reg = torch.zeros((1,))
         stds = self.latent_stds()
         offset = torch.where(stds > 0.5, stds - 1.0, stds)

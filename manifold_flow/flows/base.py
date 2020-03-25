@@ -5,6 +5,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseFlow(nn.Module):
+    """ Abstract base flow class """
+
     def forward(self, x, context=None):
         raise NotImplementedError
 
@@ -24,6 +26,8 @@ class BaseFlow(nn.Module):
         raise NotImplementedError
 
     def _report_model_parameters(self):
+        """ Reports the model size """
+
         all_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         size = all_params * (32 / 8)  # Bytes

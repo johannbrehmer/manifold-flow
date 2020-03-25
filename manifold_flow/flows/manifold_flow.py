@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class ManifoldFlow(BaseFlow):
+    """ Manifold-based flow (base class for FOM, MFMF, PIE, and others) """
+
     def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
         super(ManifoldFlow, self).__init__()
 
@@ -36,8 +38,12 @@ class ManifoldFlow(BaseFlow):
         self._report_model_parameters()
 
     def forward(self, x, mode="mf", context=None):
-        """ mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
-        (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all). """
+        """
+        Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
+
+        mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
+        (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all).
+        """
 
         assert mode in ["mf", "pie", "slice", "projection", "pie-inv", "mf-fixed-manifold"]
 
@@ -50,7 +56,7 @@ class ManifoldFlow(BaseFlow):
         # Decode
         x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h_manifold_reco = self._decode(u, mode=mode, context=context)
 
-        # Sometimes the inverse log det transformation has NaNs -- not clear why
+        # Rarely the inverse log det transformation has NaNs
         if torch.isnan(inv_log_det_inner).any():
             _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
 
@@ -68,37 +74,31 @@ class ManifoldFlow(BaseFlow):
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
-        # # Debugging
-        # diff = x_reco - x
-        # if torch.max(torch.sum(diff**2, dim=1)).item() > 0.04:
-        #     logger.debug("Large reco error:")
-        #     logger.debug("  x       = %s", x[torch.sum(diff**2, dim=1) > 0.04 ])
-        #     logger.debug("  r       = %s", (torch.sum(x**2, dim=1)**0.5)[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  h_orth  = %s", h_orthogonal[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  h_man   = %s", h_manifold[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  u       = %s", u[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  h_man'  = %s", h_manifold_reco[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  dh_man  = %s", (h_manifold_reco[:,:2] - h_manifold)[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  x'      = %s", x_reco[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  dx      = %s", (x_reco-x)[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  r'      = %s", (torch.sum(x_reco**2, dim=1)**0.5)[torch.sum(diff**2, dim=1) > 0.05 ])
-        #     logger.debug("  logdet  = %s", inv_log_det_inner[torch.sum(diff**2, dim=1) > 0.05 ])
-
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):
+        """ Transforms data point to latent space. """
+
         u, _, _, _, _ = self._encode(x, context=context)
         return u
 
     def decode(self, u, u_orthogonal=None, context=None):
+        """ Decodes latent variable to data space."""
+
         x, _, _, _, _ = self._decode(u, mode="projection", u_orthogonal=u_orthogonal, context=context)
         return x
 
     def log_prob(self, x, mode="mf", context=None):
+        """ Evaluates log likelihood for given data point."""
+
         return self.forward(x, mode, context)[1]
 
     def sample(self, u=None, n=1, context=None, sample_orthogonal=False):
-        """ Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently."""
+        """
+        Generates samples from model.
+
+        Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently.
+        """
 
         if u is None:
             u = self.manifold_latent_distribution.sample(n, context=None)
@@ -111,23 +111,6 @@ class ManifoldFlow(BaseFlow):
         h, log_det_outer = self.outer_transform(x, full_jacobian=False, context=context if self.apply_context_to_outer else None)
         h_manifold, h_orthogonal = self.projection(h)
         u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
-
-        # # Debugging
-        # h_check, inv_log_det_inner = self.inner_transform.inverse(u, full_jacobian=False, context=context)
-        # diff = torch.sum((h_manifold - h_check)**2., dim=1)**0.5
-        # if torch.max(diff) > 0.1:
-        #     logger.debug("Inner inversion didn't work!")
-        #     logger.debug("  h  = %s", h[diff > 0.1])
-        #     logger.debug("  hm = %s", h_manifold[diff > 0.1])
-        #     logger.debug("  u  = %s", u[diff > 0.1])
-        #     logger.debug("  h' = %s", h_check[diff > 0.1])
-        #     logger.debug("  log det  = %s", log_det_inner[diff > 0.1])
-        #     logger.debug("  log det' = %s", - inv_log_det_inner[diff > 0.1])
-
-        #     # For debugging
-        #     h_ = h_manifold[diff > 0.1]
-        #     u_, log_det_inner_ = self.inner_transform(h_, full_jacobian=False, context=context)
-        #     h_check_, inv_log_det_inner_ = self.inner_transform.inverse(u_, full_jacobian=False, context=context)
 
         return u, h_manifold, h_orthogonal, log_det_outer, log_det_inner
 
@@ -148,13 +131,6 @@ class ManifoldFlow(BaseFlow):
         else:
             x, inv_jacobian_outer = self.outer_transform.inverse(h, full_jacobian=True, context=context if self.apply_context_to_outer else None)
             inv_log_det_outer = None
-
-        # if torch.isnan(x).any():
-        #     logger.warning("Reconstructed x contains NaN")
-        #     filter = torch.isnan(x).any(dim=-1).flatten()
-        #     logger.warning("  u: %s", u[filter])
-        #     logger.warning("  h: %s", h[filter])
-        #     logger.warning("  x: %s", x[filter])
 
         return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h
 
@@ -182,17 +158,6 @@ class ManifoldFlow(BaseFlow):
 
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
             log_prob = log_prob - 0.5 * torch.slogdet(jtj)[1] - inv_log_det_inner
-
-            # if torch.isnan(log_prob).any():
-            #     logger.warning("MF log likelihood contains NaNs")
-            #     filter = torch.isnan(log_prob).flatten()
-            #     logger.warning("  u:             %s", u[filter])
-            #     logger.warning("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
-            #     logger.warning("  Jacobian:      %s", inv_jacobian_outer[filter])
-            #     logger.warning("  JTJ:           %s", jtj[filter])
-            #     logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
-            #     logger.warning("  log det inner: %s", inv_log_det_inner[filter])
-            #     logger.warning("  total:         %s", log_prob[filter])
 
         elif mode == "mf-fixed-manifold":
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)

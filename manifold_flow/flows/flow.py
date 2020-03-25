@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class Flow(BaseFlow):
+    """ Ambient normalizing flow (AF) """
+
     def __init__(self, data_dim, transform):
         super(Flow, self).__init__()
 
@@ -22,6 +24,8 @@ class Flow(BaseFlow):
         self._report_model_parameters()
 
     def forward(self, x, context=None):
+        """ Transforms data point to latent space, evaluates log likelihood """
+
         # Encode
         u, log_det = self._encode(x, context=context)
 
@@ -35,14 +39,20 @@ class Flow(BaseFlow):
         return x, log_prob, u
 
     def encode(self, x, context=None):
+        """ Encodes data point to latent space """
+
         u, _ = self._encode(x, context=context)
         return u
 
     def decode(self, u, context=None):
+        """ Encodes data point to latent space """
+
         x, _ = self.transform.inverse(u, context=context)
         return x
 
     def log_prob(self, x, context=None):
+        """ Evaluates log likelihood """
+
         # Encode
         u, log_det = self._encode(x, context)
 
@@ -53,6 +63,8 @@ class Flow(BaseFlow):
         return log_prob
 
     def sample(self, u=None, n=1, context=None):
+        """ Generates samples from model """
+
         if u is None:
             u = self.latent_distribution.sample(n, context=None)
         x = self.decode(u, context=context)

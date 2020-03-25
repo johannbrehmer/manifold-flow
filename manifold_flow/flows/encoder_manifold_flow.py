@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class EncoderManifoldFlow(BaseFlow):
+    """ Manifold-based flow with separate encoder (for MFMFE) """
+
     def __init__(self, data_dim, latent_dim, encoder, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
         super(EncoderManifoldFlow, self).__init__()
 
@@ -37,8 +39,12 @@ class EncoderManifoldFlow(BaseFlow):
         self._report_model_parameters()
 
     def forward(self, x, mode="mf", context=None):
-        """ mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
-        (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all). """
+        """
+        Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
+
+        mode can be "mf" (calculating the exact manifold density based on the full Jacobian), "pie" (calculating the density in x), "slice"
+        (calculating the density on x, but projected onto the manifold), or "projection" (calculating no density at all).
+        """
 
         assert mode in ["mf", "projection", "pie", "mf-fixed-manifold"]
 
@@ -57,18 +63,28 @@ class EncoderManifoldFlow(BaseFlow):
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):
-        u, _, _, _ = self._encode(x, context=context)
+        """ Transforms data point to latent space. """
+
+        u, _, _ = self._encode(x, context=context)
         return u
 
     def decode(self, u, u_orthogonal=None, context=None):
+        """ Decodes latent variable to data space."""
+
         x, _, _, _, _ = self._decode(u, mode="projection", u_orthogonal=u_orthogonal, context=context)
         return x
 
     def log_prob(self, x, mode="mf", context=None):
+        """ Evaluates log likelihood for given data point."""
+
         return self.forward(x, mode, context)[1]
 
     def sample(self, u=None, n=1, context=None, sample_orthogonal=False):
-        """ Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently."""
+        """
+        Generates samples from model.
+
+        Note: this is PIE / MF sampling! Cannot sample from slice of PIE efficiently.
+        """
 
         if u is None:
             u = self.manifold_latent_distribution.sample(n, context=None)
@@ -101,13 +117,6 @@ class EncoderManifoldFlow(BaseFlow):
             x, inv_jacobian_outer = self.outer_transform.inverse(h, full_jacobian=True, context=context if self.apply_context_to_outer else None)
             inv_log_det_outer = None
 
-        if torch.isnan(x).any():
-            logger.warning("Reconstructed x contains NaN")
-            filter = torch.isnan(x).any(dim=-1).flatten()
-            logger.warning("  u: %s", u[filter])
-            logger.warning("  h: %s", h[filter])
-            logger.warning("  x: %s", x[filter])
-
         return x, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h
 
     def _log_prob(self, mode, u, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer):
@@ -119,17 +128,6 @@ class EncoderManifoldFlow(BaseFlow):
 
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
             log_prob = log_prob - 0.5 * torch.slogdet(jtj)[1] - inv_log_det_inner
-
-            if torch.isnan(log_prob).any():
-                logger.warning("MF log likelihood contains NaNs")
-                filter = torch.isnan(log_prob).flatten()
-                logger.warning("  u:             %s", u[filter])
-                logger.warning("  base density:  %s", self.manifold_latent_distribution._log_prob(u, context=None)[filter])
-                logger.warning("  Jacobian:      %s", inv_jacobian_outer[filter])
-                logger.warning("  JTJ:           %s", jtj[filter])
-                logger.warning("  log det outer: %s", torch.slogdet(jtj)[1][filter])
-                logger.warning("  log det inner: %s", inv_log_det_inner[filter])
-                logger.warning("  total:         %s", log_prob[filter])
 
         elif mode == "mf-fixed-manifold":
             log_prob = self.manifold_latent_distribution._log_prob(u, context=None)
