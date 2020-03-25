@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Top-level script for hyperparameter tuning """
+
 import numpy as np
 import logging
 import sys

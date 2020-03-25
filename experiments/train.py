@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Top-level script for training models """
+
 import numpy as np
 import logging
 import sys

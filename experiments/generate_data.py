@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Top-level script for generating data (in the data sets where that is necessary) """
+
 import argparse
 import sys
 import numpy as np

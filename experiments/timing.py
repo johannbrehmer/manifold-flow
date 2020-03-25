@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+""" Top-level script for simple timing experiments """
+
 import numpy as np
 import logging
 import sys
@@ -13,6 +15,31 @@ from experiments.utils.names import create_filename
 from experiments.utils.models import create_model
 
 logger = logging.getLogger(__name__)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
+
+    parser.add_argument("--conditionalouter", action="store_true")
+    parser.add_argument("--modellatentdim", type=int, default=8)
+    parser.add_argument("--outertransform", type=str, default="affine-coupling")
+    parser.add_argument("--innertransform", type=str, default="affine-coupling")
+    parser.add_argument("--outerlayers", type=int, default=4)
+    parser.add_argument("--innerlayers", type=int, default=8)
+    parser.add_argument("--outercouplingmlp", action="store_true")
+    parser.add_argument("--outercouplinglayers", type=int, default=3)
+    parser.add_argument("--outercouplinghidden", type=int, default=256)
+
+    parser.add_argument("--datadims", nargs="+", type=int, default=[10, 20, 50, 100, 200])
+    parser.add_argument("--batchsize", type=int, default=100)
+    parser.add_argument("--repeats", type=int, default=5)
+
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
+    parser.add_argument("--debug", action="store_true")
+
+    return parser.parse_args()
 
 
 def timing(args):
@@ -60,31 +87,6 @@ def timing(args):
     # Save results
     logger.info("Saving results")
     np.save(create_filename("timing", None, args), all_times)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--algorithm", type=str, default="mf", choices=["flow", "pie", "mf"])
-
-    parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--modellatentdim", type=int, default=8)
-    parser.add_argument("--outertransform", type=str, default="affine-coupling")
-    parser.add_argument("--innertransform", type=str, default="affine-coupling")
-    parser.add_argument("--outerlayers", type=int, default=4)
-    parser.add_argument("--innerlayers", type=int, default=8)
-    parser.add_argument("--outercouplingmlp", action="store_true")
-    parser.add_argument("--outercouplinglayers", type=int, default=3)
-    parser.add_argument("--outercouplinghidden", type=int, default=256)
-
-    parser.add_argument("--datadims", nargs="+", type=int, default=[10, 20, 50, 100, 200])
-    parser.add_argument("--batchsize", type=int, default=100)
-    parser.add_argument("--repeats", type=int, default=5)
-
-    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
-    parser.add_argument("--debug", action="store_true")
-
-    return parser.parse_args()
 
 
 if __name__ == "__main__":
