@@ -22,64 +22,90 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # What what what
-    parser.add_argument("--truth", action="store_true")
-    parser.add_argument("--modelname", type=str, default=None)
-    parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
-    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS)
-    parser.add_argument("-i", type=int, default=0)
+    parser.add_argument("--truth", action="store_true", help="Evaluate ground truth rather than learned model")
+    parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        default="flow",
+        choices=ALGORITHMS,
+        help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
+    )
+    parser.add_argument(
+        "--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others"
+    )
+    parser.add_argument("-i", type=int, default=0, help="Run number")
 
     # Dataset details
-    parser.add_argument("--truelatentdim", type=int, default=2)
-    parser.add_argument("--datadim", type=int, default=3)
-    parser.add_argument("--epsilon", type=float, default=0.01)
+    parser.add_argument("--truelatentdim", type=int, default=2, help="True manifold dimensionality (for datasets where that is variable)")
+    parser.add_argument("--datadim", type=int, default=3, help="True data dimensionality (for datasets where that is variable)")
+    parser.add_argument("--epsilon", type=float, default=0.01, help="Noise term (for datasets where that is variable)")
 
     # Model details
-    parser.add_argument("--modellatentdim", type=int, default=2)
-    parser.add_argument("--specified", action="store_true")
-    parser.add_argument("--outertransform", type=str, default="rq-coupling")
-    parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--lineartransform", type=str, default="permutation")
-    parser.add_argument("--outerlayers", type=int, default=5)
-    parser.add_argument("--innerlayers", type=int, default=5)
-    parser.add_argument("--conditionalouter", action="store_true")
-    parser.add_argument("--outercouplingmlp", action="store_true")
-    parser.add_argument("--outercouplinglayers", type=int, default=2)
-    parser.add_argument("--outercouplinghidden", type=int, default=100)
-    parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument("--pieepsilon", type=float, default=0.01)
-    parser.add_argument("--encoderblocks", type=int, default=5)
-    parser.add_argument("--encoderhidden", type=int, default=100)
-    parser.add_argument("--encodermlp", action="store_true")
-    parser.add_argument("--splinerange", default=3.0, type=float)
-    parser.add_argument("--splinebins", default=8, type=int)
+    parser.add_argument("--modellatentdim", type=int, default=2, help="Model manifold dimensionality")
+    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of MFMF")
+    parser.add_argument(
+        "--outertransform",
+        type=str,
+        default="rq-coupling",
+        help="Type of transformations for f: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
+    )
+    parser.add_argument(
+        "--innertransform",
+        type=str,
+        default="rq-coupling",
+        help="Type of transformations for h: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
+    )
+    parser.add_argument(
+        "--lineartransform",
+        type=str,
+        default="permutation",
+        help="Type of linear transformations inserted between the base transformations: linear, permutation. See Neural Spline Flow paper.",
+    )
+    parser.add_argument("--outerlayers", type=int, default=5, help="Number of transformations in f (not counting linear transformations)")
+    parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
+    parser.add_argument(
+        "--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)"
+    )
+    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
+    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
+    parser.add_argument("--outercouplinghidden", type=int, default=100, help="Number of hidden units for coupling layers")
+    parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
+    parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
+    parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
+    parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
+    parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
 
     # Evaluation settings
-    parser.add_argument("--gridresolution", type=int, default=11)
-    parser.add_argument("--generate", type=int, default=10000)
-    parser.add_argument("--observedsamples", type=int, default=20)
-    parser.add_argument("--slicesampler", action="store_true")
-    parser.add_argument("--mcmcstep", type=float, default=0.15)
-    parser.add_argument("--thin", type=int, default=1)
-    parser.add_argument("--mcmcsamples", type=int, default=5000)
-    parser.add_argument("--burnin", type=int, default=100)
-    parser.add_argument("--evalbatchsize", type=int, default=100)
-    parser.add_argument("--chain", type=int, default=0)
-    parser.add_argument("--trueparam", type=int, default=0)
+    parser.add_argument("--gridresolution", type=int, default=11, help="Grid ressolution (per axis) for likelihood eval")
+    parser.add_argument("--generate", type=int, default=10000, help="Number of samples for generative mode eval")
+    parser.add_argument("--observedsamples", type=int, default=20, help="Number of iid samples in synthetic 'observed' set for inference tasks")
+    parser.add_argument("--slicesampler", action="store_true", help="Use slice sampler for MCMC")
+    parser.add_argument("--mcmcstep", type=float, default=0.15, help="MCMC step size")
+    parser.add_argument("--thin", type=int, default=1, help="MCMC thinning")
+    parser.add_argument("--mcmcsamples", type=int, default=5000, help="Length of MCMC chain")
+    parser.add_argument("--burnin", type=int, default=100, help="MCMC burn in")
+    parser.add_argument("--evalbatchsize", type=int, default=100, help="Likelihood eval batch size")
+    parser.add_argument("--chain", type=int, default=0, help="MCMC chain")
+    parser.add_argument("--trueparam", type=int, default=0, help="Index of true parameter point for inference tasks")
 
     # Other settings
-    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
-    parser.add_argument("--debug", action="store_true")
-
-    parser.add_argument("--skipgeneration", action="store_true")
-    parser.add_argument("--skiplikelihood", action="store_true")
-    parser.add_argument("--skipood", action="store_true")
-    parser.add_argument("--skipinference", action="store_true")
-    parser.add_argument("--skipmcmc", action="store_true")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
+    parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
+    parser.add_argument("--skipgeneration", action="store_true", help="Skip generative mode eval")
+    parser.add_argument("--skiplikelihood", action="store_true", help="Skip likelihood eval")
+    parser.add_argument("--skipood", action="store_true", help="Skip OOD likelihood eval")
+    parser.add_argument("--skipinference", action="store_true", help="Skip all inference tasks (likelihood eval and MCMC)")
+    parser.add_argument("--skipmcmc", action="store_true", help="Skip MCMC")
 
     return parser.parse_args()
 
 
-def _sample_from_model(args, model, simulator):
+def sample_from_model(args, model, simulator):
+    """ Generate samples from model and store """
+
     logger.info("Sampling from model")
     if simulator.parameter_dim() is None:
         x_gen = model.sample(n=args.generate).detach().numpy()
@@ -92,8 +118,9 @@ def _sample_from_model(args, model, simulator):
     return x_gen
 
 
-def _evaluate_model_samples(args, simulator, x_gen):
-    # Likelihood
+def evaluate_model_samples(args, simulator, x_gen):
+    """ Evaluate model samples and save results """
+
     logger.info("Calculating likelihood of generated samples")
 
     try:
@@ -117,7 +144,9 @@ def _evaluate_model_samples(args, simulator, x_gen):
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
 
 
-def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False):
+def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False):
+    """ Likelihood evaluation """
+
     logger.info("Evaluating %s likelihood of %s samples", "true" if model is None else "model", "ood" if ood else "test")
 
     x = load_test_samples(simulator, args, ood=ood, paramscan=paramscan)[:samples]
@@ -167,7 +196,9 @@ def _evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=
     return np.asarray(log_probs), reco_error, parameter_grid
 
 
-def _mcmc(args, simulator, model=None):
+def run_mcmc(args, simulator, model=None):
+    """ MCMC """
+
     logger.info(
         "Starting MCMC based on %s after %s observed samples, generating %s posterior samples with %s for parameter point number %s",
         "true simulator likelihood" if model is None else "neural likelihood estimate",
@@ -257,8 +288,8 @@ if __name__ == "__main__":
     if args.skipgeneration:
         logger.info("Skipping generative evaluation as per request.")
     elif not args.truth:
-        x_gen = _sample_from_model(args, model, simulator)
-        _evaluate_model_samples(args, simulator, x_gen)
+        x_gen = sample_from_model(args, model, simulator)
+        evaluate_model_samples(args, simulator, x_gen)
 
     if args.skipinference:
         logger.info("Skipping all inference tasks as per request. Have a nice day!")
@@ -270,19 +301,19 @@ if __name__ == "__main__":
 
     elif args.truth:
         try:
-            log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
+            log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
 
             if args.skipood:
                 logger.info("Skipping OOD evaluation")
             else:
-                log_likelihood_ood, _, _ = _evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
+                log_likelihood_ood, _, _ = evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
                 np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
 
     else:
-        log_likelihood_test, reconstruction_error_test, parameter_grid = _evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize)
+        log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize)
         np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
         np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
         if parameter_grid is not None:
@@ -292,7 +323,7 @@ if __name__ == "__main__":
             logger.info("Skipping OOD evaluation")
         else:
             try:
-                log_likelihood_ood, reconstruction_error_ood, _ = _evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
+                log_likelihood_ood, reconstruction_error_ood, _ = evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
                 np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
                 np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
             except:
@@ -304,7 +335,7 @@ if __name__ == "__main__":
     # Truth MCMC
     elif simulator.parameter_dim() is not None and args.truth:
         try:
-            true_posterior_samples = _mcmc(args, simulator)
+            true_posterior_samples = run_mcmc(args, simulator)
             np.save(create_filename("mcmcresults", "posterior_samples", args), true_posterior_samples)
 
         except IntractableLikelihoodError:
@@ -312,7 +343,7 @@ if __name__ == "__main__":
 
     # Model-based MCMC
     elif simulator.parameter_dim() is not None and not args.truth:
-        model_posterior_samples = _mcmc(args, simulator, model)
+        model_posterior_samples = run_mcmc(args, simulator, model)
         np.save(create_filename("mcmcresults", "posterior_samples", args), model_posterior_samples)
 
         # MMD calculation (only accurate if there is only one chain)
