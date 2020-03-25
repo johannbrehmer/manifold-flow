@@ -62,6 +62,8 @@ class NumpyDataset(Dataset):
 
 
 class UnlabelledImageFolder(Dataset):
+    """ Image folder dataset. """
+
     def __init__(self, root, transform=None):
         self.root = root
         self.transform = transform

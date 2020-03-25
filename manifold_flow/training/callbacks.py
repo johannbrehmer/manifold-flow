@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 def save_model_after_every_epoch(filename):
+    """ Saves model checkpoints. """
+
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
         torch.save(model.state_dict(), filename.format(i_epoch))
 
@@ -13,6 +15,8 @@ def save_model_after_every_epoch(filename):
 
 
 def print_mf_weight_statistics():
+    """ Prints debug info about size of weights. """
+
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
         try:
             models = [model.outer_transform, model.inner_transform]

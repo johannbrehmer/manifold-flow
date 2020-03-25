@@ -7,6 +7,8 @@ from .trainer import BaseTrainer, logger, NanException, EarlyStoppingException
 
 
 class AlternatingTrainer(BaseTrainer):
+    """ Alternating trainer: takes a number of trainers and alternates between them """
+
     def __init__(self, model, *trainers, run_on_gpu=True, multi_gpu=True, double_precision=False):
         super().__init__(model, run_on_gpu, multi_gpu, double_precision)
 
@@ -45,6 +47,8 @@ class AlternatingTrainer(BaseTrainer):
         shuffle_trainer_order=False,
         subset_callbacks=None,
     ):
+        """ Start training. """
+
         # Set up
         loss_function_trainers = np.array(loss_function_trainers, dtype=np.int)
         if trainer_order is None:

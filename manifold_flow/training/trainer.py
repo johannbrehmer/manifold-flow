@@ -22,6 +22,8 @@ class NanException(Exception):
 
 
 class BaseTrainer(object):
+    """ Abstract base trainer. """
+
     def __init__(self, model, run_on_gpu=True, multi_gpu=True, double_precision=False):
         self.model = model
 
@@ -181,7 +183,7 @@ class BaseTrainer(object):
 
 
 class Trainer(BaseTrainer):
-    """ Trainer class. Any subclass has to implement the forward_pass() function. """
+    """ Base trainer class. Any subclass has to implement the forward_pass() function. """
 
     def train(
         self,
@@ -521,6 +523,8 @@ class Trainer(BaseTrainer):
 
 
 class ManifoldFlowTrainer(Trainer):
+    """ Trainer for likelihood-based flow training when the model is not conditional. """
+
     def first_batch(self, batch_data):
         if self.multi_gpu:
             x, y = batch_data
@@ -554,6 +558,8 @@ class ManifoldFlowTrainer(Trainer):
 
 
 class ConditionalManifoldFlowTrainer(Trainer):
+    """ Trainer for likelihood-based flow training for conditional models. """
+
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
@@ -584,6 +590,8 @@ class ConditionalManifoldFlowTrainer(Trainer):
 
 
 class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
+    """ Trainer for likelihood-based flow training for PIE with variable epsilons and non-conditional models. """
+
     def train(
         self,
         dataset,
@@ -670,6 +678,8 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
 
 
 class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
+    """ Trainer for likelihood-based flow training for PIE with variable epsilons and conditional models. """
+
     def train(
         self,
         dataset,
@@ -756,6 +766,8 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
 
 
 class GenerativeTrainer(Trainer):
+    """ Trainer for adversarial (OT) flow training when the model is not conditional. """
+
     # TODO: multi-GPU support
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
@@ -778,6 +790,8 @@ class GenerativeTrainer(Trainer):
 
 
 class ConditionalGenerativeTrainer(GenerativeTrainer):
+    """ Trainer for adversarial (OT) flow training and conditional models. """
+
     # TODO: multi-GPU support
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
