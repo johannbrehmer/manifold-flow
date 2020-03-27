@@ -13,12 +13,14 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-run=$((SLURM_ARRAY_TASK_ID / 2))
-task=$((SLURM_ARRAY_TASK_ID % 2))
-echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
+#run=$((SLURM_ARRAY_TASK_ID / 2))
+#task=$((SLURM_ARRAY_TASK_ID % 2))
+#echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, task = ${task}, run = ${run}"
+#
+#case ${task} in
+#0) python -u train.py --modelname alternate_march --dataset power --algorithm emf --alternate --splinebins 10 --splinerange 6. --samplesize 100000 -i ${run} ;;
+#1) python -u train.py --modelname march --dataset power --algorithm emf --splinebins 10 --splinerange 6. --samplesize 100000 -i ${run} ;;
+#*) echo "Nothing to do for job ${task}" ;;
+#esac
 
-case ${task} in
-0) python -u train.py --modelname alternate_march --dataset power --algorithm emf --alternate --splinebins 10 --splinerange 6. --samplesize 100000 -i ${run} ;;
-1) python -u train.py --modelname march --dataset power --algorithm emf --splinebins 10 --splinerange 6. --samplesize 100000 -i ${run} ;;
-*) echo "Nothing to do for job ${task}" ;;
-esac
+python -u train.py --modelname alternate_march --dataset power --algorithm emf --alternate --splinebins 10 --splinerange 6. --samplesize 100000 -i ${SLURM_ARRAY_TASK_ID}
