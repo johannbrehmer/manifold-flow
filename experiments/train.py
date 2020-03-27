@@ -289,6 +289,9 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
     phase1_kwargs = {"clip_gradient": args.clip}
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
+    phase1_parameters = model.parameters()
+    phase2_parameters = model.inner_transform.parameters()
+
     logger.info("Starting training GAMF, alternating between Sinkhorn divergence and log likelihood")
     learning_curves_ = metatrainer.train(
         loss_functions=[losses.make_sinkhorn_divergence(), losses.nll],
@@ -297,7 +300,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         loss_weights=[args.sinkhornfactor, args.nllfactor],
         batch_sizes=[args.genbatchsize, args.batchsize],
         epochs=args.epochs,
-        parameters=[model.parameters(), model.inner_transform.parameters()],
+        parameters=[phase1_parameters, phase2_parameters],
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         subsets=args.subsets,
