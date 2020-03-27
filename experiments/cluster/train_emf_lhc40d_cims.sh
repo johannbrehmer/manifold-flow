@@ -3,10 +3,10 @@
 #SBATCH --job-name=t-emf-l40
 #SBATCH --output=log_train_emf_lhc40d_%a.log
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=32GB
 #SBATCH --time=2-00:00:00
-#SBATCH --gres=gpu:1080ti:1
+#SBATCH --gres=gpu:1080ti:2
 
 conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
