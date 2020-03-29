@@ -91,7 +91,8 @@ def parse_args():
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
 
     # Training
-    parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-A instead of MFMF-S)")
+    parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
+    parser.add_argument("--sequential", action="store_true", help="Use sequential training algorithm")
     parser.add_argument("--load", type=str, default=None, help="Model name to load rather than training from scratch, run is affixed automatically")
     parser.add_argument("--samplesize", type=int, default=None, help="If not None, number of samples used for training")
     parser.add_argument("--epochs", type=int, default=50, help="Maximum number of epochs")
@@ -240,6 +241,53 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         **meta_kwargs,
     )
     learning_curves = np.vstack(learning_curves_).T
+
+    return learning_curves
+
+
+def train_manifold_flow_sequential(args, dataset, model, simulator):
+    """ MFMF-A training """
+
+    assert not args.specified
+
+    trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
+
+    common_kwargs = {
+        "dataset": dataset,
+        "batch_size": args.batchsize,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+    }
+    if args.weightdecay is not None:
+        common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
+
+    logger.info("Starting training MF, phase 1: manifold training")
+    learning_curves = trainer.train(
+        loss_functions=[losses.mse],
+        loss_labels=["MSE"],
+        loss_weights=[args.msefactor],
+        epochs=args.epochs // 2,
+        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters(),
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+        forward_kwargs={"mode": "projection"},
+        **common_kwargs,
+    )
+    learning_curves = np.vstack(learning_curves).T
+
+    logger.info("Starting training MF, phase 2: density training")
+    learning_curves_ = trainer.train(
+        loss_functions=[losses.nll],
+        loss_labels=["NLL"],
+        loss_weights=[args.nllfactor],
+        epochs=args.epochs - (args.epochs // 2),
+        parameters=model.inner_transform.parameters(),
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        forward_kwargs={"mode": "mf-fixed-manifold"},
+        **common_kwargs,
+    )
+    learning_curves_ = np.vstack(learning_curves_).T
+    learning_curves = learning_curves_ if learning_curves is None else np.vstack((learning_curves, learning_curves_))
 
     return learning_curves
 
@@ -468,6 +516,8 @@ def train_model(args, dataset, model, simulator):
     elif args.algorithm in ["mf", "emf"]:
         if args.alternate:
             learning_curves = train_manifold_flow_alternating(args, dataset, model, simulator)
+        elif args.sequential:
+            learning_curves = train_manifold_flow_sequential(args, dataset, model, simulator)
         else:
             learning_curves = train_manifold_flow(args, dataset, model, simulator)
     elif args.algorithm == "gamf":
