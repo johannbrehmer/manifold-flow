@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-mf4-l40
-#SBATCH --output=log_train_mf4_lhc40d_%a.log
+#SBATCH --job-name=t-mf-l
+#SBATCH --output=log_train_mf_lhc_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
@@ -13,5 +13,5 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-# python -u train.py --modelname alternate_april --dataset lhc40d --algorithm mf --alternate --modellatentdim 14 --splinebins 10 --nllfactor 0.1 --subsets 100 -i ${SLURM_ARRAY_TASK_ID}
-python -u train.py --modelname sequential_april --dataset lhc40d --algorithm mf --sequential --modellatentdim 14 --splinebins 10 --nllfactor 0.1 -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/lhc_may.config --modelname sequential_may --algorithm mf --sequential -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/lhc_may.config --modelname alternate_may --algorithm mf --alternate -i ${SLURM_ARRAY_TASK_ID}

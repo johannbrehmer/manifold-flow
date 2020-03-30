@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-sf-l2d
+#SBATCH --job-name=t-f-l2d
 #SBATCH --output=log_train_flow_lhc2d_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
@@ -13,4 +13,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py --modelname april --dataset lhc2d --algorithm flow --splinebins 10 --nllfactor 1 --modellatentdim 2 -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/lhc_may.config --modelname may --algorithm flow --dataset lhc40d --modellatentdim 14 -i ${SLURM_ARRAY_TASK_ID}
