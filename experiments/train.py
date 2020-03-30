@@ -6,7 +6,7 @@ import numpy as np
 import logging
 import sys
 import torch
-import argparse
+import configargparse
 import copy
 from torch import optim
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 def parse_args():
     """ Parses command line arguments for the training """
 
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
 
     # What what what
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
@@ -113,6 +113,7 @@ def parse_args():
     parser.add_argument("--prepostfraction", type=int, default=3, help="Fraction of epochs reserved for pretraining and posttraining (MFMF-S only)")
 
     # Other settings
+    parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
     parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
 

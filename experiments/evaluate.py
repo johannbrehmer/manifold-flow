@@ -6,7 +6,7 @@ import numpy as np
 import logging
 import sys
 import torch
-import argparse
+import configargparse
 import copy
 
 sys.path.append("../")
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def parse_args():
     """ Parses command line arguments for the evaluation """
 
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
 
     # What what what
     parser.add_argument("--truth", action="store_true", help="Evaluate ground truth rather than learned model")
@@ -96,6 +96,7 @@ def parse_args():
     parser.add_argument("--trueparam", type=int, default=0, help="Index of true parameter point for inference tasks")
 
     # Other settings
+    parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
     parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
     parser.add_argument("--skipgeneration", action="store_true", help="Skip generative mode eval")
