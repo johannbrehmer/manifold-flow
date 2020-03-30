@@ -437,7 +437,7 @@ def create_model(args, simulator):
             outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
             outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
             outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
-            logger.info("Additional settings for outer transform: %s", outer_transform_kwargs)
+            logger.debug("Additional settings for outer transform: %s", outer_transform_kwargs)
         except:
             pass
         outer_transform = create_vector_transform(
