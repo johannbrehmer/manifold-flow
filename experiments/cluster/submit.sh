@@ -24,8 +24,11 @@
 
 # PARTICLE PHYSICS
 
-sbatch --array 0-4 train_mf_lhc40d.sh
-sbatch --array 0-4 train_emf_lhc40d.sh
-sbatch --array 0-4 train_flow_lhc40d.sh
-sbatch --array 0-4 train_pie_lhc40d.sh
-sbatch --array 0-4 train_flow_lhc2d.sh
+for i in 0 1 2 3 4
+do
+    sbatch --array $i-$i train_mf_lhc40d.sh
+    sbatch --array $i-$i train_emf_lhc40d.sh
+    sbatch --array $i-$i train_flow_lhc40d.sh
+    sbatch --array $i-$i train_pie_lhc40d.sh
+    sbatch --array $i-$i train_flow_lhc2d.sh
+done
