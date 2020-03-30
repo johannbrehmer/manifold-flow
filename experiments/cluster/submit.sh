@@ -24,7 +24,7 @@
 
 # PARTICLE PHYSICS
 
-for i in 0 1 2 3 4
+for i in 5 6 7 8 9 10
 do
     sbatch --array $i-$i train_mf_lhc40d.sh
     sbatch --array $i-$i train_emf_lhc40d.sh
