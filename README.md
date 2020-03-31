@@ -40,12 +40,14 @@ Algorithm | Acronym in paper | Arguments to `train.py`
 Ambient flow | AF | `--algorithm flow`
 Flow on manifold | FOM | `--algorithm mf --specified`
 Pseudo-invertible encoder | PIE | `--algorithm pie`
-Manifold-modeling flow, simultaneous training | MFMF-S | `--algorithm mf`
-Manifold-modeling flow, alternating training | MFMF-A | `--algorithm mf --alternate`
+Manifold-modeling flow, simultaneous training (not recommended) | MFMF-S | `--algorithm mf`
+Manifold-modeling flow, alternating M/D training | MFMF-M/D | `--algorithm mf --alternate`
+Manifold-modeling flow, sequential M/D training | MFMF-M/D | `--algorithm mf --sequential`
 Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow, alternating Optimal Transport training | MFMF-OTA | `--algorithm gamf --alternate`
-Manifold-modeling flow with sep. encoder, simultaneous training | MFMFE-S | `--algorithm emf`
-Manifold-modeling flow with sep. encoder, alternating training schedule | MFMFE-A | `--algorithm emf --alternate`
+Manifold-modeling flow, alternating Optimal Transport training | MFMF-OT/D | `--algorithm gamf --alternate`
+Manifold-modeling flow with sep. encoder, simultaneous training (not recommended) | MFMFE-S | `--algorithm emf`
+Manifold-modeling flow with sep. encoder, alternating M/D training | MFMFE-M/D | `--algorithm emf --alternate`
+Manifold-modeling flow with sep. encoder, sequential M/D training | MFMFE-M/D | `--algorithm emf --sequential`
 
 
 ## Evaluation 
