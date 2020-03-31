@@ -224,7 +224,9 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
-    phase1_parameters = list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+    phase1_parameters = (
+        list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+    )
     phase2_parameters = model.inner_transform.parameters()
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
@@ -269,7 +271,9 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_labels=["MSE"],
         loss_weights=[args.msefactor],
         epochs=args.epochs // 2,
-        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters(),
+        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
+        if args.algorithm == "emf"
+        else model.outer_transform.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
         forward_kwargs={"mode": "projection"},
         **common_kwargs,
