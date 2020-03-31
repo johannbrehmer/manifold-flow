@@ -12,7 +12,7 @@ In the paper [Flows for simultaneous manifold learning and density estimation](h
 
 ## Getting started
 
-Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the MLF-OT algorithm, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
+Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the MFMF-OT algorithm, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
 
 ## Data sets
 
