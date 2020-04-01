@@ -115,6 +115,39 @@ class ImageNet64Fast(Dataset):
                 download_file_from_google_drive(self.GOOGLE_DRIVE_FILE_ID[tag], npy)
 
 
+class CelebA(UnlabelledImageFolder):
+    """Unlabelled standard CelebA dataset, the aligned version."""
+    GOOGLE_DRIVE_FILE_ID = '0B7EVK8r0v71pZjFTYXZWM3FlRnM'
+    ZIP_FILE_NAME = 'img_align_celeba.zip'
+
+    def __init__(self, root, transform=None, download=False):
+        if download:
+            self.download(root)
+        super(CelebA, self).__init__(os.path.join(root, self.img_dir),
+                                     transform=transform)
+
+    @property
+    def img_dir(self):
+        return 'img_align_celeba'
+
+    def download(self, root):
+        if os.path.isdir(os.path.join(root, self.img_dir)):
+            return  # Downloaded already
+
+        os.makedirs(root, exist_ok=True)
+
+        zip_file = os.path.join(root, self.ZIP_FILE_NAME)
+
+        print('Downloading {}...'.format(os.path.basename(zip_file)))
+        download_file_from_google_drive(self.GOOGLE_DRIVE_FILE_ID, zip_file)
+
+        print('Extracting {}...'.format(os.path.basename(zip_file)))
+        with zipfile.ZipFile(zip_file, 'r') as fp:
+            fp.extractall(root)
+
+        os.remove(zip_file)
+
+
 class Preprocess:
     def __init__(self, num_bits):
         self.num_bits = num_bits
