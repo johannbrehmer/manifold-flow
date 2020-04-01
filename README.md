@@ -2,12 +2,13 @@
 
 *Johann Brehmer and Kyle Cranmer 2019-2020*
 
+[![arXiv](http://img.shields.io/badge/arXiv-1907.10621-B31B1B.svg)](https://arxiv.org/abs/2003.13913)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ![MFMF illustration figure](experiments/figures/manifold_density_illustration_combined.png)
 
-In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.XXXXX) we introduce manifold-modeling flows (MFMFs), a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of manifold-modeling flows as well as some other fow-based generative models, as well as the code for our experiments with them.
+In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-modeling flows (MFMFs), a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of manifold-modeling flows as well as some other fow-based generative models, as well as the code for our experiments with them.
 
 
 ## Getting started
