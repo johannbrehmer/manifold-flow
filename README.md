@@ -2,7 +2,7 @@
 
 *Johann Brehmer and Kyle Cranmer 2019-2020*
 
-[![arXiv](http://img.shields.io/badge/arXiv-1907.10621-B31B1B.svg)](https://arxiv.org/abs/2003.13913)
+[![arXiv](http://img.shields.io/badge/arXiv-2003.13913-B31B1B.svg)](https://arxiv.org/abs/2003.13913)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
