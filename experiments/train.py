@@ -24,7 +24,7 @@ from manifold_flow.training import (
 from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer
 from experiments.utils.loading import load_training_dataset, load_simulator
 from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
-from experiments.utils.models import create_model
+from experiments.models.create_model import create_model
 
 logger = logging.getLogger(__name__)
 
