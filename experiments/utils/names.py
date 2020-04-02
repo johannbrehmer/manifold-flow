@@ -1,6 +1,6 @@
 import os
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet", "celeba"]
 ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
 
 
@@ -23,6 +23,9 @@ def create_filename(type, label, args):
 
     elif type == "checkpoint":
         filename = "{}/experiments/data/models/checkpoints/{}.pt".format(args.dir, args.modelname)
+
+    elif type == "training_plots":
+        filename = "{}/experiments/data/figures/training/{}_epoch{}.pdf".format(args.dir, args.modelname, "{}")
 
     elif type == "learning_curve":
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)

@@ -32,14 +32,7 @@ def _create_image_transform_step(
     hidden_channels=96,
     actnorm=True,
     coupling_layer_type="rational_quadratic_spline",
-    spline_params={
-        "apply_unconditional_transform": False,
-        "min_bin_height": 0.001,
-        "min_bin_width": 0.001,
-        "min_derivative": 0.001,
-        "num_bins": 4,
-        "tail_bound": 3.0,
-    },
+    spline_params=None,
     use_resnet=True,
     num_res_blocks=3,
     resnet_batchnorm=True,
@@ -64,6 +57,16 @@ def _create_image_transform_step(
 
         def create_convnet(in_channels, out_channels):
             return ConvNet(in_channels, hidden_channels, out_channels)
+
+    if spline_params is None:
+        spline_params = {
+            "apply_unconditional_transform": False,
+            "min_bin_height": 0.001,
+            "min_bin_width": 0.001,
+            "min_derivative": 0.001,
+            "num_bins": 4,
+            "tail_bound": 3.0,
+        }
 
     mask = various.create_mid_split_binary_mask(num_channels)
 
@@ -120,7 +123,25 @@ def _create_image_transform_step(
     return transforms.CompositeTransform(step_transforms)
 
 
-def create_image_transform(c, h, w, levels=3, hidden_channels=96, steps_per_level=7, alpha=0.05, num_bits=8, preprocessing="glow", multi_scale=True):
+def create_image_transform(
+    c,
+    h,
+    w,
+    levels=3,
+    hidden_channels=96,
+    steps_per_level=7,
+    alpha=0.05,
+    num_bits=8,
+    preprocessing="glow",
+    multi_scale=True,
+    use_resnet=True,
+    dropout_prob=0.0,
+    num_res_blocks=3,
+    coupling_layer_type="rational_quadratic_spline",
+    use_batchnorm=False,
+    use_actnorm=True,
+    spline_params=None,
+):
     dim = c * h * w
     if not isinstance(hidden_channels, list):
         hidden_channels = [hidden_channels] * levels
@@ -136,7 +157,20 @@ def create_image_transform(c, h, w, levels=3, hidden_channels=96, steps_per_leve
             logger.debug("  SqueezeTransform()")
             transform_level = transforms.CompositeTransform(
                 [squeeze_transform]
-                + [_create_image_transform_step(c, level_hidden_channels) for _ in range(steps_per_level)]
+                + [
+                    _create_image_transform_step(
+                        c,
+                        level_hidden_channels,
+                        actnorm=use_actnorm,
+                        coupling_layer_type=coupling_layer_type,
+                        spline_params=spline_params,
+                        use_resnet=use_resnet,
+                        num_res_blocks=num_res_blocks,
+                        resnet_batchnorm=use_batchnorm,
+                        dropout_prob=dropout_prob,
+                    )
+                    for _ in range(steps_per_level)
+                ]
                 + [transforms.OneByOneConvolution(c)]  # End each level with a linear transformation.
             )
             logger.debug("  OneByOneConvolution(%s)", c)
@@ -154,7 +188,20 @@ def create_image_transform(c, h, w, levels=3, hidden_channels=96, steps_per_leve
 
             transform_level = transforms.CompositeTransform(
                 [squeeze_transform]
-                + [_create_image_transform_step(c, level_hidden_channels) for _ in range(steps_per_level)]
+                + [
+                    _create_image_transform_step(
+                        c,
+                        level_hidden_channels,
+                        actnorm=use_actnorm,
+                        coupling_layer_type=coupling_layer_type,
+                        spline_params=spline_params,
+                        use_resnet=use_resnet,
+                        num_res_blocks=num_res_blocks,
+                        resnet_batchnorm=use_batchnorm,
+                        dropout_prob=dropout_prob,
+                    )
+                    for _ in range(steps_per_level)
+                ]
                 + [transforms.OneByOneConvolution(c)]  # End each level with a linear transformation.
             )
             all_transforms.append(transform_level)
@@ -383,6 +430,11 @@ def create_vector_encoder(
 def create_model(args, simulator):
     assert args.algorithm in ALGORITHMS
 
+    if simulator.is_image():
+        c, h, w = simulator.data_dim()
+    else:
+        c, h, w = None, None, None
+
     if not simulator.is_image() and args.algorithm == "flow":
         logger.info(
             "Creating standard flow for vector data with %s layers, transform %s, %s context features",
@@ -403,13 +455,39 @@ def create_model(args, simulator):
         model = Flow(data_dim=args.datadim, transform=transform)
 
     elif simulator.is_image() and args.algorithm == "flow":
+        if simulator.parameter_dim() > 0:
+            raise NotImplementedError
+
+        steps_per_level = (args.innerlayers + args.outerlayers) // args.levels
         logger.info(
-            "Creating standard flow for image data with %s layers, transform %s, %s context features",
-            args.innerlayers + args.outerlayers,
+            "Creating standard flow for image data with %s levels and %s steps per level, transform %s, %s context features",
+            args.levels,
+            steps_per_level,
             args.outertransform,
             context_features=simulator.parameter_dim(),
         )
-        raise NotImplementedError
+        spline_params = {
+            "apply_unconditional_transform": False,
+            "min_bin_height": 0.001,
+            "min_bin_width": 0.001,
+            "min_derivative": 0.001,
+            "num_bins": args.splinebins,
+            "tail_bound": args.splinerange,
+        }
+        transform = create_image_transform(
+            c,
+            h,
+            w,
+            levels=args.levels,
+            hidden_channels=args.outercouplinglayers,
+            steps_per_level=steps_per_level,
+            alpha=0.05,
+            num_bits=8,
+            preprocessing="glow",
+            multi_scale=True,
+            spline_params=spline_params,
+        )
+        model = Flow(data_dim=args.datadim, transform=transform)
 
     elif not simulator.is_image() and args.algorithm == "emf":
         logger.info(
