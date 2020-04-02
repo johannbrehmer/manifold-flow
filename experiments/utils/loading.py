@@ -11,6 +11,7 @@ from experiments.simulators import (
     WBF2DLoader,
     WBF40DLoader,
     PowerManifoldSimulator,
+    CelebALoader,
 )
 from experiments.utils import SIMULATORS
 from experiments.utils.names import create_filename
@@ -37,6 +38,8 @@ def load_simulator(args):
         simulator = CIFAR10Loader()
     elif args.dataset == "imagenet":
         simulator = ImageNetLoader()
+    elif args.dataset == "celeba":
+        simulator = CelebALoader()
     else:
         raise ValueError("Unknown dataset {}".format(args.dataset))
 

@@ -24,7 +24,7 @@ def create_filename(type, label, args):
     elif type == "checkpoint":
         filename = "{}/experiments/data/models/checkpoints/{}.pt".format(args.dir, args.modelname)
 
-    elif type == "training_plots":
+    elif type == "training_plot":
         filename = "{}/experiments/data/figures/training/{}_epoch{}.pdf".format(args.dir, args.modelname, "{}")
 
     elif type == "learning_curve":

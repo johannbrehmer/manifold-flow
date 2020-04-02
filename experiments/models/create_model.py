@@ -3,8 +3,8 @@ import logging
 from ..utils import ALGORITHMS
 from .image_transforms import create_image_transform
 from .vector_transforms import create_vector_encoder, create_vector_transform
-from ...manifold_flow import transforms
-from ...manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionManifoldFlow, ManifoldFlow
+from manifold_flow import transforms
+from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionManifoldFlow, ManifoldFlow
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def create_model(args, simulator):
 
     # Ambient flow for image data
     elif simulator.is_image() and args.algorithm == "flow":
-        if simulator.parameter_dim() > 0:
+        if simulator.parameter_dim() is not None:
             raise NotImplementedError
 
         steps_per_level = (args.innerlayers + args.outerlayers) // args.levels
@@ -49,7 +49,7 @@ def create_model(args, simulator):
             args.levels,
             steps_per_level,
             args.outertransform,
-            context_features=simulator.parameter_dim(),
+            simulator.parameter_dim(),
         )
         spline_params = {
             "apply_unconditional_transform": False,
