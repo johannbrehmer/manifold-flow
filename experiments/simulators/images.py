@@ -120,15 +120,13 @@ class CelebA(UnlabelledImageFolder):
     GOOGLE_DRIVE_FILE_ID = '0B7EVK8r0v71pZjFTYXZWM3FlRnM'
     ZIP_FILE_NAME = 'img_align_celeba.zip'
 
-    def __init__(self, root, transform=None, download=False):
+    def __init__(self, root, train=True, transform=None, download=False):
         if download:
             self.download(root)
+
+        tag = "train" if train else "valid"
         super(CelebA, self).__init__(os.path.join(root, self.img_dir),
                                      transform=transform)
-
-    @property
-    def img_dir(self):
-        return 'img_align_celeba'
 
     def download(self, root):
         if os.path.isdir(os.path.join(root, self.img_dir)):
@@ -226,9 +224,15 @@ class Preprocess:
         # Uniform dequantization.
         img = img + torch.rand_like(img)
 
+        # Rescale to (-1., 1.)
+        img = -1. + img / 128.
+
         return img
 
     def inverse(self, inputs):
+        # Rescale from (-1., 1.) to (0., 256.)
+        inputs = (inputs + 1.) * 128.
+
         # Discretize the pixel values.
         inputs = torch.floor(inputs)
         # Convert to a float in [0, 1].
@@ -251,134 +255,6 @@ class RandomHorizontalFlipTensor(object):
 
     def __repr__(self):
         return self.__class__.__name__ + "(p={})".format(self.p)
-
-
-# def get_data(dataset_name, num_bits, dataset_root, train=True):
-#     if dataset_name == "imagenet-64-fast":
-#         root = os.path.join(dataset_root, "imagenet64_fast")
-#         c, h, w = (3, 64, 64)
-#
-#         if train:
-#             dataset = ImageNet64Fast(
-#                 root=root, train=True, download=True, transform=Preprocess(num_bits)
-#             )
-#
-#             # num_train = len(train_dataset)
-#             # valid_size = int(np.floor(num_train * valid_frac))
-#             # train_size = num_train - valid_size
-#             # train_dataset, valid_dataset = random_split(train_dataset,
-#             #                                             (train_size, valid_size))
-#         else:
-#             dataset = ImageNet64Fast(
-#                 root=root, train=False, download=True, transform=Preprocess(num_bits)
-#             )
-#
-#     elif dataset_name == "cifar-10-fast" or dataset_name == "cifar-10":
-#         root = os.path.join(dataset_root, "cifar-10")
-#         c, h, w = (3, 32, 32)
-#
-#         if dataset_name == "cifar-10-fast":
-#             dataset_class = CIFAR10Fast
-#             train_transform = tvt.Compose(
-#                 [RandomHorizontalFlipTensor(), Preprocess(num_bits)]
-#             )
-#             test_transform = Preprocess(num_bits)
-#         else:
-#             dataset_class = datasets.CIFAR10
-#             train_transform = tvt.Compose(
-#                 [tvt.RandomHorizontalFlip(), tvt.ToTensor(), Preprocess(num_bits)]
-#             )
-#             test_transform = tvt.Compose([tvt.ToTensor(), Preprocess(num_bits)])
-#
-#         if train:
-#             dataset = dataset_class(
-#                 root=root, train=True, download=True, transform=train_transform
-#             )
-#
-#             # valid_dataset = dataset_class(
-#             #     root=root,
-#             #     train=True,
-#             #     transform=test_transform # Note different transform.
-#             # )
-#
-#             # num_train = len(train_dataset)
-#             # indices = torch.randperm(num_train).tolist()
-#             # valid_size = int(np.floor(valid_frac * num_train))
-#             # train_idx, valid_idx = indices[valid_size:], indices[:valid_size]
-#
-#             # train_dataset = Subset(train_dataset, train_idx)
-#             # valid_dataset = Subset(valid_dataset, valid_idx)
-#         else:
-#             dataset = dataset_class(
-#                 root=root, train=False, download=True, transform=test_transform
-#             )
-#
-#     elif dataset_name == "imagenet-32" or dataset_name == "imagenet-64":
-#         if dataset_name == "imagenet-32":
-#             root = os.path.join(dataset_root, "imagenet32")
-#             c, h, w = (3, 32, 32)
-#             dataset_class = ImageNet32
-#         else:
-#             root = os.path.join(dataset_root, "imagenet64")
-#             c, h, w = (3, 64, 64)
-#             dataset_class = ImageNet64
-#
-#         if train:
-#             dataset = dataset_class(
-#                 root=root,
-#                 train=True,
-#                 download=True,
-#                 transform=tvt.Compose([tvt.ToTensor(), Preprocess(num_bits)]),
-#             )
-#
-#             # num_train = len(train_dataset)
-#             # valid_size = int(np.floor(num_train * valid_frac))
-#             # train_size = num_train - valid_size
-#             # train_dataset, valid_dataset = random_split(train_dataset,
-#             #                                             (train_size, valid_size))
-#         else:
-#             dataset = dataset_class(
-#                 root=root,
-#                 train=False,
-#                 download=True,
-#                 transform=tvt.Compose([tvt.ToTensor(), Preprocess(num_bits)]),
-#             )
-#     # elif dataset_name == "celeba-hq-64-fast":
-#     #     root = os.path.join(dataset_root, "celeba_hq_64_fast")
-#     #     c, h, w = (3, 64, 64)
-#     #
-#     #     train_transform = tvt.Compose(
-#     #         [RandomHorizontalFlipTensor(), Preprocess(num_bits)]
-#     #     )
-#     #     test_transform = Preprocess(num_bits)
-#     #
-#     #     if train:
-#     #         dataset = CelebAHQ64Fast(
-#     #             root=root, train=True, download=True, transform=train_transform
-#     #         )
-#     #
-#     #         # valid_dataset = data.CelebAHQ64Fast(
-#     #         #     root=root,
-#     #         #     train=True,
-#     #         #     transform=test_transform # Note different transform.
-#     #         # )
-#     #
-#     #         # num_train = len(train_dataset)
-#     #         # indices = torch.randperm(num_train).tolist()
-#     #         # valid_size = int(np.floor(valid_frac * num_train))
-#     #         # train_idx, valid_idx = indices[valid_size:], indices[:valid_size]
-#     #         #
-#     #         # train_dataset = Subset(train_dataset, train_idx)
-#     #         # valid_dataset = Subset(valid_dataset, valid_idx)
-#     #     else:
-#     #         dataset = CelebAHQ64Fast(
-#     #             root=root, train=False, download=True, transform=test_transform
-#     #         )
-#
-#     else:
-#         raise RuntimeError("Unknown dataset {}".format(dataset_name))
-#
-#     return dataset, (c, h, w)
 
 
 class CIFAR10Loader(BaseSimulator):
@@ -423,7 +299,7 @@ class ImageNetLoader(BaseSimulator):
 
 class CelebALoader(BaseSimulator):
     def data_dim(self):
-        return (3, 128, 128)
+        return (3, 64, 64)
 
     def is_image(self):
         return True
@@ -437,4 +313,6 @@ class CelebALoader(BaseSimulator):
 
         assert limit_samplesize is None
         num_bits = 8
-        return ImageNet64Fast(root=dataset_dir, train=train, download=True, transform=Preprocess(num_bits))
+        train_transform = tvt.Compose([RandomHorizontalFlipTensor(), Preprocess(num_bits)])
+        test_transform = Preprocess(num_bits)
+        return CelebAHQ64Fast(root=dataset_dir, train=train, download=True, transform=train_transform if train else test_transform)
