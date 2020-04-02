@@ -99,7 +99,7 @@ class ImageNet64Fast(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        # Add a bogus label to be compatible with standard image simulators.
+        # Add a bogus label to be compatible with standard image data.
         return img, torch.tensor([0.0])
 
     def __len__(self):
@@ -146,6 +146,67 @@ class CelebA(UnlabelledImageFolder):
             fp.extractall(root)
 
         os.remove(zip_file)
+
+
+class CelebAHQ(CelebA):
+    """Unlabelled high quality CelebA dataset with 256x256 images."""
+    GOOGLE_DRIVE_FILE_ID = '1psLniAvAvyDgJV8DBk7cvTZ9EasB_2tZ'
+    ZIP_FILE_NAME = 'celeba-hq-256.zip'
+
+    def __init__(self, root, transform=None, train=True, download=False):
+        self.train = train
+        super().__init__(root, transform=transform, download=download)
+
+    @property
+    def img_dir(self):
+        if self.train:
+            return 'celeba-hq-256/train-png'
+        else:
+            return 'celeba-hq-256/validation-png'
+
+
+class CelebAHQ64Fast(Dataset):
+    GOOGLE_DRIVE_FILE_ID = {
+        'train': '1bcaqMKWzJ-2ca7HCQrUPwN61lfk115TO',
+        'valid': '1WfE64z9FNgOnLliGshUDuCrGBfJSwf-t'
+    }
+
+    NPY_NAME = {
+        'train': 'train.npy',
+        'valid': 'valid.npy'
+    }
+
+    def __init__(self, root, train=True, download=False, transform=None):
+        self.transform = transform
+        self.root = root
+
+        if download:
+            self._download()
+
+        tag = 'train' if train else 'valid'
+        npy_data = np.load(os.path.join(root, self.NPY_NAME[tag]))
+        self.data = torch.from_numpy(npy_data) # Shouldn't make a copy.
+
+    def __getitem__(self, index):
+        img = self.data[index, ...]
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        # Add a bogus label to be compatible with standard image data.
+        return img, torch.tensor([0.])
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def _download(self):
+        os.makedirs(self.root, exist_ok=True)
+
+        for tag in ['train','valid']:
+            npy = os.path.join(self.root, self.NPY_NAME[tag])
+            if not os.path.isfile(npy):
+                print('Downloading {}...'.format(self.NPY_NAME[tag]))
+                download_file_from_google_drive(self.GOOGLE_DRIVE_FILE_ID[tag], npy)
 
 
 class Preprocess:
@@ -330,7 +391,7 @@ class CIFAR10Loader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
         if numpy:
             raise NotImplementedError
 
@@ -351,7 +412,26 @@ class ImageNetLoader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
+        if numpy:
+            raise NotImplementedError
+
+        assert limit_samplesize is None
+        num_bits = 8
+        return ImageNet64Fast(root=dataset_dir, train=train, download=True, transform=Preprocess(num_bits))
+
+
+class CelebALoader(BaseSimulator):
+    def data_dim(self):
+        return (3, 128, 128)
+
+    def is_image(self):
+        return True
+
+    def parameter_dim(self):
+        return None
+
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
         if numpy:
             raise NotImplementedError
 
