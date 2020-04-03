@@ -20,7 +20,7 @@ def plot_sample_images(filename):
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
         x = model.sample(n=30).detach().numpy()
-        x = 0.5 * (np.transpose(x, [0, 2, 3, 1]) + 1)
+        x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256., 0., 1.)
 
         plt.figure(figsize=(6 * 3.0, 5 * 3.0))
         for i in range(30):
