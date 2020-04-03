@@ -11,7 +11,7 @@ import copy
 import optuna
 import pickle
 
-# sys.path.append("../")
+sys.path.append("../")
 
 import train, evaluate
 from datasets import load_simulator, load_training_dataset, SIMULATORS

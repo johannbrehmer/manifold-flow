@@ -22,8 +22,8 @@ Please make sure your Python environment satisfies the requirements in the [envi
 
 Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `generate_data.py`, `train.py`, and `evaluate.py`
 --- | --- | --- | --- | ---
-Gaussian on an `n`-sphere | `n` | `d` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
-Conditional Gaussian on a `n`-sphere | `n` | `d` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
+Gaussian on an `n`-sphere | `d` | `n` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
+Conditional Gaussian on a `n`-sphere | `d` | `n` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
 Particle physics data (48-D) | 48 | 14 | 2 | `--dataset lhc`
 Particle physics data (40-D, no angular features) | 40 | 14 | 2 | `--dataset lhc40d`

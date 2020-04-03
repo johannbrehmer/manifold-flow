@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.stats import norm
 import logging
-from experiments.datasets.base import BaseSimulator
+from .base import BaseSimulator
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ def create_filename(type, label, args):
         filename = "{}/experiments/data/models/checkpoints/{}.pt".format(args.dir, args.modelname)
 
     elif type == "training_plot":
-        filename = "{}/experiments/data/figures/training/{}_epoch{}.pdf".format(args.dir, args.modelname, "{}")
+        filename = "{}/experiments/figures/training/{}_epoch{}.pdf".format(args.dir, args.modelname, "{}")
 
     elif type == "learning_curve":
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)

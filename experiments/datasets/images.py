@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from torchvision import transforms as tvt
 
-from experiments.datasets.utils import Preprocess, RandomHorizontalFlipTensor
+from .utils import Preprocess, RandomHorizontalFlipTensor
 from .base import BaseSimulator
 from .utils import download_file_from_google_drive, UnlabelledImageDataset
 
