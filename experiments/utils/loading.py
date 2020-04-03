@@ -2,7 +2,7 @@ import numpy as np
 import logging
 import copy
 
-from experiments.simulators import (
+from experiments.datasets import (
     SphericalGaussianSimulator,
     ConditionalSphericalGaussianSimulator,
     CIFAR10Loader,

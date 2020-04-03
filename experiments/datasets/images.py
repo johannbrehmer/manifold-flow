@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms as tvt
 from torchvision import datasets
 
-from experiments.simulators.base import BaseSimulator
+from experiments.datasets.base import BaseSimulator
 from experiments.utils import download_file_from_google_drive
 from manifold_flow.training import UnlabelledImageFolder
 

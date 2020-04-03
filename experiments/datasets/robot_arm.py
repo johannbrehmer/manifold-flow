@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.stats import norm, uniform
 import logging
-from experiments.simulators.base import BaseSimulator, IntractableLikelihoodError
+from experiments.datasets.base import BaseSimulator, IntractableLikelihoodError
 
 logger = logging.getLogger(__name__)
 

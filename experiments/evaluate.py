@@ -14,8 +14,8 @@ sys.path.append("../")
 from experiments.inference import mcmc, sq_maximum_mean_discrepancy
 from experiments.utils.loading import load_simulator, load_test_samples
 from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
-from experiments.models.create_model import create_model
-from experiments.simulators.base import IntractableLikelihoodError
+from experiments.architectures.create_model import create_model
+from experiments.datasets.base import IntractableLikelihoodError
 
 logger = logging.getLogger(__name__)
 

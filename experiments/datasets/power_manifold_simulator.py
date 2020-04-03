@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import norm, uniform, special_ortho_group
 from sklearn.preprocessing import PolynomialFeatures
 import logging
-from experiments.simulators.base import BaseSimulator
+from experiments.datasets.base import BaseSimulator
 
 logger = logging.getLogger(__name__)
 
