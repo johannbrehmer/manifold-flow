@@ -62,8 +62,14 @@ class BaseLHCLoader(BaseSimulator):
             return x, params
         return NumpyDataset(x, params)
 
-    def default_parameters(self, true_param_id=0):
-        return np.zeros(self._parameter_dim)
+    def sample(self, n, parameters=None):
+        raise NotImplementedError
+
+    def sample_ood(self, n, parameters=None):
+        raise NotImplementedError
+
+    def distance_from_manifold(self, x):
+        raise NotImplementedError
 
     def sample_from_prior(self, n):
         return np.random.normal(

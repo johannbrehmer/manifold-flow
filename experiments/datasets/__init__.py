@@ -5,22 +5,22 @@ import logging
 from .base import IntractableLikelihoodError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
-from .images import CIFAR10Loader, ImageNetLoader, CelebALoader
+from .images import ImageNetLoader, CelebALoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
-from .power_manifold_simulator import PowerManifoldSimulator
+from .polynomial_surface_simulator import PolynomialSurfaceSimulator
 from ..utils import create_filename
 from .utils import NumpyDataset
 
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet", "celeba"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba"]
 
 
 def load_simulator(args):
     assert args.dataset in SIMULATORS
     if args.dataset == "power":
-        simulator = PowerManifoldSimulator(filename=args.dir + "/experiments/data/samples/power/manifold.npz")
+        simulator = PolynomialSurfaceSimulator(filename=args.dir + "/experiments/data/samples/power/manifold.npz")
     elif args.dataset == "spherical_gaussian":
         simulator = SphericalGaussianSimulator(args.truelatentdim, args.datadim, epsilon=args.epsilon)
     elif args.dataset == "conditional_spherical_gaussian":
@@ -31,8 +31,6 @@ def load_simulator(args):
         simulator = WBF2DLoader()
     elif args.dataset == "lhc40d":
         simulator = WBF40DLoader()
-    elif args.dataset == "cifar10":
-        simulator = CIFAR10Loader()
     elif args.dataset == "imagenet":
         simulator = ImageNetLoader()
     elif args.dataset == "celeba":

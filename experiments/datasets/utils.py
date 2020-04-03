@@ -1,10 +1,9 @@
 import os
 import numpy as np
 import torch
-from torch import __init__
+import requests
 
 from torch.utils.data import Dataset
-from torchvision.datasets.folder import default_loader, has_file_allowed_extension, IMG_EXTENSIONS
 
 
 def download_file(url, dest):

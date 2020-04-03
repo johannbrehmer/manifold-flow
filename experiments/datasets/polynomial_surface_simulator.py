@@ -10,7 +10,7 @@ from .base import BaseSimulator
 logger = logging.getLogger(__name__)
 
 
-class PowerManifoldSimulator(BaseSimulator):
+class PolynomialSurfaceSimulator(BaseSimulator):
     def __init__(
         self,
         draw_constants=False,

@@ -34,11 +34,17 @@ class RobotArmSimulator(BaseSimulator):
     def log_density(self, x, parameters=None):
         raise IntractableLikelihoodError
 
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
+        raise NotImplementedError
+
     def sample(self, n, parameters=None):
         assert parameters is not None
         z = self._draw_z(n, parameters=parameters)
         x = self._observation(z)
         return x
+
+    def sample_ood(self, n, parameters=None):
+        raise NotImplementedError
 
     def distance_from_manifold(self, x):
         raise IntractableLikelihoodError

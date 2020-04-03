@@ -23,14 +23,17 @@ class BaseImageLoader(BaseSimulator):
     def data_dim(self):
         return (3, self.resolution, self.resolution)
 
+    def latent_dim(self):
+        raise NotImplementedError
+
     def parameter_dim(self):
         return None
 
     def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
         # Load data as numpy array
         if self.gdrive_file_ids is not None:
-            self._download()
-        x = np.load("{}/{}.npy".format(dataset_dir, "train" if train else "valid"))
+            self._download(dataset_dir)
+        x = np.load("{}/{}.npy".format(dataset_dir, "train" if train else "test"))
 
         # Optionally limit sample size
         if limit_samplesize is not None:
@@ -39,6 +42,7 @@ class BaseImageLoader(BaseSimulator):
 
         if numpy:
             # TODO: implement transforms here as well
+            logger.warning("Loading image data as numpy array, these data do not have preprocessing applied!")
             return x, None
 
         # Transforms
@@ -51,10 +55,19 @@ class BaseImageLoader(BaseSimulator):
         dataset = UnlabelledImageDataset(x, transform=transform)
         return dataset
 
+    def sample(self, n, parameters=None):
+        raise NotImplementedError
+
+    def sample_ood(self, n, parameters=None):
+        raise NotImplementedError
+
+    def distance_from_manifold(self, x):
+        raise NotImplementedError
+
     def _download(self, dataset_dir):
         os.makedirs(dataset_dir, exist_ok=True)
 
-        for tag in ["train", "valid"]:
+        for tag in ["train", "test"]:
             filename = "{}/{}.npy".format(dataset_dir, tag)
             if not os.path.isfile(filename):
                 assert self.gdrive_file_ids is not None
