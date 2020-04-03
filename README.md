@@ -24,8 +24,10 @@ Gaussian on an `n`-sphere | `n` | `d` | - |  `--dataset spherical_gaussian --tru
 Conditional Gaussian on a `n`-sphere | `n` | `d` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
 Particle physics data (48D) | 48 | 14 | 2 | `--dataset lhc`
-Particle physics data (40D, no angular features) | 2 | 2 | 2 | `--dataset lhc2d`
+Particle physics data (40D, no angular features) | 2 | 2 | 2 | `--dataset lhc40d`
 Particle physics data (2D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
+
+The data for the particle physics experiments is available upon request.
 
 
 ## Data generation
