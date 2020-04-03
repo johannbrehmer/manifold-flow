@@ -9,7 +9,7 @@ import torch
 import argparse
 import time
 
-# sys.path.append("../")
+sys.path.append("../")
 
 from utils import create_filename
 from architectures import create_model

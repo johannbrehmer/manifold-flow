@@ -9,7 +9,7 @@ import torch
 import configargparse
 import copy
 
-# sys.path.append("../")
+sys.path.append("../")
 
 from evaluation import mcmc, sq_maximum_mean_discrepancy
 from datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError

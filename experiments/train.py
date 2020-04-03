@@ -10,7 +10,7 @@ import configargparse
 import copy
 from torch import optim
 
-# sys.path.append("../")
+sys.path.append("../")
 
 from training import (
     ManifoldFlowTrainer,
