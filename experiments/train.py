@@ -10,9 +10,9 @@ import configargparse
 import copy
 from torch import optim
 
-sys.path.append("../")
+# sys.path.append("../")
 
-from .training import (
+from training import (
     ManifoldFlowTrainer,
     losses,
     ConditionalManifoldFlowTrainer,
@@ -23,10 +23,10 @@ from .training import (
     VariableDimensionManifoldFlowTrainer,
     ConditionalVariableDimensionManifoldFlowTrainer,
 )
-from .datasets import load_simulator, load_training_dataset, SIMULATORS
-from .utils import create_filename, create_modelname
-from .architectures import create_model
-from experiments.architectures.create_model import ALGORITHMS
+from datasets import load_simulator, load_training_dataset, SIMULATORS
+from utils import create_filename, create_modelname
+from architectures import create_model
+from architectures.create_model import ALGORITHMS
 
 logger = logging.getLogger(__name__)
 

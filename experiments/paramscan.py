@@ -11,12 +11,12 @@ import copy
 import optuna
 import pickle
 
-sys.path.append("../")
+# sys.path.append("../")
 
-from experiments import train, evaluate
-from experiments.datasets import load_simulator, load_training_dataset, SIMULATORS
-from experiments.utils.names import create_filename, create_modelname
-from experiments.architectures.create_model import create_model, ALGORITHMS
+import train, evaluate
+from datasets import load_simulator, load_training_dataset, SIMULATORS
+from utils import create_filename, create_modelname
+from architectures import create_model, ALGORITHMS
 
 logger = logging.getLogger(__name__)
 

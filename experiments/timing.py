@@ -9,10 +9,10 @@ import torch
 import argparse
 import time
 
-sys.path.append("../")
+# sys.path.append("../")
 
-from experiments.utils.names import create_filename
-from experiments.architectures.create_model import create_model
+from utils import create_filename
+from architectures import create_model
 
 logger = logging.getLogger(__name__)
 

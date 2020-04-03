@@ -8,7 +8,7 @@ from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulat
 from .images import ImageNetLoader, CelebALoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .polynomial_surface_simulator import PolynomialSurfaceSimulator
-from ..utils import create_filename
+from utils import create_filename
 from .utils import NumpyDataset
 
 logger = logging.getLogger(__name__)
