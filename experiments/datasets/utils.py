@@ -105,6 +105,23 @@ class NumpyDataset(Dataset):
         return data
 
 
+class UnlabelledImageDataset(Dataset):
+    def __init__(self, array, transform=None):
+        self.transform = transform
+        self.data = torch.from_numpy(array)
+
+    def __getitem__(self, index):
+        img = self.data[index, ...]
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, torch.tensor([0.0])
+
+    def __len__(self):
+        return self.data.shape[0]
+
+
 class Preprocess:
     def __init__(self, num_bits):
         self.num_bits = num_bits
