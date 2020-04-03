@@ -71,7 +71,7 @@ class CompositeTransform(Transform):
         else:
             total_logabsdet = torch.zeros(batch_size)
             for func in funcs:
-                outputs, logabsdet = func(outputs, context, full_jacobian=False)
+                outputs, logabsdet = func(outputs, context)
                 total_logabsdet += logabsdet
             return outputs, total_logabsdet
 

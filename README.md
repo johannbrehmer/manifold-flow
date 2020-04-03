@@ -10,6 +10,7 @@
 
 In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-modeling flows (MFMFs), a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of manifold-modeling flows as well as some other fow-based generative models, as well as the code for our experiments with them.
 
+**Note that this repository is still under development and we're breaking and mending things constantly!**
 
 ## Getting started
 

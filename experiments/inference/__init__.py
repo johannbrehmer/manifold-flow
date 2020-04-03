@@ -1,1 +1,0 @@
-from experiments.inference.mmd import sq_maximum_mean_discrepancy

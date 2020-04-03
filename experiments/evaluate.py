@@ -9,13 +9,13 @@ import torch
 import configargparse
 import copy
 
-sys.path.append("../")
+# sys.path.append("../")
 
-from experiments.inference import mcmc, sq_maximum_mean_discrepancy
-from experiments.utils.loading import load_simulator, load_test_samples
-from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
-from experiments.utils.models import create_model
-from experiments.simulators.base import IntractableLikelihoodError
+from evaluation import mcmc, sq_maximum_mean_discrepancy
+from datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError
+from utils import create_filename, create_modelname
+from architectures import create_model
+from architectures.create_model import ALGORITHMS
 
 logger = logging.getLogger(__name__)
 

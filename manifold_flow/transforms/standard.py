@@ -38,16 +38,20 @@ class AffineScalarTransform(transforms.Transform):
     def _log_scale(self):
         return torch.log(torch.abs(self._scale))
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
         batch_size = inputs.shape[0]
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = inputs * self._scale + self._shift
+        if full_jacobian:
+            raise NotImplementedError
         logabsdet = torch.full([batch_size], self._log_scale * num_dims)
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
         batch_size = inputs.shape[0]
         num_dims = torch.prod(torch.tensor(inputs.shape[1:]), dtype=torch.float)
         outputs = (inputs - self._shift) / self._scale
+        if full_jacobian:
+            raise NotImplementedError
         logabsdet = torch.full([batch_size], -self._log_scale * num_dims)
         return outputs, logabsdet

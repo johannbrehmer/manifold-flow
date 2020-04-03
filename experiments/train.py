@@ -10,9 +10,9 @@ import configargparse
 import copy
 from torch import optim
 
-sys.path.append("../")
+# sys.path.append("../")
 
-from manifold_flow.training import (
+from training import (
     ManifoldFlowTrainer,
     losses,
     ConditionalManifoldFlowTrainer,
@@ -20,11 +20,13 @@ from manifold_flow.training import (
     GenerativeTrainer,
     ConditionalGenerativeTrainer,
     AlternatingTrainer,
+    VariableDimensionManifoldFlowTrainer,
+    ConditionalVariableDimensionManifoldFlowTrainer,
 )
-from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer
-from experiments.utils.loading import load_training_dataset, load_simulator
-from experiments.utils.names import create_filename, create_modelname, ALGORITHMS, SIMULATORS
-from experiments.utils.models import create_model
+from datasets import load_simulator, load_training_dataset, SIMULATORS
+from utils import create_filename, create_modelname
+from architectures import create_model
+from architectures.create_model import ALGORITHMS
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,9 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
+
+    # Model (new)
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
@@ -431,6 +436,7 @@ def train_flow(args, dataset, model, simulator):
 
     trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     logger.info("Starting training standard flow on NLL")
+
     common_kwargs = {
         "dataset": dataset,
         "batch_size": args.batchsize,
@@ -440,15 +446,14 @@ def train_flow(args, dataset, model, simulator):
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
+    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
+    if simulator.is_image():
+        callbacks_.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
 
     learning_curves = trainer.train(
-        loss_functions=[losses.nll],
-        loss_labels=["NLL"],
-        loss_weights=[args.nllfactor],
-        epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-        **common_kwargs,
+        loss_functions=[losses.nll], loss_labels=["NLL"], loss_weights=[args.nllfactor], epochs=args.epochs, callbacks=callbacks_, **common_kwargs
     )
+
     learning_curves = np.vstack(learning_curves).T
     return learning_curves
 

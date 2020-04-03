@@ -13,7 +13,10 @@ class OneByOneConvolution(transforms.LULinear):
         super().__init__(num_channels, using_cache, identity_init)
         self.permutation = transforms.RandomPermutation(num_channels, dim=1)
 
-    def _lu_forward_inverse(self, inputs, inverse=False):
+    def _lu_forward_inverse(self, inputs, inverse=False, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         b, c, h, w = inputs.shape
         inputs = inputs.permute(0, 2, 3, 1).reshape(b * h * w, c)
 
