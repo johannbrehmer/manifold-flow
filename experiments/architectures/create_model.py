@@ -1,6 +1,5 @@
 import logging
 
-from experiments.architectures import ALGORITHMS
 from .image_transforms import create_image_transform
 from .vector_transforms import create_vector_encoder, create_vector_transform
 from manifold_flow import transforms
@@ -8,6 +7,9 @@ from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionMani
 
 
 logger = logging.getLogger(__name__)
+
+
+ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
 
 
 def create_model(args, simulator):

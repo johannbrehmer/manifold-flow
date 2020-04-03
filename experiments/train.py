@@ -25,7 +25,8 @@ from .training import (
 )
 from .datasets import load_simulator, load_training_dataset, SIMULATORS
 from .utils import create_filename, create_modelname
-from .architectures import ALGORITHMS, create_model
+from .architectures import create_model
+from experiments.architectures.create_model import ALGORITHMS
 
 logger = logging.getLogger(__name__)
 

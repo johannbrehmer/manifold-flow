@@ -1,1 +1,1 @@
-from manifold_flow import distributions, flows, nn, training, transforms
+from . import distributions, flows, nn, transforms

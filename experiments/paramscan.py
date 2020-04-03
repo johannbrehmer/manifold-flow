@@ -16,8 +16,7 @@ sys.path.append("../")
 from experiments import train, evaluate
 from experiments.datasets import load_simulator, load_training_dataset, SIMULATORS
 from experiments.utils.names import create_filename, create_modelname
-from experiments.architectures import ALGORITHMS
-from experiments.architectures.create_model import create_model
+from experiments.architectures.create_model import create_model, ALGORITHMS
 
 logger = logging.getLogger(__name__)
 
