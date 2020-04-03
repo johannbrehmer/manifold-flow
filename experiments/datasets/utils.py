@@ -138,15 +138,9 @@ class Preprocess:
         # Uniform dequantization.
         img = img + torch.rand_like(img)
 
-        # Rescale to (-1., 1.)
-        img = -1.0 + img / 128.0
-
         return img
 
     def inverse(self, inputs):
-        # Rescale from (-1., 1.) to (0., 256.)
-        inputs = (inputs + 1.0) * 128.0
-
         # Discretize the pixel values.
         inputs = torch.floor(inputs)
         # Convert to a float in [0, 1].

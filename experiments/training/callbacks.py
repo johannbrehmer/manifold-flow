@@ -19,13 +19,13 @@ def plot_sample_images(filename):
     """ Saves model checkpoints. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
-        x = model.sample(n=30)
-        x_ = 0.5 * (np.transpose(np.array(x), [0, 2, 3, 1]) + 1)
+        x = model.sample(n=30).detach().numpy()
+        x = 0.5 * (np.transpose(x, [0, 2, 3, 1]) + 1)
 
         plt.figure(figsize=(6 * 3.0, 5 * 3.0))
         for i in range(30):
             plt.subplot(5, 6, i + 1)
-            plt.imshow(x_[i])
+            plt.imshow(x[i])
             plt.gca().get_xaxis().set_visible(False)
             plt.gca().get_yaxis().set_visible(False)
         plt.tight_layout()
