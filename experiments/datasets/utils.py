@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import torch
+from torch import __init__
 
 from torch.utils.data import Dataset
 from torchvision.datasets.folder import default_loader, has_file_allowed_extension, IMG_EXTENSIONS
@@ -104,30 +105,51 @@ class NumpyDataset(Dataset):
         return data
 
 
-class UnlabelledImageFolder(Dataset):
-    """ Image folder dataset. """
+class Preprocess:
+    def __init__(self, num_bits):
+        self.num_bits = num_bits
+        self.num_bins = 2 ** self.num_bits
 
-    def __init__(self, root, transform=None):
-        self.root = root
-        self.transform = transform
-        self.paths = self.find_images(os.path.join(root))
+    def __call__(self, img):
+        if img.dtype == torch.uint8:
+            img = img.float()  # Already in [0,255]
+        else:
+            img = img * 255.0  # [0,1] -> [0,255]
 
-    def __getitem__(self, index):
-        path = self.paths[index]
-        image = default_loader(path)
-        if self.transform is not None:
-            image = self.transform(image)
-        # Add a bogus label to be compatible with standard image simulators.
-        return image, torch.tensor([0.0])
+        if self.num_bits != 8:
+            img = torch.floor(img / 2 ** (8 - self.num_bits))  # [0, 255] -> [0, num_bins - 1]
 
-    def __len__(self):
-        return len(self.paths)
+        # Uniform dequantization.
+        img = img + torch.rand_like(img)
 
-    @staticmethod
-    def find_images(dir):
-        paths = []
-        for fname in sorted(os.listdir(dir)):
-            if has_file_allowed_extension(fname, IMG_EXTENSIONS):
-                path = os.path.join(dir, fname)
-                paths.append(path)
-        return paths
+        # Rescale to (-1., 1.)
+        img = -1.0 + img / 128.0
+
+        return img
+
+    def inverse(self, inputs):
+        # Rescale from (-1., 1.) to (0., 256.)
+        inputs = (inputs + 1.0) * 128.0
+
+        # Discretize the pixel values.
+        inputs = torch.floor(inputs)
+        # Convert to a float in [0, 1].
+        inputs = inputs * (256 / self.num_bins) / 255
+        inputs = torch.clamp(inputs, 0, 1)
+        return inputs
+
+
+class RandomHorizontalFlipTensor(object):
+    """Random horizontal flip of a CHW image tensor."""
+
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, img):
+        assert img.dim() == 3
+        if np.random.rand() < self.p:
+            return img.flip(2)  # Flip the width dimension, assuming img shape is CHW.
+        return img
+
+    def __repr__(self):
+        return self.__class__.__name__ + "(p={})".format(self.p)
