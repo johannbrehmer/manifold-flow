@@ -2,7 +2,6 @@
 
 import numpy as np
 from scipy.stats import norm
-import itertools
 import logging
 from experiments.datasets.base import BaseSimulator
 

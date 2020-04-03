@@ -7,10 +7,13 @@ from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulat
 from .images import CIFAR10Loader, ImageNetLoader, CelebALoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .power_manifold_simulator import PowerManifoldSimulator
-from ..utils.names import create_filename
-from manifold_flow.training import NumpyDataset
+from ..utils import create_filename
+from .utils import NumpyDataset
 
 logger = logging.getLogger(__name__)
+
+
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet", "celeba"]
 
 
 def load_simulator(args):
@@ -73,6 +76,3 @@ def load_test_samples(simulator, args, ood=False, paramscan=False):
         args_.i = 0
 
         return np.load(create_filename("sample", "x_ood" if ood else "x_paramscan" if paramscan else "x_test", args_))
-
-
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet", "celeba"]

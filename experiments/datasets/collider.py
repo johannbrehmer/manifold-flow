@@ -1,9 +1,9 @@
 import logging
-
 import numpy as np
-from scipy.stats import norm, uniform
-from manifold_flow.training import NumpyDataset
-from experiments.datasets.base import BaseSimulator
+from scipy.stats import norm
+
+from .utils import NumpyDataset
+from .base import BaseSimulator
 
 logger = logging.getLogger(__name__)
 

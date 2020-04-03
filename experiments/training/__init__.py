@@ -8,4 +8,4 @@ from .trainer import (
     ConditionalVariableDimensionManifoldFlowTrainer,
 )
 from .alternate import AlternatingTrainer
-from .datasets import NumpyDataset, UnlabelledImageFolder
+from ..datasets.utils import NumpyDataset, UnlabelledImageFolder

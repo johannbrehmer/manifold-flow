@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 
 import numpy as np
-from scipy.stats import norm, uniform
+from scipy.stats import norm
 import logging
-from experiments.datasets.base import BaseSimulator, IntractableLikelihoodError
+from .base import BaseSimulator, IntractableLikelihoodError
 
 logger = logging.getLogger(__name__)
 
