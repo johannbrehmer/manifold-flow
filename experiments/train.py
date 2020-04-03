@@ -12,7 +12,7 @@ from torch import optim
 
 sys.path.append("../")
 
-from manifold_flow.training import (
+from .training import (
     ManifoldFlowTrainer,
     losses,
     ConditionalManifoldFlowTrainer,
@@ -20,12 +20,12 @@ from manifold_flow.training import (
     GenerativeTrainer,
     ConditionalGenerativeTrainer,
     AlternatingTrainer,
+    VariableDimensionManifoldFlowTrainer,
+    ConditionalVariableDimensionManifoldFlowTrainer,
 )
-from manifold_flow.training import VariableDimensionManifoldFlowTrainer, ConditionalVariableDimensionManifoldFlowTrainer
-from experiments.datasets import load_simulator, load_training_dataset, SIMULATORS
-from experiments.utils.names import create_filename, create_modelname
-from experiments.architectures import ALGORITHMS
-from experiments.architectures.create_model import create_model
+from .datasets import load_simulator, load_training_dataset, SIMULATORS
+from .utils import create_filename, create_modelname
+from .architectures import ALGORITHMS, create_model
 
 logger = logging.getLogger(__name__)
 

@@ -11,12 +11,10 @@ import copy
 
 sys.path.append("../")
 
-from experiments.evaluation import mcmc, sq_maximum_mean_discrepancy
-from experiments.datasets import load_simulator, load_test_samples, SIMULATORS
-from experiments.utils.names import create_filename, create_modelname
-from experiments.architectures import ALGORITHMS
-from experiments.architectures.create_model import create_model
-from experiments.datasets.base import IntractableLikelihoodError
+from .evaluation import mcmc, sq_maximum_mean_discrepancy
+from .datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError
+from .utils import create_filename, create_modelname
+from .architectures import ALGORITHMS, create_model
 
 logger = logging.getLogger(__name__)
 

@@ -2,6 +2,7 @@ import copy
 import numpy as np
 import logging
 
+from .base import IntractableLikelihoodError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
 from .images import CIFAR10Loader, ImageNetLoader, CelebALoader
