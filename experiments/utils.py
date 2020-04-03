@@ -1,8 +1,5 @@
 import os
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "cifar10", "imagenet", "celeba"]
-ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
-
 
 def create_filename(type, label, args):
     run_label = "_run{}".format(args.i) if args.i > 0 else ""

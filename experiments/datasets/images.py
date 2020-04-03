@@ -8,7 +8,7 @@ from torchvision import transforms as tvt
 from torchvision import datasets
 
 from experiments.datasets.base import BaseSimulator
-from experiments.utils import download_file_from_google_drive
+from experiments.datasets.utils import download_file_from_google_drive
 from manifold_flow.training import UnlabelledImageFolder
 
 logger = logging.getLogger(__name__)
