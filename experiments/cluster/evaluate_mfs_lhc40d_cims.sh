@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-emf-l40
-#SBATCH --output=log_evaluate_emf_lhc40d_%a.log
+#SBATCH --job-name=e-mfs-l40
+#SBATCH --output=log_evaluate_mfs_lhc40d_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64GB
@@ -20,4 +20,4 @@ chain=$((task / 3))
 true=$((task % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-python -u evaluate.py --modelname alternate_april --dataset lhc40d --algorithm emf --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --modelname sequential_may --algorithm mf -i $run --trueparam $true --chain $chain --dir $dir

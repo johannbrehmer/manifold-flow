@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=e-sf-lhc40
-#SBATCH --output=log_evaluate_flow_lhc40d_%a.log
+#SBATCH --job-name=e-mfa-l
+#SBATCH --output=log_evaluate_mfa_lhc40d_%a.log
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=64GB
 #SBATCH --time=2-00:00:00
 # #SBATCH --gres=gpu:1
@@ -20,4 +20,4 @@ chain=$((task / 3))
 true=$((task % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --modelname may --algorithm flow -i $run --trueparam $true --chain $chain --dir $dir
+python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --modelname alternate_may --algorithm mf -i $run --trueparam $true --chain $chain --dir $dir

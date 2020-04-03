@@ -20,4 +20,4 @@ chain=$((task / 3))
 true=$((task % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-python -u evaluate.py --modelname april --dataset lhc40d --algorithm pie --modellatentdim 14 --observedsamples 50 --splinebins 10 -i $run --skiplikelihood --burnin 50 --mcmcsamples 500 --trueparam $true --chain $chain --dir $dir
+python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --modelname may --algorithm pie -i $run --trueparam $true --chain $chain --dir $dir
