@@ -117,6 +117,9 @@ def parse_args():
     parser.add_argument("--prepie", action="store_true", help="Pretrain with PIE rather than on reco error (MFMF-S only)")
     parser.add_argument("--prepostfraction", type=int, default=3, help="Fraction of epochs reserved for pretraining and posttraining (MFMF-S only)")
 
+    # Training (new)
+    parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
+
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
@@ -135,6 +138,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -226,8 +230,8 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     if args.weightdecay is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
-    phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
-    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
+    phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip, "validation_split": args.validationsplit}
+    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip, "validation_split": args.validationsplit}
 
     phase1_parameters = (
         list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
@@ -266,6 +270,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -306,7 +311,13 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     """ MFMF-OT training """
 
     gen_trainer = GenerativeTrainer(model) if simulator.parameter_dim() is None else ConditionalGenerativeTrainer(model)
-    common_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "clip_gradient": args.clip}
+    common_kwargs = {
+        "dataset": dataset,
+        "initial_lr": args.lr,
+        "scheduler": optim.lr_scheduler.CosineAnnealingLR,
+        "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
+    }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
@@ -340,7 +351,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
     likelihood_trainer = ManifoldFlowTrainer(model) if simulator.parameter_dim() is None else ConditionalManifoldFlowTrainer(model)
     metatrainer = AlternatingTrainer(model, gen_trainer, likelihood_trainer)
 
-    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "validation_split": args.validationsplit}
     if args.weightdecay is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
 
@@ -380,6 +391,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -443,6 +455,7 @@ def train_flow(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -469,6 +482,7 @@ def train_pie(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -496,6 +510,7 @@ def train_dough(args, dataset, model, simulator):
         "initial_lr": args.lr,
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
+        "validation_split": args.validationsplit,
     }
     if args.weightdecay is not None:
         common_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}

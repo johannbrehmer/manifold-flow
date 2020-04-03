@@ -12,9 +12,11 @@ In the paper [Flows for simultaneous manifold learning and density estimation](h
 
 **Note that this repository is still under development and we're breaking and mending things constantly!**
 
+
 ## Getting started
 
 Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the MFMF-OT algorithm, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
+
 
 ## Data sets
 
@@ -23,9 +25,9 @@ Data set | Data dimension | Manifold dimension | Model parameters | Arguments to
 Gaussian on an `n`-sphere | `n` | `d` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
 Conditional Gaussian on a `n`-sphere | `n` | `d` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
-Particle physics data (48D) | 48 | 14 | 2 | `--dataset lhc`
-Particle physics data (40D, no angular features) | 2 | 2 | 2 | `--dataset lhc40d`
-Particle physics data (2D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
+Particle physics data (48-D) | 48 | 14 | 2 | `--dataset lhc`
+Particle physics data (40-D, no angular features) | 40 | 14 | 2 | `--dataset lhc40d`
+Particle physics data (2-D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
 
 The data for the particle physics experiments is available upon request.
 
@@ -66,7 +68,6 @@ Pseudo-invertible encoder | PIE | `--algorithm pie`
 Manifold-modeling flow (except OT training) | MFMF | `--algorithm mf`
 Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
 Manifold-modeling flow with sep. encoder | MFMFE | `--algorithm emf`
-
 
 
 ## Acknowledgements
