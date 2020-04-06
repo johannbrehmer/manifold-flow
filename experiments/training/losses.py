@@ -1,6 +1,14 @@
 import torch
 from torch.nn import MSELoss
-from geomloss import SamplesLoss
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from geomloss import SamplesLoss
+except ModuleNotFoundError:
+    logger.warning("geomloss not found, let's hope that you started a training method that doesn't need it!")
+    geomloss = None
 
 
 def nll(x_pred, x_true, log_p):
