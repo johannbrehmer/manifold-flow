@@ -13,5 +13,7 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u train.py -c cluster/configs/train_lhc_may.config --modelname sequential_may --algorithm emf --sequential -i ${SLURM_ARRAY_TASK_ID}
-python -u train.py -c cluster/configs/train_lhc_may.config --modelname alternate_may --algorithm emf --alternate -i ${SLURM_ARRAY_TASK_ID}
+#python -u train.py -c cluster/configs/train_lhc_may.config --modelname sequential_may --algorithm emf --sequential -i ${SLURM_ARRAY_TASK_ID}
+#python -u train.py -c cluster/configs/train_lhc_may.config --modelname alternate_may --algorithm emf --alternate -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c cluster/configs/train_lhc_may.config --modelname sequential_scandal_may --algorithm emf --scandal 5 --sequential -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c cluster/configs/train_lhc_may.config --modelname alternate_scandal_may --algorithm emf --scandal 5 --alternate -i ${SLURM_ARRAY_TASK_ID}
