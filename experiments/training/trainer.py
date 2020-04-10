@@ -812,7 +812,7 @@ class AdversarialTrainer(Trainer):
 
         x = batch_data[0]
         batch_size = x.size(0)
-        
+
         if len(x.size()) < 2:
             x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)

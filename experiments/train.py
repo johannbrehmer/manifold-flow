@@ -300,7 +300,8 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
     assert not args.specified
 
-    trainer = (
+    trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+    trainer2 = (
         ForwardTrainer(model)
         if simulator.parameter_dim() is None
         else ConditionalForwardTrainer(model)
@@ -310,7 +311,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
     logger.info("Starting training MF, phase 1: manifold training")
-    learning_curves = trainer.train(
+    learning_curves = trainer1.train(
         loss_functions=[losses.mse],
         loss_labels=["MSE"],
         loss_weights=[args.msefactor],
@@ -325,7 +326,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     learning_curves = np.vstack(learning_curves).T
 
     logger.info("Starting training MF, phase 2: density training")
-    learning_curves_ = trainer.train(
+    learning_curves_ = trainer2.train(
         loss_functions=[losses.nll] + scandal_loss,
         loss_labels=["NLL"] + scandal_label,
         loss_weights=[args.nllfactor] + scandal_weight,
