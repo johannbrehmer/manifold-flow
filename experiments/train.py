@@ -122,7 +122,7 @@ def parse_args():
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
-    parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow", help="Base directory of repo")
+    parser.add_argument("--dir", type=str, default="/scratch/jb6504/scandal-mf", help="Base directory of repo")
     parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
 
     return parser.parse_args()
