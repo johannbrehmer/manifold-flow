@@ -36,7 +36,7 @@ class BaseLHCLoader(BaseSimulator):
         x = np.load("{}/x_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         params = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         if joint_score:
-            scores = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+            scores = np.load("{}/t_xz_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         else:
             scores = None
 

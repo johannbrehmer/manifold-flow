@@ -22,7 +22,7 @@ from training import (
     AlternatingTrainer,
     VarDimForwardTrainer,
     ConditionalVarDimForwardTrainer,
-    Scandal,
+    SCANDALForwardTrainer,
 )
 from datasets import load_simulator, load_training_dataset, SIMULATORS
 from utils import create_filename, create_modelname
@@ -253,22 +253,23 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
     assert not args.specified
 
-    trainer = (
+    trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+    trainer2 = (
         ForwardTrainer(model)
         if simulator.parameter_dim() is None
         else ConditionalForwardTrainer(model)
         if args.scandal is None
         else SCANDALForwardTrainer(model)
     )
-    metatrainer = AlternatingTrainer(model, trainer, trainer)
+    metatrainer = AlternatingTrainer(model, trainer1, trainer2)
 
-    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR}
+    meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "validation_split": args.validationsplit}
     if args.weightdecay is not None:
         meta_kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
     _, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
-    phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip, "validation_split": args.validationsplit}
-    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip, "validation_split": args.validationsplit}
+    phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
+    phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
     phase1_parameters = (
         list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()

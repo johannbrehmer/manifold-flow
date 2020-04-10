@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import torch
 from torch import optim, nn
+from torch.autograd import grad
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
@@ -533,7 +534,7 @@ class ForwardTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         self._check_for_nans("Training data", x)
 
         if len(x.size()) < 2:
@@ -560,7 +561,8 @@ class ConditionalForwardTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
 
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
@@ -612,7 +614,7 @@ class SCANDALForwardTrainer(Trainer):
         else:
             x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
 
-        t, = grad(log_prob, theta, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
+        t, = grad(log_prob, params, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
 
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
@@ -808,8 +810,9 @@ class AdversarialTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         batch_size = x.size(0)
+        
         if len(x.size()) < 2:
             x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)
@@ -832,7 +835,8 @@ class ConditionalAdversarialTrainer(AdversarialTrainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
         batch_size = x.size(0)
 
         if len(x.size()) < 2:

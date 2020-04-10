@@ -5,4 +5,4 @@ dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
 
-python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --dataset lhc2d --modellatentdim 2 --modelname may --algorithm flow --dir $dir
+python -u train.py -c cluster/configs/train_lhc_may.config --dataset lhc40d --modelname scandal_debug --algorithm flow --scandal 1. --samplesize 10000 --dir $dir
