@@ -31,16 +31,22 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
         # Load numpy arrays
         x = np.load("{}/x_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         params = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+        if joint_score:
+            scores = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+        else:
+            scores = None
 
         # OPtionally limit sample size
         if limit_samplesize is not None:
             logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
             x = x[:limit_samplesize]
             params = params[:limit_samplesize]
+            if joint_score:
+                scores = scores[:limit_samplesize]
 
         # Debug output
         logger.debug("lhc features before preprocessing:")
@@ -58,9 +64,14 @@ class BaseLHCLoader(BaseSimulator):
         for i in range(params.shape[1]):
             logger.debug("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
 
-        if numpy:
+        if numpy and joint_score:
+            return x, params, scores
+        elif numpy:
             return x, params
-        return NumpyDataset(x, params)
+        elif joint_score:
+            return NumpyDataset(x, params, scores)
+        else:
+            return NumpyDataset(x, params)
 
     def sample(self, n, parameters=None):
         raise NotImplementedError
