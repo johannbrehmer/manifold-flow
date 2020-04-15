@@ -13,8 +13,8 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/scandal-mf/experiments
 
-python -u train.py -c cluster/configs/train_lhc_may.config --modelname conditionalmanifold_may --algorithm pie -i ${SLURM_ARRAY_TASK_ID}
-# python -u train.py -c cluster/configs/train_lhc_may.config --modelname conditionalmanifold_scandal_may --algorithm pie --scandal 5 -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c cluster/configs/train_lhc_may.config --modelname conditionalmanifold_may --algorithm pie --conditionalouter -i ${SLURM_ARRAY_TASK_ID}
+# python -u train.py -c cluster/configs/train_lhc_may.config --modelname conditionalmanifold_scandal_may --algorithm pie --conditionalouter --scandal 5 -i ${SLURM_ARRAY_TASK_ID}
 
 # python -u train.py -c cluster/configs/train_lhc_may.config --modelname may --algorithm pie -i ${SLURM_ARRAY_TASK_ID}
 # python -u train.py -c cluster/configs/train_lhc_may.config --modelname scandal_may --algorithm pie --scandal 5 -i ${SLURM_ARRAY_TASK_ID}
