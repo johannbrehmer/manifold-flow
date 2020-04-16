@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Last update master: April 15, 9:40
-# Last update scandal: April 15, 9:40
+# Last update scandal: April 16, 10:30
 
 
 
