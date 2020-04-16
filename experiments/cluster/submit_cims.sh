@@ -14,6 +14,8 @@
 # sbatch --array 0-107 evaluate_pie_lhc40d_cims.sh  # done
 # sbatch --array 108-119 evaluate_pie_lhc40d_cims.sh  # submitted
 
+# sbatch --array 0-119 evaluate_pie_cm_lhc40d_cims.sh
+
 # sbatch --array 0-35 evaluate_mfs_lhc40d_cims.sh  # done
 # sbatch --array 36-47 evaluate_mfs_lhc40d_cims.sh  # submitted
 # sbatch --array 48-107 evaluate_mfs_lhc40d_cims.sh  # done
@@ -41,13 +43,18 @@
 # sbatch --array 0-23 evaluate_flow_scandal_lhc2d_cims.sh  # submitted
 # sbatch --array 24-119 evaluate_flow_scandal_lhc2d_cims.sh
 
-# sbatch --array 0-119 evaluate_flow_scandal_lhc40d_cims.sh
+sbatch --array 0-35 evaluate_flow_scandal_lhc40d_cims.sh
+# sbatch --array 36-119 evaluate_flow_scandal_lhc40d_cims.sh
 
 # sbatch --array 0-23 evaluate_pie_scandal_lhc40d_cims.sh  # submitted
-# sbatch --array 24-119 evaluate_pie_scandal_lhc40d_cims.sh
+sbatch --array 24-35 evaluate_pie_scandal_lhc40d_cims.sh
+# sbatch --array 36-119 evaluate_pie_scandal_lhc40d_cims.sh
+
+# sbatch --array 0-119 evaluate_pie_cm_scandal_lhc40d_cims.sh
 
 # sbatch --array 0-35 evaluate_mfs_scandal_lhc40d_cims.sh  # submitted
-# sbatch --array 36-119 evaluate_mfs_scandal_lhc40d_cims.sh
+sbatch --array 36-47 evaluate_mfs_scandal_lhc40d_cims.sh
+# sbatch --array 48-119 evaluate_mfs_scandal_lhc40d_cims.sh
 
 # sbatch --array 0-119 evaluate_mfa_scandal_lhc40d_cims.sh
 
