@@ -56,21 +56,6 @@ class ManifoldFlow(BaseFlow):
         # Decode
         x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h_manifold_reco = self._decode(u, mode=mode, context=context)
 
-        # Rarely the inverse log det transformation has NaNs
-        if torch.isnan(inv_log_det_inner).any():
-            _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
-
-            logger.warning("Fixing NaN in inverse inner determinant")
-            logger.debug("  x       = %s", x[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_orth  = %s", h_orthogonal[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
-            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
-            logger.debug("  x'      = %s", x_reco[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet  = %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet' = %s", -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
-
-            inv_log_det_inner = -inv_log_det_inner_fix
-
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
