@@ -15,13 +15,13 @@ class ManifoldFlow(BaseFlow):
     def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
         super(ManifoldFlow, self).__init__()
 
-        assert latent_dim < data_dim
-
         self.data_dim = data_dim
         self.latent_dim = latent_dim
+        self.apply_context_to_outer = apply_context_to_outer
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
-        self.apply_context_to_outer = apply_context_to_outer
+
+        assert self.total_latent_dim < self.total_data_dim
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal(
@@ -168,3 +168,11 @@ class ManifoldFlow(BaseFlow):
             log_prob = None
 
         return log_prob
+
+    def _report_model_parameters(self):
+        """ Reports the model size """
+        super()._report_model_parameters()
+        inner_params = sum(p.numel() for p in self.inner_transform.parameters())
+        outer_params = sum(p.numel() for p in self.outer_transform.parameters())
+        logger.debug("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
+        logger.debug("  Inner transform: %.1f M parameters", inner_params / 1.0e06)

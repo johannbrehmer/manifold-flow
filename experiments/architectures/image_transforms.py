@@ -138,6 +138,7 @@ def create_image_transform(
     use_batchnorm=False,
     use_actnorm=True,
     spline_params=None,
+    add_linear_layer=False,
 ):
     dim = c * h * w
     if not isinstance(hidden_channels, list):
@@ -233,8 +234,15 @@ def create_image_transform(
     else:
         raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
 
-    # Random permutation
-    permutation = transforms.RandomPermutation(dim)
-    logger.debug("RandomPermutation(%s)", dim)
+    # Final transformation: random permutation or learnable linear matrix
+    if add_linear_layer:
+        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
+        # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
+        logger.debug("RandomPermutation(%s)", dim)
+        logger.debug("SVDLinear(%s)", dim)
+    else:
+        # Random permutation
+        final_transform = transforms.RandomPermutation(dim)
+        logger.debug("RandomPermutation(%s)", dim)
 
-    return transforms.CompositeTransform([preprocess_transform, mct, permutation])
+    return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
