@@ -37,6 +37,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
@@ -75,6 +76,8 @@ def create_model(args, simulator):
             dropout_prob=args.dropout,
             multi_scale=True,
             spline_params=spline_params,
+            use_batchnorm=args.batchnorm,
+            use_actnorm=args.actnorm,
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
@@ -99,6 +102,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             context_features=simulator.parameter_dim() if args.conditionalouter else None,
             resnet=not args.encodermlp,
+            use_batch_norm=args.batchnorm
         )
         outer_transform_kwargs = {}
         try:
@@ -117,6 +121,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
             **outer_transform_kwargs
         )
         inner_transform = create_vector_transform(
@@ -128,6 +133,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
 
         model = EncoderManifoldFlow(
@@ -161,6 +167,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
         model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
 
@@ -192,6 +199,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
         model = ManifoldFlow(
             data_dim=args.datadim,
@@ -235,6 +243,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
             **outer_transform_kwargs
         )
         inner_transform = create_vector_transform(
@@ -246,6 +255,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
 
         model = ManifoldFlow(
@@ -295,6 +305,8 @@ def create_model(args, simulator):
             multi_scale=True,
             spline_params=spline_params,
             add_linear_layer=True,
+            use_actnorm=args.actnorm,
+            use_batchnorm=args.batchnorm,
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
@@ -305,6 +317,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
+            use_batch_norm=args.batchnorm
         )
         model = ManifoldFlow(
             data_dim=args.datadim,

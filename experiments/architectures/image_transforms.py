@@ -61,7 +61,7 @@ def _create_image_transform_step(
             "min_bin_height": 0.001,
             "min_bin_width": 0.001,
             "min_derivative": 0.001,
-            "num_bins": 4,
+            "num_bins": 8,
             "tail_bound": 3.0,
         }
 
@@ -135,7 +135,7 @@ def create_image_transform(
     dropout_prob=0.0,
     num_res_blocks=3,
     coupling_layer_type="rational_quadratic_spline",
-    use_batchnorm=False,
+    use_batchnorm=True,
     use_actnorm=True,
     spline_params=None,
     add_linear_layer=False,

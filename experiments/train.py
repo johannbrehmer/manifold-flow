@@ -93,6 +93,8 @@ def parse_args():
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
+    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
