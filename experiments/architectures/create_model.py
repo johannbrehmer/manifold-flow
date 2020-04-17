@@ -9,7 +9,7 @@ from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionMani
 logger = logging.getLogger(__name__)
 
 
-ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "dough", "emf"]
+ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "emf"]  #, "dough"
 
 
 def create_model(args, simulator):
@@ -150,30 +150,30 @@ def create_model(args, simulator):
     elif simulator.is_image() and args.algorithm == "emf":
         raise NotImplementedError
 
-    # PIE with variable epsilon for vector data
-    elif not simulator.is_image() and args.algorithm == "dough":
-        logger.info(
-            "Creating variable-dimensional manifold flow for vector data with %s layers, transform %s, %s context features",
-            args.innerlayers + args.outerlayers,
-            args.outertransform,
-            simulator.parameter_dim(),
-        )
-        transform = create_vector_transform(
-            args.datadim,
-            args.innerlayers + args.outerlayers,
-            linear_transform_type=args.lineartransform,
-            base_transform_type=args.outertransform,
-            context_features=simulator.parameter_dim(),
-            dropout_probability=args.dropout,
-            tail_bound=args.splinerange,
-            num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
-        )
-        model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
-
-    # PIE with variable epsilon for image data
-    elif simulator.is_image() and args.algorithm == "dough":
-        raise NotImplementedError
+    # # PIE with variable epsilon for vector data
+    # elif not simulator.is_image() and args.algorithm == "dough":
+    #     logger.info(
+    #         "Creating variable-dimensional manifold flow for vector data with %s layers, transform %s, %s context features",
+    #         args.innerlayers + args.outerlayers,
+    #         args.outertransform,
+    #         simulator.parameter_dim(),
+    #     )
+    #     transform = create_vector_transform(
+    #         args.datadim,
+    #         args.innerlayers + args.outerlayers,
+    #         linear_transform_type=args.lineartransform,
+    #         base_transform_type=args.outertransform,
+    #         context_features=simulator.parameter_dim(),
+    #         dropout_probability=args.dropout,
+    #         tail_bound=args.splinerange,
+    #         num_bins=args.splinebins,
+    #         use_batch_norm=args.batchnorm
+    #     )
+    #     model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
+    #
+    # # PIE with variable epsilon for image data
+    # elif simulator.is_image() and args.algorithm == "dough":
+    #     raise NotImplementedError
 
     # FOM for vector data
     elif not simulator.is_image() and args.specified:

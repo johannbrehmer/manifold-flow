@@ -20,8 +20,8 @@ from training import (
     AdversarialTrainer,
     ConditionalAdversarialTrainer,
     AlternatingTrainer,
-    VarDimForwardTrainer,
-    ConditionalVarDimForwardTrainer,
+    # VarDimForwardTrainer,
+    # ConditionalVarDimForwardTrainer,
     SCANDALForwardTrainer,
 )
 from datasets import load_simulator, load_training_dataset, SIMULATORS
@@ -112,7 +112,7 @@ def parse_args():
     parser.add_argument("--sinkhornfactor", type=float, default=10.0, help="Sinkhorn divergence multiplier in loss")
     parser.add_argument("--weightdecay", type=float, default=1.0e-4, help="Weight decay")
     parser.add_argument("--clip", type=float, default=1.0, help="Gradient norm clipping parameter")
-    parser.add_argument("--doughl1reg", type=float, default=0.0, help="L1 reg on epsilon when learning epsilons for PIE")
+    # parser.add_argument("--doughl1reg", type=float, default=0.0, help="L1 reg on epsilon when learning epsilons for PIE")
     parser.add_argument("--nopretraining", action="store_true", help="Skip pretraining in MFMF-S training")
     parser.add_argument("--noposttraining", action="store_true", help="Skip posttraining in MFMF-S training")
     parser.add_argument("--prepie", action="store_true", help="Pretrain with PIE rather than on reco error (MFMF-S only)")
@@ -524,23 +524,23 @@ def train_pie(args, dataset, model, simulator):
     return learning_curves
 
 
-def train_dough(args, dataset, model, simulator):
-    """ PIE with variable epsilons training """
-    trainer = VarDimForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalVarDimForwardTrainer(model)
-    common_kwargs, _, _, _ = make_training_kwargs(args, dataset)
-
-    logger.info("Starting training dough, phase 1: NLL without latent regularization")
-    learning_curves = trainer.train(
-        loss_functions=[losses.nll],
-        loss_labels=["NLL"],
-        loss_weights=[args.nllfactor],
-        epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-        l1=args.doughl1reg,
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
-    return learning_curves
+# def train_dough(args, dataset, model, simulator):
+#     """ PIE with variable epsilons training """
+#     trainer = VarDimForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalVarDimForwardTrainer(model)
+#     common_kwargs, _, _, _ = make_training_kwargs(args, dataset)
+#
+#     logger.info("Starting training dough, phase 1: NLL without latent regularization")
+#     learning_curves = trainer.train(
+#         loss_functions=[losses.nll],
+#         loss_labels=["NLL"],
+#         loss_weights=[args.nllfactor],
+#         epochs=args.epochs,
+#         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+#         l1=args.doughl1reg,
+#         **common_kwargs,
+#     )
+#     learning_curves = np.vstack(learning_curves).T
+#     return learning_curves
 
 
 def train_model(args, dataset, model, simulator):
@@ -566,8 +566,8 @@ def train_model(args, dataset, model, simulator):
             learning_curves = train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator)
         else:
             learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "dough":
-        learning_curves = train_dough(args, dataset, model, simulator)
+    # elif args.algorithm == "dough":
+    #     learning_curves = train_dough(args, dataset, model, simulator)
     else:
         raise ValueError("Unknown algorithm %s", args.algorithm)
 

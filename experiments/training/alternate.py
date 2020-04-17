@@ -102,20 +102,7 @@ class AlternatingTrainer(BaseTrainer):
         n_losses = len(loss_labels)
         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights
 
-        # Verbosity
-        if verbose == "all":  # Print output after every epoch
-            n_epochs_verbose = 1
-        elif verbose == "many":  # Print output after 2%, 4%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 50, 0)), 1)
-        elif verbose == "some":  # Print output after 10%, 20%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 20, 0)), 1)
-        elif verbose == "few":  # Print output after 20%, 40%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 5, 0)), 1)
-        elif verbose == "none":  # Never print output
-            n_epochs_verbose = epochs + 2
-        else:
-            raise ValueError("Unknown value %s for keyword verbose", verbose)
-        logger.debug("Will print training progress every %s epochs", n_epochs_verbose)
+        n_epochs_verbose = self._set_verbosity(epochs, verbose)
 
         logger.debug("Beginning main training loop")
         losses_train, losses_val = [], []

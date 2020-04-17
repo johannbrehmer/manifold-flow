@@ -81,6 +81,9 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
+    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
 
     # Evaluation settings
     parser.add_argument("--gridresolution", type=int, default=11, help="Grid ressolution (per axis) for likelihood eval")
