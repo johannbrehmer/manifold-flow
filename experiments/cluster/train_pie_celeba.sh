@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-pie-l
+#SBATCH --job-name=t-pie-c
 #SBATCH --output=log_train_pie_celeba.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
