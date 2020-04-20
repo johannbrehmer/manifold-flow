@@ -114,12 +114,8 @@ venv.bak/
 
 # Data
 log/
-experiments/data/
-#!experiments/data/samples
-#experiments/data/samples/*
-#!experiments/data/samples/lhc
-#!experiments/data/samples/lhc2d
-#!experiments/data/samples/power
-#experiments/data/samples/power/*
-#!experiments/data/samples/power/manifold.npz
 other/
+experiments/data/
+experiments/figures/training/
+experiments/datasets/collider_data_generation/data/
+experiments/datasets/collider_data_generation/models/
