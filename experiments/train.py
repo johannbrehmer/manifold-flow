@@ -92,8 +92,6 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
-
-    # Model (new)
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
 
     # Training

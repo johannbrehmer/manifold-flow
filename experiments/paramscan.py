@@ -6,7 +6,7 @@ import numpy as np
 import logging
 import sys
 import torch
-import argparse
+import configargparse
 import copy
 import optuna
 import pickle
@@ -15,6 +15,7 @@ sys.path.append("../")
 
 import train, evaluate
 from datasets import load_simulator, load_training_dataset, SIMULATORS
+from training import ForwardTrainer, ConditionalForwardTrainer, losses
 from utils import create_filename, create_modelname
 from architectures import create_model, ALGORITHMS
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = configargparse.ArgumentParser()
 
     # What what what
     parser.add_argument("--algorithm", type=str, default="mf", choices=ALGORITHMS)
@@ -37,44 +38,51 @@ def parse_args():
     # Fixed model parameters
     parser.add_argument("--modellatentdim", type=int, default=2)
     parser.add_argument("--specified", action="store_true")
+    parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
     parser.add_argument("--lineartransform", type=str, default="permutation")
+    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
+    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
     parser.add_argument("--outercouplinghidden", type=int, default=100)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--encoderblocks", type=int, default=5)
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--encodermlp", action="store_true")
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
 
     # Fixed training params
     parser.add_argument("--load", type=str, default=None)
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--genbatchsize", type=int, default=1000)
+    parser.add_argument("--lr", type=float, default=1.0e-3, help="Initial learning rate")
     parser.add_argument("--addnllfactor", type=float, default=0.1)
     parser.add_argument("--nllfactor", type=float, default=1.0)
     parser.add_argument("--sinkhornfactor", type=float, default=10.0)
-    parser.add_argument("--samplesize", type=int, default=100000)
+    parser.add_argument("--samplesize", type=int, default=None)
     parser.add_argument("--doughl1reg", type=float, default=0.0)
     parser.add_argument("--nopretraining", action="store_true")
     parser.add_argument("--noposttraining", action="store_true")
     parser.add_argument("--prepie", action="store_true")
     parser.add_argument("--prepostfraction", type=int, default=3)
-    parser.add_argument("--alternate", action="store_false")
+    parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
+    parser.add_argument("--sequential", action="store_true", help="Use sequential training algorithm")
+    parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
+    parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
 
     # Evaluation settings
-    parser.add_argument("--gridresolution", type=int, default=11)
     parser.add_argument("--generate", type=int, default=1000)
 
     # Hyperparameter optimization
     parser.add_argument("--trials", type=int, default=100)
-    parser.add_argument("--metricnllfactor", type=float, default=1.0)
     parser.add_argument("--metricrecoerrorfactor", type=float, default=100.0)
-    parser.add_argument("--metricdistancefactor", type=float, default=10.0)
+    parser.add_argument("--metricdistancefactor", type=float, default=1.0)
     parser.add_argument("--paramscanstudyname", type=str, default="paramscan")
     parser.add_argument("--resumestudy", action="store_true")
 
     # Other settings
+    parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/manifold-flow")
     parser.add_argument("--debug", action="store_true")
 
@@ -84,20 +92,15 @@ def parse_args():
 def pick_parameters(args, trial, counter):
     margs = copy.deepcopy(args)
 
-    margs.modelname = "paramscan_{}".format(counter)
+    margs.modelname = "{}_{}".format(args.paramscanstudyname, counter)
 
     margs.outerlayers = trial.suggest_categorical("outerlayers", [3, 5, 10])
-    margs.innerlayers = trial.suggest_categorical("innerlayers", [3, 5, 10])
-    margs.outercouplingmlp = trial.suggest_categorical("outercouplingmlp", [False, True])
-    margs.outercouplinglayers = trial.suggest_categorical("outercouplinglayers", [1, 2, 3])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
     margs.splinerange = trial.suggest_categorical("splinerange", [5.0, 6.0, 8.0])
-    margs.splinebins = trial.suggest_categorical("splinebins", [5, 10, 20])
-
-    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 500])
-    margs.lr = trial.suggest_loguniform("lr", 1.0e-5, 1.0e-2)
-    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e2, 1.0e4)
-    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-8, 1.0e-4)
+    margs.splinebins = trial.suggest_categorical("splinebins", [5, 8, 13, 20])
+    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 400])
+    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e0, 1.0e4)
+    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-9, 1.0e-2)
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
 
     create_modelname(margs)
@@ -119,7 +122,7 @@ if __name__ == "__main__":
                 logging.getLogger(key).setLevel(logging.info if args.debug else logging.WARNING)
 
     logger.info("Hi!")
-    logger.info("Starting paramscan.py with arguments %s", args)
+    logger.debug("Starting paramscan.py with arguments %s", args)
     logger.debug("Parameter scan study %s", args.paramscanstudyname)
 
     counter = -1
@@ -132,9 +135,16 @@ if __name__ == "__main__":
         # Hyperparameters
         margs = pick_parameters(args, trial, counter)
 
-        logger.info("Starting training for the following hyperparameters:")
-        for k, v in margs.__dict__.items():
-            logger.info("  %s: %s", k, v)
+        logger.info(f"Starting run {counter} / {args.trials}")
+        logger.info(f"Hyperparams:")
+        logger.info(f"  outer layers:      {margs.outerlayers}")
+        logger.info(f"  spline range:      {margs.splinerange}")
+        logger.info(f"  spline bins:       {margs.splinebins}")
+        logger.info(f"  batch size:        {margs.batchsize}")
+        logger.info(f"  MSE factor:        {margs.msefactor}")
+        logger.info(f"  weight decay:      {margs.weightdecay}")
+        logger.info(f"  gradient clipping: {margs.clip}")
+        logger.info(f"  dropout:           {margs.dropout}")
 
         # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
         torch.multiprocessing.set_start_method("spawn", force=True)
@@ -147,18 +157,30 @@ if __name__ == "__main__":
         model = create_model(margs, simulator)
 
         # Train
-        _ = train.train_model(margs, dataset, model, simulator)
+        trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+        common_kwargs, _, _, _ = train.make_training_kwargs(margs, dataset)
+
+        logger.info(f"Strarting training")
+        _, val_losses = trainer.train(
+            loss_functions=[losses.mse],
+            loss_labels=["MSE"],
+            loss_weights=[margs.msefactor],
+            epochs=margs.epochs,
+            parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
+            if args.algorithm == "emf"
+            else model.outer_transform.parameters(),
+            forward_kwargs={"mode": "projection"},
+            **common_kwargs,
+        )
+
+        # Best validation reco error
+        reco_mse = np.min(val_losses) / margs.msefactor
 
         # Save
         torch.save(model.state_dict(), create_filename("model", None, margs))
 
         # Evaluate
         model.eval()
-
-        # Evaluate test samples
-        log_likelihood_test, reconstruction_error_test, _ = evaluate.evaluate_test_samples(margs, simulator, model, paramscan=True)
-        mean_log_likelihood_test = np.mean(log_likelihood_test)
-        mean_reco_error_test = np.mean(reconstruction_error_test)
 
         # Generate samples
         x_gen = evaluate.sample_from_model(margs, model, simulator)
@@ -167,15 +189,10 @@ if __name__ == "__main__":
 
         # Report results
         logger.info("Results:")
-        logger.info("  test log p:    %s", mean_log_likelihood_test)
-        logger.info("  test reco err: %s", mean_reco_error_test)
-        logger.info("  gen distance:  %s", mean_gen_distance)
+        logger.info("  reco err:     %s", reco_mse)
+        logger.info("  gen distance: %s", mean_gen_distance)
 
-        return (
-            -1.0 * margs.metricnllfactor * mean_log_likelihood_test
-            + margs.metricrecoerrorfactor * mean_reco_error_test
-            + margs.metricdistancefactor * mean_gen_distance
-        )
+        return margs.metricrecoerrorfactor * reco_mse + margs.metricdistancefactor * mean_gen_distance
 
     # Load saved study object
     if args.resumestudy:
