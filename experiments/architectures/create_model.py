@@ -9,7 +9,7 @@ from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionMani
 logger = logging.getLogger(__name__)
 
 
-ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "emf"]  #, "dough"
+ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "emf"]  # , "dough"
 
 
 def create_model(args, simulator):
@@ -37,7 +37,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
@@ -102,7 +102,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             context_features=simulator.parameter_dim() if args.conditionalouter else None,
             resnet=not args.encodermlp,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
         outer_transform_kwargs = {}
         try:
@@ -121,8 +121,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
-            **outer_transform_kwargs
+            use_batch_norm=args.batchnorm ** outer_transform_kwargs,
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
@@ -133,7 +132,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
 
         model = EncoderManifoldFlow(
@@ -199,7 +198,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
         model = ManifoldFlow(
             data_dim=args.datadim,
@@ -243,8 +242,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
-            **outer_transform_kwargs
+            use_batch_norm=args.batchnorm ** outer_transform_kwargs,
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
@@ -255,7 +253,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
 
         model = ManifoldFlow(
@@ -267,7 +265,84 @@ def create_model(args, simulator):
             pie_epsilon=args.pieepsilon,
         )
 
-    # MFMF or PIE for image data
+    # MFMF or PIE for image data, with structured (image) latent space
+    elif args.structuredlatents:
+        if simulator.parameter_dim() is not None:
+            raise NotImplementedError
+
+        steps_per_level = args.outerlayers // args.levels
+        inner_steps_per_level = args.innerlayers // args.innerlevels
+        h_inner = h // 2 ** args.levels
+        w_inner = w // 2 ** args.levels
+        inner_channels = args.modellatentdim // (h_inner * w_inner)
+        logger.debug("Channels after projection: %s x %s x %s", inner_channels, h_inner, w_inner)
+        assert args.modellatentdim == inner_channels * (h_inner * w_inner)
+
+        logger.info(
+            "Creating manifold flow for image data with %s levels and %s steps per level in the outer transformation, %s levels and %s steps per level in the inner transformation, %s inner channels, transforms %s / %s, %s context features",
+            args.levels,
+            steps_per_level,
+            args.innerlevels,
+            inner_steps_per_level,
+            inner_channels,
+            args.outertransform,
+            args.innertransform,
+            simulator.parameter_dim(),
+        )
+        spline_params = {
+            "apply_unconditional_transform": False,
+            "min_bin_height": 0.001,
+            "min_bin_width": 0.001,
+            "min_derivative": 0.001,
+            "num_bins": args.splinebins,
+            "tail_bound": args.splinerange,
+        }
+        outer_transform = create_image_transform(
+            c,
+            h,
+            w,
+            levels=args.levels,
+            hidden_channels=args.outercouplinghidden,
+            steps_per_level=steps_per_level,
+            num_res_blocks=args.outercouplinglayers,
+            alpha=0.05,
+            num_bits=8,
+            preprocessing="glow",
+            dropout_prob=args.dropout,
+            multi_scale=True,
+            spline_params=spline_params,
+            add_linear_layer=False,
+            use_actnorm=args.actnorm,
+            use_batchnorm=args.batchnorm,
+        )
+        inner_transform = create_image_transform(
+            inner_channels,
+            h_inner,
+            w_inner,
+            levels=args.innerlevels,
+            hidden_channels=args.outercouplinghidden,
+            steps_per_level=steps_per_level,
+            num_res_blocks=args.outercouplinglayers,
+            alpha=0.05,
+            num_bits=8,
+            preprocessing="unflatten",
+            dropout_prob=args.dropout,
+            multi_scale=True,
+            spline_params=spline_params,
+            add_linear_layer=False,
+            use_actnorm=args.actnorm,
+            use_batchnorm=args.batchnorm,
+        )
+        model = ManifoldFlow(
+            data_dim=args.datadim,
+            latent_dim=args.modellatentdim,
+            outer_transform=outer_transform,
+            inner_transform=inner_transform,
+            apply_context_to_outer=args.conditionalouter,
+            pie_epsilon=args.pieepsilon,
+        )
+
+    # MFMF or PIE for image data, with scalar latent space
     else:
         if simulator.parameter_dim() is not None:
             raise NotImplementedError
@@ -317,7 +392,7 @@ def create_model(args, simulator):
             dropout_probability=args.dropout,
             tail_bound=args.splinerange,
             num_bins=args.splinebins,
-            use_batch_norm=args.batchnorm
+            use_batch_norm=args.batchnorm,
         )
         model = ManifoldFlow(
             data_dim=args.datadim,

@@ -222,7 +222,6 @@ def create_image_transform(
                 transforms.Logit(),
             ]
         )
-
     elif preprocessing == "realnvp_2alpha":
         preprocess_transform = transforms.CompositeTransform(
             [
@@ -231,6 +230,8 @@ def create_image_transform(
                 transforms.Logit(),
             ]
         )
+    elif preprocessing == "unflatten":
+        preprocess_transform = transforms.ReshapeTransform(input_shape=(c * h * w), output_shape=(c, h, w))
     else:
         raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
 
