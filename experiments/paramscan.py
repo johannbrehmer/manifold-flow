@@ -73,6 +73,7 @@ def parse_args():
 
     # Evaluation settings
     parser.add_argument("--generate", type=int, default=1000)
+    parser.add_argument("--trueparam", type=int, default=0, help="Index of true parameter point for inference tasks")
 
     # Hyperparameter optimization
     parser.add_argument("--trials", type=int, default=100)
