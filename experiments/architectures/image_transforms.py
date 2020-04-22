@@ -144,6 +144,39 @@ def create_image_transform(
     if not isinstance(hidden_channels, list):
         hidden_channels = [hidden_channels] * levels
 
+    # Preprocessing
+    # Inputs to the model in [0, 2 ** num_bits]
+    if preprocessing == "glow":
+        # Map to [-0.5,0.5]
+        preprocess_transform = transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits), shift=-0.5)
+        logger.debug("Preprocessing: Glow")
+    elif preprocessing == "realnvp":
+        preprocess_transform = transforms.CompositeTransform(
+            [
+                # Map to [0,1]
+                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
+                # Map into unconstrained space as done in RealNVP
+                transforms.AffineScalarTransform(shift=alpha, scale=(1 - alpha)),
+                transforms.Logit(),
+            ]
+        )
+        logger.debug("Preprocessing: RealNVP")
+    elif preprocessing == "realnvp_2alpha":
+        preprocess_transform = transforms.CompositeTransform(
+            [
+                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
+                transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)),
+                transforms.Logit(),
+            ]
+        )
+        logger.debug("Preprocessing: RealNVP2alpha")
+    elif preprocessing == "unflatten":
+        preprocess_transform = transforms.ReshapeTransform(input_shape=(c * h * w,), output_shape=(c, h, w))
+        logger.debug("Preprocessing: Unflattening from %s to (%s, %s, %s)", c*h*w, c, h, w)
+    else:
+        raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
+
+    # Main part
     if multi_scale:
         mct = transforms.MultiscaleCompositeTransform(num_transforms=levels)
         for level, level_hidden_channels in zip(range(levels), hidden_channels):
@@ -206,34 +239,6 @@ def create_image_transform(
 
         all_transforms.append(transforms.ReshapeTransform(input_shape=(c, h, w), output_shape=(c * h * w,)))
         mct = transforms.CompositeTransform(all_transforms)
-
-    # Inputs to the model in [0, 2 ** num_bits]
-
-    if preprocessing == "glow":
-        # Map to [-0.5,0.5]
-        preprocess_transform = transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits), shift=-0.5)
-    elif preprocessing == "realnvp":
-        preprocess_transform = transforms.CompositeTransform(
-            [
-                # Map to [0,1]
-                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
-                # Map into unconstrained space as done in RealNVP
-                transforms.AffineScalarTransform(shift=alpha, scale=(1 - alpha)),
-                transforms.Logit(),
-            ]
-        )
-    elif preprocessing == "realnvp_2alpha":
-        preprocess_transform = transforms.CompositeTransform(
-            [
-                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
-                transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)),
-                transforms.Logit(),
-            ]
-        )
-    elif preprocessing == "unflatten":
-        preprocess_transform = transforms.ReshapeTransform(input_shape=(c * h * w), output_shape=(c, h, w))
-    else:
-        raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
 
     # Final transformation: random permutation or learnable linear matrix
     if add_linear_layer:
