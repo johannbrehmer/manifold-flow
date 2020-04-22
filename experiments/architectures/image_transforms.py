@@ -138,7 +138,7 @@ def create_image_transform(
     use_batchnorm=True,
     use_actnorm=True,
     spline_params=None,
-    add_linear_layer=False,
+    postprocessing="permutation",
 ):
     dim = c * h * w
     if not isinstance(hidden_channels, list):
@@ -241,14 +241,18 @@ def create_image_transform(
         mct = transforms.CompositeTransform(all_transforms)
 
     # Final transformation: random permutation or learnable linear matrix
-    if add_linear_layer:
+    if postprocessing == "linear":
         final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
         # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
         logger.debug("RandomPermutation(%s)", dim)
         logger.debug("SVDLinear(%s)", dim)
-    else:
+    elif postprocessing == "permutation":
         # Random permutation
         final_transform = transforms.RandomPermutation(dim)
         logger.debug("RandomPermutation(%s)", dim)
+    elif postprocessing == "none":
+        final_transform = transforms.IdentityTransform()
+    else:
+        raise NotImplementedError(postprocessing)
 
     return transforms.CompositeTransform([preprocess_transform, mct, final_transform])

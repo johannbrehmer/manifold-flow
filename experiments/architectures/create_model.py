@@ -78,6 +78,7 @@ def create_model(args, simulator):
             spline_params=spline_params,
             use_batchnorm=args.batchnorm,
             use_actnorm=args.actnorm,
+            postprocessing="permutation"
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
@@ -311,7 +312,7 @@ def create_model(args, simulator):
             dropout_prob=args.dropout,
             multi_scale=True,
             spline_params=spline_params,
-            add_linear_layer=False,
+            postprocessing="none",
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
         )
@@ -329,7 +330,7 @@ def create_model(args, simulator):
             dropout_prob=args.dropout,
             multi_scale=True,
             spline_params=spline_params,
-            add_linear_layer=False,
+            postprocessing="permutation",
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
         )
@@ -379,7 +380,7 @@ def create_model(args, simulator):
             dropout_prob=args.dropout,
             multi_scale=True,
             spline_params=spline_params,
-            add_linear_layer=True,
+            postprocessing="linear",
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
         )
