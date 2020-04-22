@@ -172,7 +172,7 @@ def create_image_transform(
         logger.debug("Preprocessing: RealNVP2alpha")
     elif preprocessing == "unflatten":
         preprocess_transform = transforms.ReshapeTransform(input_shape=(c * h * w,), output_shape=(c, h, w))
-        logger.debug("Preprocessing: Unflattening from %s to (%s, %s, %s)", c*h*w, c, h, w)
+        logger.debug("Preprocessing: Unflattening from %s to (%s, %s, %s)", c * h * w, c, h, w)
     else:
         raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
 
