@@ -238,6 +238,9 @@ def run_mcmc(args, simulator, model=None):
                 log_prob = np.sum(model.log_prob(x_obs_, context=params_).detach().numpy())
             elif args.algorithm in ["pie", "slice"]:
                 log_prob = np.sum(model.log_prob(x_obs_, context=params_, mode=args.algorithm).detach().numpy())
+            elif not args.conditionalouter:
+                # Slow part of Jacobian drops out in LLR / MCMC acceptance ratio
+                log_prob = np.sum(model.log_prob(x_obs_, context=params_, mode="mf-fixed-manifold").detach().numpy())
             else:
                 log_prob = np.sum(model.log_prob(x_obs_, context=params_, mode="mf").detach().numpy())
 
