@@ -98,6 +98,18 @@ class CelebALoader(BaseImageLoader):
         )
 
 
+class FFHQStyleGAN2DLoader(BaseImageLoader):
+    def __init__(self):
+        super().__init__(
+            resolution=64,
+            n_bits=8,
+            random_horizontal_flips=True,
+        )
+
+    def latent_dim(self):
+        return 2
+
+
 # class ImageNet64Fast(Dataset):
 #     GOOGLE_DRIVE_FILE_ID = {"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"}
 #
