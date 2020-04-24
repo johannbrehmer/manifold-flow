@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-f-c
-#SBATCH --output=log_train_flow_celeba.log
+#SBATCH --job-name=t-mf-g
+#SBATCH --output=log_train_mf_gan2d.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
@@ -13,4 +13,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/image-mf/experiments
 
-python -u train.py -c cluster/configs/train_flow_celeba_may.config --algorithm flow
+python -u train.py -c cluster/configs/train_mfmf_gan2d_may.config --algorithm mf --sequential

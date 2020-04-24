@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-f-c
-#SBATCH --output=log_train_flow_celeba.log
+#SBATCH --job-name=t-f-g
+#SBATCH --output=log_train_flow_gan2d.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
