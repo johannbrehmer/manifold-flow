@@ -78,7 +78,7 @@ def create_model(args, simulator):
             spline_params=spline_params,
             use_batchnorm=args.batchnorm,
             use_actnorm=args.actnorm,
-            postprocessing="permutation"
+            postprocessing="permutation",
         )
         model = Flow(data_dim=args.datadim, transform=transform)
 
