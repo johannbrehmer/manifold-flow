@@ -312,6 +312,12 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     )
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
+    callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")]
+    callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")]
+    if simulator.is_image():
+        callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+        callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
         loss_functions=[losses.mse],
@@ -321,7 +327,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
         if args.algorithm == "emf"
         else model.outer_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=callbacks1,
         forward_kwargs={"mode": "projection"},
         **common_kwargs,
     )
@@ -334,7 +340,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_weights=[args.nllfactor] + scandal_weight,
         epochs=args.epochs - (args.epochs // 2),
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=callbacks2,
         forward_kwargs={"mode": "mf-fixed-manifold"},
         **common_kwargs,
     )
