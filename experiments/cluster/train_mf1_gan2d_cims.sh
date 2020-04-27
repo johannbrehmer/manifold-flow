@@ -14,4 +14,4 @@ export OMP_NUM_THREADS=1
 dir=/home/brehmer/manifold-flow
 cd $dir/experiments
 
-python -u train.py -c cluster/configs/train_mf_gan2d_may_l1.config --modelname l1_may --algorithm mf --sequential --dir $dir
+python -u train.py -c cluster/configs/train_mf_gan2d_april_l1.config --modelname l1_april --algorithm mf --sequential --dir $dir
