@@ -121,6 +121,7 @@ def parse_args():
     parser.add_argument("--prepostfraction", type=int, default=3, help="Fraction of epochs reserved for pretraining and posttraining (MFMF-S only)")
     parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
     parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
+    parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -280,9 +281,9 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
-        loss_functions=[losses.mse, losses.nll] + scandal_loss,
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse, losses.nll] + scandal_loss,
         loss_function_trainers=[0, 1] + [1] if args.scandal is not None else [],
-        loss_labels=["MSE", "NLL"] + scandal_label,
+        loss_labels=["L1" if args.l1 else "MSE", "NLL"] + scandal_label,
         loss_weights=[args.msefactor, args.nllfactor] + scandal_weight,
         epochs=args.epochs // 2,
         subsets=args.subsets,
@@ -320,8 +321,8 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse],
+        loss_labels=["L1" if args.l1 else "MSE"],
         loss_weights=[args.msefactor],
         epochs=args.epochs // 2,
         parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
