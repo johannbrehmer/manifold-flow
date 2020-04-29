@@ -10,7 +10,7 @@ import logging
 sys.path.append("../")
 
 from experiments.datasets import load_simulator
-from experiments.utils.names import create_filename
+from experiments.utils import create_filename
 
 logger = logging.getLogger(__name__)
 

@@ -8,13 +8,14 @@ from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulat
 from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .polynomial_surface_simulator import PolynomialSurfaceSimulator
+from .lorenz import LorenzSimulator
 from experiments.utils import create_filename
 from .utils import NumpyDataset
 
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d", "lorenz"]
 
 
 def load_simulator(args):
@@ -37,6 +38,8 @@ def load_simulator(args):
         simulator = CelebALoader()
     elif args.dataset == "gan2d":
         simulator = FFHQStyleGAN2DLoader()
+    elif args.dataset == "lorenz":
+        simulator = LorenzSimulator()
     else:
         raise ValueError("Unknown dataset {}".format(args.dataset))
 
