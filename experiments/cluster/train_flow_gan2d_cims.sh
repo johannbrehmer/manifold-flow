@@ -12,7 +12,7 @@
 conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
-dir=/home/brehmer/manifold-flow
+dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
 python -u train.py -c cluster/configs/train_flow_gan2d_april.config --modelname april --algorithm flow --dir $dir
