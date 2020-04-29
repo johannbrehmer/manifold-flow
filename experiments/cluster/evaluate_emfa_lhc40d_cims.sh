@@ -11,7 +11,7 @@
 conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
-dir=/home/brehmer/manifold-flow
+dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
 run=$((SLURM_ARRAY_TASK_ID / 12))
