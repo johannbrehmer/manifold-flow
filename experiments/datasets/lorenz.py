@@ -15,7 +15,9 @@ class LorenzSimulator(BaseSimulator):
         assert beta > 0.0
         assert rho > 0.0
 
-        self.trajectory = self._lorenz(sigma, beta, rho, np.asarray([x0, y0, z0]), tmax, steps)
+        self._trajectory = self._lorenz(sigma, beta, rho, np.asarray([x0, y0, z0]), tmax, steps)
+        self._x_means=np.array([-0.68170659, -0.55421554, 23.71924285])
+        self._x_stds=np.array([7.98203267, 9.0880048 , 8.31979251])
 
     def is_image(self):
         return False
@@ -29,9 +31,15 @@ class LorenzSimulator(BaseSimulator):
     def parameter_dim(self):
         return None
 
+    def trajectory(self):
+        x = self._trajectory
+        x = self._preprocess(x, inverse=False)
+        return x
+
     def sample(self, n, parameters=None):
-        idx = np.random.choice(list(range(len(self.trajectory))), size=n)
-        x = self.trajectory[idx, :]
+        idx = np.random.choice(list(range(len(self._trajectory))), size=n)
+        x = self._trajectory[idx, :]
+        x = self._preprocess(x, inverse=False)
         return x
 
     def sample_ood(self, n, parameters=None):
@@ -66,3 +74,18 @@ class LorenzSimulator(BaseSimulator):
 
     def evaluate_log_prior(self, parameters):
         raise NotImplementedError
+
+    def _preprocess(self, x, inverse=False):
+        x = np.copy(x)
+        if self._x_means is not None and self._x_stds is not None:
+            if inverse:
+                logger.debug("Scaling LHC data back to conventional normalization")
+                x *= self._x_stds
+                x += self._x_means
+            else:
+                logger.debug("Scaling LHC data to zero mean and unit variance")
+                x = x - self._x_means
+                x /= self._x_stds
+        else:
+            logger.debug("No preprocessing")
+        return x

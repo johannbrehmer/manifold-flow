@@ -20,12 +20,11 @@ def parse_args():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-i", type=int, default=0)
     parser.add_argument(
         "--dataset",
         type=str,
         default="spherical_gaussian",
-        choices=["power", "spherical_gaussian", "conditional_spherical_gaussian"],
+        choices=["power", "spherical_gaussian", "conditional_spherical_gaussian", "lorenz"],
         help="Dataset: spherical_gaussian, power, and conditional_spherical_gaussian",
     )
     parser.add_argument("-i", type=int, default=0, help="Run number")
