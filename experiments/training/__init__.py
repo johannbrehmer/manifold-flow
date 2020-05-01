@@ -1,10 +1,11 @@
 from . import losses
 from .trainer import (
-    ManifoldFlowTrainer,
-    ConditionalManifoldFlowTrainer,
-    GenerativeTrainer,
-    ConditionalGenerativeTrainer,
-    VariableDimensionManifoldFlowTrainer,
-    ConditionalVariableDimensionManifoldFlowTrainer,
+    ForwardTrainer,
+    ConditionalForwardTrainer,
+    AdversarialTrainer,
+    ConditionalAdversarialTrainer,
+    VarDimForwardTrainer,
+    ConditionalVarDimForwardTrainer,
+    SCANDALForwardTrainer,
 )
 from .alternate import AlternatingTrainer

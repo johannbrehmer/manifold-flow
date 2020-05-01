@@ -2,13 +2,10 @@ import logging
 import numpy as np
 import torch
 from torch import optim, nn
+from torch.autograd import grad
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-
-# from matplotlib import pyplot as plt
-# from sklearn.manifold import TSNE
-# from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -522,7 +519,7 @@ class Trainer(BaseTrainer):
         pass
 
 
-class ManifoldFlowTrainer(Trainer):
+class ForwardTrainer(Trainer):
     """ Trainer for likelihood-based flow training when the model is not conditional. """
 
     def first_batch(self, batch_data):
@@ -537,7 +534,7 @@ class ManifoldFlowTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         self._check_for_nans("Training data", x)
 
         if len(x.size()) < 2:
@@ -557,14 +554,15 @@ class ManifoldFlowTrainer(Trainer):
         return losses
 
 
-class ConditionalManifoldFlowTrainer(Trainer):
+class ConditionalForwardTrainer(Trainer):
     """ Trainer for likelihood-based flow training for conditional models. """
 
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
 
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
@@ -589,7 +587,46 @@ class ConditionalManifoldFlowTrainer(Trainer):
         return losses
 
 
-class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
+class SCANDALForwardTrainer(Trainer):
+    """ Trainer for likelihood-based flow training for conditional models with SCANDAL-like loss. """
+
+    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
+        if forward_kwargs is None:
+            forward_kwargs = {}
+
+        x, params, t_xz = batch_data
+
+        if len(x.size()) < 2:
+            x = x.view(x.size(0), -1)
+        if len(params.size()) < 2:
+            params = params.view(params.size(0), -1)
+
+        x = x.to(self.device, self.dtype)
+        params = params.to(self.device, self.dtype)
+        t_xz = t_xz.to(self.device, self.dtype)
+        self._check_for_nans("Training data", x, params, t_xz)
+
+        if not params.requires_grad:
+            params.requires_grad = True
+
+        if self.multi_gpu:
+            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+        else:
+            x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
+
+        t, = grad(log_prob, params, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
+
+        self._check_for_nans("Reconstructed data", x_reco)
+        if log_prob is not None:
+            self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+
+        losses = [loss_fn(x_reco, x, log_prob, t, t_xz) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
+
+        return losses
+
+
+class VarDimForwardTrainer(ForwardTrainer):
     """ Trainer for likelihood-based flow training for PIE with variable epsilons and non-conditional models. """
 
     def train(
@@ -677,7 +714,7 @@ class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
         logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
 
 
-class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
+class ConditionalVarDimForwardTrainer(ConditionalForwardTrainer):
     """ Trainer for likelihood-based flow training for PIE with variable epsilons and conditional models. """
 
     def train(
@@ -765,7 +802,7 @@ class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTra
         logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
 
 
-class GenerativeTrainer(Trainer):
+class AdversarialTrainer(Trainer):
     """ Trainer for adversarial (OT) flow training when the model is not conditional. """
 
     # TODO: multi-GPU support
@@ -773,8 +810,9 @@ class GenerativeTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         batch_size = x.size(0)
+
         if len(x.size()) < 2:
             x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)
@@ -789,7 +827,7 @@ class GenerativeTrainer(Trainer):
         return losses
 
 
-class ConditionalGenerativeTrainer(GenerativeTrainer):
+class ConditionalAdversarialTrainer(AdversarialTrainer):
     """ Trainer for adversarial (OT) flow training and conditional models. """
 
     # TODO: multi-GPU support
@@ -797,7 +835,8 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
         batch_size = x.size(0)
 
         if len(x.size()) < 2:

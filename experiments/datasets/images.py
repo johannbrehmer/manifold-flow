@@ -29,7 +29,10 @@ class BaseImageLoader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
+        if joint_score:
+            raise NotImplementedError("SCANDAL training not implemented for this dataset")
+
         # Load data as numpy array
         if self.gdrive_file_ids is not None:
             self._download(dataset_dir)

@@ -44,7 +44,9 @@ def load_simulator(args):
 
 def load_training_dataset(simulator, args):
     try:
-        return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize)
+        return simulator.load_dataset(
+            train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize, joint_score=args.scandal is not None
+        )
     except NotImplementedError:
         pass
 
@@ -53,6 +55,8 @@ def load_training_dataset(simulator, args):
         params = np.load(create_filename("sample", "parameters_train", args))
     except:
         params = np.ones(x.shape[0])
+    if args.scandal is not None:
+        raise NotImplementedError("SCANDAL training not implemented for this dataset")
 
     if args.samplesize is not None:
         logger.info("Only using %s of %s available samples", args.samplesize, x.shape[0])
@@ -64,7 +68,9 @@ def load_training_dataset(simulator, args):
 
 def load_test_samples(simulator, args, ood=False, paramscan=False):
     try:
-        x, _ = simulator.load_dataset(train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam)
+        x, _ = simulator.load_dataset(
+            train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False
+        )
 
         # TODO: implement OOD
         return x
