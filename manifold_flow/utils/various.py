@@ -450,6 +450,25 @@ def create_random_binary_mask(features):
     return mask
 
 
+def create_mlt_channel_mask(features, channels_per_level=(1,2,4,8), resolution=64):
+    mask = torch.zeros(features).byte()
+
+    pos = 0
+    total_size = features
+    res = resolution
+
+    for channels in channels_per_level:
+        total_size = total_size // 2
+        res = res // 2
+        active = channels * res * res
+        mask[pos:pos+active] += 1
+        pos += total_size
+
+    assert pos <= features
+
+    return mask
+
+
 def searchsorted(bin_locations, inputs, eps=1e-6):
     bin_locations[..., -1] += eps
     return torch.sum(inputs[..., None] >= bin_locations, dim=-1) - 1
