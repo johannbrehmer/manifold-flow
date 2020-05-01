@@ -252,7 +252,7 @@ def create_image_transform(
         if partial_linear_channels is None:
             partial_linear_channels = max(1, c // 16)
         partial_dim = partial_linear_channels * h * w
-        mask = various.create_split_binary_mask(c * h * w, partial_dim)
+        mask = various.create_split_binary_mask(dim, partial_dim)
         partial_transform = transforms.CompositeTransform([transforms.RandomPermutation(partial_dim), transforms.LULinear(partial_dim, identity_init=True)])
         final_transform = transforms.PartialTransform(mask, partial_transform)
         logger.debug("PartialTransform with (RandomPermutation + LULinear) (%s, %s)", dim, partial_dim)

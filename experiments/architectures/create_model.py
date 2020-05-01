@@ -385,6 +385,7 @@ def create_model(args, simulator):
             postprocessing="partial_linear",
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
+            partial_linear_channels=args.linchannels,
         )
         inner_transform = create_vector_transform(
             args.modellatentdim,
