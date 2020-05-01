@@ -20,8 +20,8 @@ from training import (
     AdversarialTrainer,
     ConditionalAdversarialTrainer,
     AlternatingTrainer,
-    VarDimForwardTrainer,
-    ConditionalVarDimForwardTrainer,
+    # VarDimForwardTrainer,
+    # ConditionalVarDimForwardTrainer,
     SCANDALForwardTrainer,
 )
 from datasets import load_simulator, load_training_dataset, SIMULATORS
@@ -92,7 +92,11 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
-    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
+    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
+    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
+    parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
+    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
@@ -110,13 +114,14 @@ def parse_args():
     parser.add_argument("--sinkhornfactor", type=float, default=10.0, help="Sinkhorn divergence multiplier in loss")
     parser.add_argument("--weightdecay", type=float, default=1.0e-4, help="Weight decay")
     parser.add_argument("--clip", type=float, default=1.0, help="Gradient norm clipping parameter")
-    parser.add_argument("--doughl1reg", type=float, default=0.0, help="L1 reg on epsilon when learning epsilons for PIE")
+    # parser.add_argument("--doughl1reg", type=float, default=0.0, help="L1 reg on epsilon when learning epsilons for PIE")
     parser.add_argument("--nopretraining", action="store_true", help="Skip pretraining in MFMF-S training")
     parser.add_argument("--noposttraining", action="store_true", help="Skip posttraining in MFMF-S training")
     parser.add_argument("--prepie", action="store_true", help="Pretrain with PIE rather than on reco error (MFMF-S only)")
     parser.add_argument("--prepostfraction", type=int, default=3, help="Fraction of epochs reserved for pretraining and posttraining (MFMF-S only)")
     parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
     parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
+    parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -276,9 +281,9 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
-        loss_functions=[losses.mse, losses.nll] + scandal_loss,
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse, losses.nll] + scandal_loss,
         loss_function_trainers=[0, 1] + [1] if args.scandal is not None else [],
-        loss_labels=["MSE", "NLL"] + scandal_label,
+        loss_labels=["L1" if args.l1 else "MSE", "NLL"] + scandal_label,
         loss_weights=[args.msefactor, args.nllfactor] + scandal_weight,
         epochs=args.epochs // 2,
         subsets=args.subsets,
@@ -308,16 +313,22 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     )
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
+    callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")]
+    callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")]
+    if simulator.is_image():
+        callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+        callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
-        loss_functions=[losses.mse],
-        loss_labels=["MSE"],
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse],
+        loss_labels=["L1" if args.l1 else "MSE"],
         loss_weights=[args.msefactor],
         epochs=args.epochs // 2,
         parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
         if args.algorithm == "emf"
         else model.outer_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+        callbacks=callbacks1,
         forward_kwargs={"mode": "projection"},
         **common_kwargs,
     )
@@ -330,7 +341,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_weights=[args.nllfactor] + scandal_weight,
         epochs=args.epochs - (args.epochs // 2),
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=callbacks2,
         forward_kwargs={"mode": "mf-fixed-manifold"},
         **common_kwargs,
     )
@@ -522,23 +533,23 @@ def train_pie(args, dataset, model, simulator):
     return learning_curves
 
 
-def train_dough(args, dataset, model, simulator):
-    """ PIE with variable epsilons training """
-    trainer = VarDimForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalVarDimForwardTrainer(model)
-    common_kwargs, _, _, _ = make_training_kwargs(args, dataset)
-
-    logger.info("Starting training dough, phase 1: NLL without latent regularization")
-    learning_curves = trainer.train(
-        loss_functions=[losses.nll],
-        loss_labels=["NLL"],
-        loss_weights=[args.nllfactor],
-        epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
-        l1=args.doughl1reg,
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
-    return learning_curves
+# def train_dough(args, dataset, model, simulator):
+#     """ PIE with variable epsilons training """
+#     trainer = VarDimForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalVarDimForwardTrainer(model)
+#     common_kwargs, _, _, _ = make_training_kwargs(args, dataset)
+#
+#     logger.info("Starting training dough, phase 1: NLL without latent regularization")
+#     learning_curves = trainer.train(
+#         loss_functions=[losses.nll],
+#         loss_labels=["NLL"],
+#         loss_weights=[args.nllfactor],
+#         epochs=args.epochs,
+#         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+#         l1=args.doughl1reg,
+#         **common_kwargs,
+#     )
+#     learning_curves = np.vstack(learning_curves).T
+#     return learning_curves
 
 
 def train_model(args, dataset, model, simulator):
@@ -564,8 +575,8 @@ def train_model(args, dataset, model, simulator):
             learning_curves = train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator)
         else:
             learning_curves = train_generative_adversarial_manifold_flow(args, dataset, model, simulator)
-    elif args.algorithm == "dough":
-        learning_curves = train_dough(args, dataset, model, simulator)
+    # elif args.algorithm == "dough":
+    #     learning_curves = train_dough(args, dataset, model, simulator)
     else:
         raise ValueError("Unknown algorithm %s", args.algorithm)
 

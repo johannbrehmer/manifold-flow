@@ -1,5 +1,5 @@
 import torch
-from torch.nn import MSELoss
+from torch.nn import MSELoss, SmoothL1Loss
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,12 @@ def mse(x_pred, x_true, log_p, t_pred=None, t_xz=None):
     """ Reconstruction error """
 
     return MSELoss()(x_pred, x_true)
+
+
+def smooth_l1_loss(x_pred, x_true, log_p, t_pred=None, t_xz=None):
+    """ Reconstruction error """
+
+    return SmoothL1Loss()(x_pred, x_true)
 
 
 def score_mse(x_pred, x_true, log_p, t_pred=None, t_xz=None):

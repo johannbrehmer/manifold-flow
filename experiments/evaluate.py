@@ -81,6 +81,11 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
+    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
+    parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
+    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
 
     # Evaluation settings
     parser.add_argument("--gridresolution", type=int, default=11, help="Grid ressolution (per axis) for likelihood eval")
@@ -183,22 +188,25 @@ def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=1
                 if args.algorithm == "flow":
                     x_reco, log_prob_, _ = model(x_, context=params_)
                 elif args.algorithm in ["pie", "slice"]:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode=args.algorithm)
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode="projection" if args.skiplikelihood else args.algorithm)
                 else:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode="mf")
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode="projection" if args.skiplikelihood else "mf")
 
-                log_prob.append(log_prob_.detach().numpy())
+                if not args.skiplikelihood:
+                    log_prob.append(log_prob_.detach().numpy())
                 reco_error_.append((torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5).detach().numpy())
 
-            log_prob = np.concatenate(log_prob, axis=0)
+            if not args.skiplikelihood:
+                log_prob = np.concatenate(log_prob, axis=0)
             if reco_error is None:
                 reco_error = np.concatenate(reco_error_, axis=0)
 
-        log_probs.append(log_prob)
+        if not args.skiplikelihood:
+            log_probs.append(log_prob)
 
     if simulator.parameter_dim() is None:
-        return np.asarray(log_probs[0]), reco_error, None
-    return np.asarray(log_probs), reco_error, parameter_grid
+        return None if args.skiplikelihood else np.asarray(log_probs[0]), reco_error, None
+    return None if args.skiplikelihood else np.asarray(log_probs), reco_error, parameter_grid
 
 
 def run_mcmc(args, simulator, model=None):
@@ -294,20 +302,19 @@ if __name__ == "__main__":
 
     # Evaluate generative performance
     if args.skipgeneration:
-        logger.info("Skipping generative evaluation as per request.")
+        logger.info("Skipping generative evaluation")
     elif not args.truth:
         x_gen = sample_from_model(args, model, simulator)
         evaluate_model_samples(args, simulator, x_gen)
 
     if args.skipinference:
-        logger.info("Skipping all inference tasks as per request. Have a nice day!")
+        logger.info("Skipping all inference tasks. Have a nice day!")
         exit()
 
     # Evaluate test and ood samples
     if args.skiplikelihood:
-        logger.info("Skipping likelihood evaluation on test and OOD samples as per request")
-
-    elif args.truth:
+        logger.info("Skipping likelihood evaluation")
+    if args.truth:
         try:
             log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
             np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
@@ -322,7 +329,8 @@ if __name__ == "__main__":
 
     else:
         log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize)
-        np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
+        if not args.skiplikelihood:
+            np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
         np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
         if parameter_grid is not None:
             np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
@@ -332,13 +340,14 @@ if __name__ == "__main__":
         else:
             try:
                 log_likelihood_ood, reconstruction_error_ood, _ = evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
-                np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
+                if not args.skiplikelihood:
+                    np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
                 np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
             except:
                 pass
 
     if args.skipmcmc:
-        logger.info("Skipping MCMC as per request")
+        logger.info("Skipping MCMC")
 
     # Truth MCMC
     elif simulator.parameter_dim() is not None and args.truth:

@@ -5,7 +5,7 @@ import logging
 from .base import IntractableLikelihoodError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
-from .images import ImageNetLoader, CelebALoader
+from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .polynomial_surface_simulator import PolynomialSurfaceSimulator
 from experiments.utils import create_filename
@@ -14,7 +14,7 @@ from .utils import NumpyDataset
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d"]
 
 
 def load_simulator(args):
@@ -35,6 +35,8 @@ def load_simulator(args):
         simulator = ImageNetLoader()
     elif args.dataset == "celeba":
         simulator = CelebALoader()
+    elif args.dataset == "gan2d":
+        simulator = FFHQStyleGAN2DLoader()
     else:
         raise ValueError("Unknown dataset {}".format(args.dataset))
 

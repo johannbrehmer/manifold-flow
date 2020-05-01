@@ -4,7 +4,4 @@ conda activate ml
 dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
-for i in 3 4
-do
-    python -u evaluate.py -c cluster/configs/evaluate_power_march.config --modelname conditionalmanifold_march --algorithm pie --conditionalouter -i $i --dir $dir
-done
+python -u train.py -c cluster/configs/train_mfmf_gan2d_april.config --algorithm mf --sequential --debug --batchsize 50 --epochs 200 --dir $dir
