@@ -242,10 +242,10 @@ def create_image_transform(
 
     # Final transformation: random permutation or learnable linear matrix
     if postprocessing == "linear":
-        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
-        # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
+        # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
+        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
         logger.debug("RandomPermutation(%s)", dim)
-        logger.debug("SVDLinear(%s)", dim)
+        logger.debug("LULinear(%s)", dim)
     elif postprocessing == "permutation":
         # Random permutation
         final_transform = transforms.RandomPermutation(dim)
