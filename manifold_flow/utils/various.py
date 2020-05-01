@@ -394,6 +394,19 @@ def get_num_parameters(model):
     return num_parameters
 
 
+def create_split_binary_mask(features, n_active):
+    """
+    Creates a binary mask of a given dimension in which the first n_active features are set to 1 and the others to 0.
+
+    :param features: Dimension of mask.
+    :param even: If True, even values are assigned 1s, odd 0s. If False, vice versa.
+    :return: Alternating binary mask of type torch.Tensor.
+    """
+    mask = torch.zeros(features).byte()
+    mask[:n_active] += 1
+    return mask
+
+
 def create_alternating_binary_mask(features, even=True):
     """
     Creates a binary mask of a given dimension which alternates its masking.

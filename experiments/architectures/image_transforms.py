@@ -247,18 +247,24 @@ def create_image_transform(
         final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
         logger.debug("RandomPermutation(%s)", dim)
         logger.debug("LULinear(%s)", dim)
+
     elif postprocessing == "partial_linear":
         if partial_linear_channels is None:
             partial_linear_channels = max(1, c // 16)
-        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.PartialLULinear(dim, transform_features=list(range(partial_linear_channels*h*w)), identity_init=True)])
-        logger.debug("RandomPermutation(%s)", dim)
-        logger.debug("PartialLULinear(%s, %s)", dim, partial_linear_channels*h*w)
+        partial_dim = partial_linear_channels * h * w
+        mask = various.create_split_binary_mask(c * h * w, partial_dim)
+        partial_transform = transforms.CompositeTransform([transforms.RandomPermutation(partial_dim), transforms.LULinear(partial_dim, identity_init=True)])
+        final_transform = transforms.PartialTransform(mask, partial_transform)
+        logger.debug("PartialTransform with (RandomPermutation + LULinear) (%s, %s)", dim, partial_dim)
+
     elif postprocessing == "permutation":
         # Random permutation
         final_transform = transforms.RandomPermutation(dim)
         logger.debug("RandomPermutation(%s)", dim)
+
     elif postprocessing == "none":
         final_transform = transforms.IdentityTransform()
+
     else:
         raise NotImplementedError(postprocessing)
 

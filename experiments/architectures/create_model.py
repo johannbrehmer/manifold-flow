@@ -382,7 +382,7 @@ def create_model(args, simulator):
             dropout_prob=args.dropout,
             multi_scale=True,
             spline_params=spline_params,
-            postprocessing="linear",
+            postprocessing="partial_linear",
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
         )
