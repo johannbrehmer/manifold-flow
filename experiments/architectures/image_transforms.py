@@ -139,6 +139,7 @@ def create_image_transform(
     use_actnorm=True,
     spline_params=None,
     postprocessing="permutation",
+    partial_linear_channels=None,
 ):
     dim = c * h * w
     if not isinstance(hidden_channels, list):
@@ -246,6 +247,12 @@ def create_image_transform(
         final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
         logger.debug("RandomPermutation(%s)", dim)
         logger.debug("LULinear(%s)", dim)
+    elif postprocessing == "partial_linear":
+        if partial_linear_channels is None:
+            partial_linear_channels = max(1, c // 16)
+        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.PartialLULinear(dim, transform_features=list(range(partial_linear_channels*h*w)), identity_init=True)])
+        logger.debug("RandomPermutation(%s)", dim)
+        logger.debug("PartialLULinear(%s, %s)", dim, partial_linear_channels*h*w)
     elif postprocessing == "permutation":
         # Random permutation
         final_transform = transforms.RandomPermutation(dim)
