@@ -320,20 +320,20 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
         callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
 
-    logger.info("Starting training MF, phase 1: manifold training")
-    learning_curves = trainer1.train(
-        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse],
-        loss_labels=["L1" if args.l1 else "MSE"],
-        loss_weights=[args.msefactor],
-        epochs=args.epochs // 2,
-        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
-        if args.algorithm == "emf"
-        else model.outer_transform.parameters(),
-        callbacks=callbacks1,
-        forward_kwargs={"mode": "projection"},
-        **common_kwargs,
-    )
-    learning_curves = np.vstack(learning_curves).T
+    # logger.info("Starting training MF, phase 1: manifold training")
+    # learning_curves = trainer1.train(
+    #     loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse],
+    #     loss_labels=["L1" if args.l1 else "MSE"],
+    #     loss_weights=[args.msefactor],
+    #     epochs=args.epochs // 2,
+    #     parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
+    #     if args.algorithm == "emf"
+    #     else model.outer_transform.parameters(),
+    #     callbacks=callbacks1,
+    #     forward_kwargs={"mode": "projection"},
+    #     **common_kwargs,
+    # )
+    # learning_curves = np.vstack(learning_curves).T
 
     logger.info("Starting training MF, phase 2: density training")
     learning_curves_ = trainer2.train(
@@ -346,7 +346,8 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         forward_kwargs={"mode": "mf-fixed-manifold"},
         **common_kwargs,
     )
-    learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
+    learning_curves = np.vstack(learning_curves).T
+    #learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
 
     return learning_curves
 
