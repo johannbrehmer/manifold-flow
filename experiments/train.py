@@ -97,6 +97,7 @@ def parse_args():
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
+    parser.add_argument("--linchannels", type=int, default=32, help="Number of channels that are linearly transformed before the projection (for image data)")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")

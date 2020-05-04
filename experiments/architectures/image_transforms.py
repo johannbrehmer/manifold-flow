@@ -1,5 +1,6 @@
 from torch import nn
 import logging
+import torch
 
 from manifold_flow import nn as nn_, transforms
 from manifold_flow.nn import Conv2dSameSize
@@ -140,7 +141,10 @@ def create_image_transform(
     spline_params=None,
     postprocessing="permutation",
 ):
+    assert h == w
+    res = h
     dim = c * h * w
+
     if not isinstance(hidden_channels, list):
         hidden_channels = [hidden_channels] * levels
 
@@ -178,6 +182,7 @@ def create_image_transform(
 
     # Main part
     if multi_scale:
+        logger.debug("Input: c, h, w = %s, %s, %s", c, h, w)
         mct = transforms.MultiscaleCompositeTransform(num_transforms=levels)
         for level, level_hidden_channels in zip(range(levels), hidden_channels):
             logger.debug("Level %s", level)
@@ -242,16 +247,45 @@ def create_image_transform(
 
     # Final transformation: random permutation or learnable linear matrix
     if postprocessing == "linear":
-        # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
-        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
-        logger.debug("RandomPermutation(%s)", dim)
+        final_transform = transforms.LULinear(dim, identity_init=True)
         logger.debug("LULinear(%s)", dim)
+
+    elif postprocessing == "partial_linear":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transform = transforms.LULinear(partial_dim, identity_init=True)
+        final_transform = transforms.PartialTransform(mask, partial_transform)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+
+    elif postprocessing == "partial_mlp":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transform = transforms.CompositeTransform(
+            [transforms.LULinear(partial_dim, identity_init=True), transforms.LogTanh(cut_point=1), transforms.LULinear(partial_dim, identity_init=True)]
+        )
+        final_transform = transforms.PartialTransform(mask, partial_transform)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        logger.debug("PartialTransform (LogTanh) (%s)", partial_dim)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+
     elif postprocessing == "permutation":
         # Random permutation
         final_transform = transforms.RandomPermutation(dim)
         logger.debug("RandomPermutation(%s)", dim)
+
     elif postprocessing == "none":
         final_transform = transforms.IdentityTransform()
+
     else:
         raise NotImplementedError(postprocessing)
 
