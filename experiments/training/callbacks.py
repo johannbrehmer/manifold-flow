@@ -76,10 +76,10 @@ def print_mf_latent_statistics():
 
         u = last_batch["u"]
 
-        logger.debug(f"  Latent variables: mean = {torch.mean(u):>8.5f}")
-        logger.debug(f"                    std  = {torch.std(u):>8.5f}")
-        logger.debug(f"                    min  = {torch.min(u):>8.5f}")
-        logger.debug(f"                    max  = {torch.max(u):>8.5f}")
+        logger.debug(f"           Latent variables: mean = {torch.mean(u):>8.5f}")
+        logger.debug(f"                             std  = {torch.std(u):>8.5f}")
+        logger.debug(f"                             min  = {torch.min(u):>8.5f}")
+        logger.debug(f"                             max  = {torch.max(u):>8.5f}")
 
     return callback
 
