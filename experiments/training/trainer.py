@@ -39,6 +39,7 @@ class BaseTrainer(object):
             torch.set_default_tensor_type("torch.FloatTensor")
 
         self.model = self.model.to(self.device, self.dtype)
+        self.last_batch = None
 
         logger.info(
             "Training on %s with %s precision",
@@ -272,7 +273,7 @@ class Trainer(BaseTrainer):
 
             # LR schedule
             if sched is not None:
-                logger.debug("Learning rate: %s", sched.get_lr()[0])
+                logger.debug("Learning rate: %s", sched.get_last_lr())
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
@@ -306,11 +307,11 @@ class Trainer(BaseTrainer):
             # Callbacks
             if callbacks is not None:
                 for callback in callbacks:
-                    callback(i_epoch, self.model, loss_train, loss_val, train_loader=train_loader, val_loader=val_loader)
+                    callback(i_epoch, self.model, loss_train, loss_val, last_batch=self.last_batch)
 
             # LR scheduler
             if sched is not None:
-                sched.step(i_epoch)
+                sched.step()
                 if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
                     try:
                         sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
@@ -544,12 +545,13 @@ class ForwardTrainer(Trainer):
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
         if self.multi_gpu:
-            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
+            x_reco, log_prob, u = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
-            x_reco, log_prob, _ = self.model(x, **forward_kwargs)
+            x_reco, log_prob, u = self.model(x, **forward_kwargs)
         self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+        self.last_batch = {"x": x, "x_reco": x_reco, "log_prob": log_prob, "u": u}
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
@@ -577,12 +579,13 @@ class ConditionalForwardTrainer(Trainer):
         self._check_for_nans("Training data", x, params)
 
         if self.multi_gpu:
-            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+            x_reco, log_prob, u = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
         else:
-            x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
+            x_reco, log_prob, u = self.model(x, context=params, **forward_kwargs)
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+        self.last_batch = {"x": x, "params": params, "x_reco": x_reco, "log_prob": log_prob, "u": u}
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)

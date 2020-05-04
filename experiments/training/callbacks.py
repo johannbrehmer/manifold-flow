@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def save_model_after_every_epoch(filename):
     """ Saves model checkpoints. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, train_loader=None, val_loader=None):
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         torch.save(model.state_dict(), filename.format(i_epoch))
 
     return callback
@@ -18,7 +18,7 @@ def save_model_after_every_epoch(filename):
 def plot_sample_images(filename):
     """ Saves model checkpoints. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, train_loader=None, val_loader=None):
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         x = model.sample(n=30).detach().cpu().numpy()
         x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
 
@@ -38,12 +38,12 @@ def plot_sample_images(filename):
 def plot_reco_images(filename):
     """ Saves model checkpoints. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, train_loader=None, val_loader=None):
-        if val_loader is None:
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
+        if last_batch is None:
             return
 
-        x, _ = next(iter(val_loader))[:15]
-        x_reco = model(x, mode="projection")[0].detach().cpu().numpy()
+        x = last_batch["x"].detach().cpu().numpy()
+        x_reco = last_batch["x_reco"].detach().cpu().numpy()
 
         x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
         x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
@@ -70,12 +70,11 @@ def plot_reco_images(filename):
 def print_mf_latent_statistics():
     """ Prints debug info about size of weights. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, train_loader=None, val_loader=None):
-        if val_loader is None:
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
+        if last_batch is None:
             return
 
-        x, _ = next(iter(val_loader))[:15]
-        u = model(x, mode="projection")[2].detach().cpu().numpy()
+        u = last_batch["u"]
 
         logger.debug(f"  Latent variables: mean = {torch.mean(u):>8.5f}")
         logger.debug(f"                    std  = {torch.std(u):>8.5f}")
