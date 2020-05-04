@@ -300,7 +300,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
 
 def train_manifold_flow_sequential(args, dataset, model, simulator):
-    """ MFMF-A training """
+    """ Sequential MFMF-M/D training """
 
     assert not args.specified
 
@@ -314,11 +314,13 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     )
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
-    callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")]
-    callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")]
+    callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args)), callbacks.print_mf_latent_statistics()]
+    callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args)), callbacks.print_mf_latent_statistics()]
     if simulator.is_image():
-        callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
-        callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+        callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", "sample_epoch_A", args)))
+        callbacks1.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_A", args)))
+        callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", "sample_epoch_B", args)))
+        callbacks2.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_B", args)))
 
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
