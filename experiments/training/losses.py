@@ -1,14 +1,9 @@
 import torch
 from torch.nn import MSELoss, SmoothL1Loss
 import logging
+SamplesLoss = None
 
 logger = logging.getLogger(__name__)
-
-try:
-    from geomloss import SamplesLoss
-except ModuleNotFoundError:
-    logger.warning("geomloss not found, let's hope that you started a training method that doesn't need it!")
-    geomloss = None
 
 
 def nll(x_pred, x_true, log_p, t_pred=None, t_xz=None):
@@ -41,6 +36,8 @@ def make_sinkhorn_divergence(blur=0.05, scaling=0.7, p=2, backend="auto"):
 
     See http://www.kernel-operations.io/geomloss/api/pytorch-api.html
     """
+
+    from geomloss import SamplesLoss  # Workaround for some of the clusters. TODO: make this prettier
 
     sinkhorn = SamplesLoss("sinkhorn", p=p, blur=blur, scaling=scaling, backend=backend)
 
