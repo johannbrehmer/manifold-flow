@@ -306,7 +306,7 @@ class Trainer(BaseTrainer):
             # Callbacks
             if callbacks is not None:
                 for callback in callbacks:
-                    callback(i_epoch, self.model, loss_train, loss_val, train_loader, val_loader)
+                    callback(i_epoch, self.model, loss_train, loss_val, train_loader=train_loader, val_loader=val_loader)
 
             # LR scheduler
             if sched is not None:
