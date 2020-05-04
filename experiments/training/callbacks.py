@@ -42,8 +42,8 @@ def plot_reco_images(filename):
         if last_batch is None:
             return
 
-        x = last_batch["x"].detach().cpu().numpy()
-        x_reco = last_batch["x_reco"].detach().cpu().numpy()
+        x = last_batch["x"]
+        x_reco = last_batch["x_reco"]
 
         x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
         x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
@@ -76,10 +76,10 @@ def print_mf_latent_statistics():
 
         u = last_batch["u"]
 
-        logger.debug(f"           Latent variables: mean = {torch.mean(u):>8.5f}")
-        logger.debug(f"                             std  = {torch.std(u):>8.5f}")
-        logger.debug(f"                             min  = {torch.min(u):>8.5f}")
-        logger.debug(f"                             max  = {torch.max(u):>8.5f}")
+        logger.debug(f"           Latent variables: mean = {np.mean(u):>8.5f}")
+        logger.debug(f"                             std  = {np.std(u):>8.5f}")
+        logger.debug(f"                             min  = {np.min(u):>8.5f}")
+        logger.debug(f"                             max  = {np.max(u):>8.5f}")
 
     return callback
 

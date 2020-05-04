@@ -551,7 +551,7 @@ class ForwardTrainer(Trainer):
         self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
-        self.last_batch = {"x": x, "x_reco": x_reco, "log_prob": log_prob, "u": u}
+        self.last_batch = {"x": x.detach().cpu().numpy(), "x_reco": x_reco.detach().cpu().numpy(), "log_prob": log_prob.detach().cpu().numpy(), "u": u.detach().cpu().numpy()}
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
@@ -585,7 +585,7 @@ class ConditionalForwardTrainer(Trainer):
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
-        self.last_batch = {"x": x, "params": params, "x_reco": x_reco, "log_prob": log_prob, "u": u}
+        self.last_batch = {"x": x.detach().cpu().numpy(), "params": params.detach().cpu().numpy(), "x_reco": x_reco.detach().cpu().numpy(), "log_prob": log_prob.detach().cpu().numpy(), "u": u.detach().cpu().numpy()}
 
         losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
