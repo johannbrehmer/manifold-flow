@@ -247,22 +247,36 @@ def create_image_transform(
 
     # Final transformation: random permutation or learnable linear matrix
     if postprocessing == "linear":
-        # final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.SVDLinear(dim, num_householder=10)])
-        final_transform = transforms.CompositeTransform([transforms.RandomPermutation(dim), transforms.LULinear(dim, identity_init=True)])
-        logger.debug("RandomPermutation(%s)", dim)
+        final_transform = transforms.LULinear(dim, identity_init=True)
         logger.debug("LULinear(%s)", dim)
 
     elif postprocessing == "partial_linear":
         if multi_scale:
-            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1,2,4,8), resolution=res)
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
             partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
         else:
             partial_dim = 1024
             mask = various.create_split_binary_mask(dim, partial_dim)
 
-        partial_transform = transforms.CompositeTransform([transforms.RandomPermutation(partial_dim), transforms.LULinear(partial_dim, identity_init=True)])
+        partial_transform = transforms.LULinear(partial_dim, identity_init=True)
         final_transform = transforms.PartialTransform(mask, partial_transform)
-        logger.debug("PartialTransform with (RandomPermutation + LULinear) (%s, %s)", dim, partial_dim)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+
+    elif postprocessing == "partial_mlp":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transform = transforms.CompositeTransform(
+            [transforms.LULinear(partial_dim, identity_init=True), transforms.LogTanh(cut_point=1), transforms.LULinear(partial_dim, identity_init=True)]
+        )
+        final_transform = transforms.PartialTransform(mask, partial_transform)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        logger.debug("PartialTransform (LogTanh) (%s)", partial_dim)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
 
     elif postprocessing == "permutation":
         # Random permutation

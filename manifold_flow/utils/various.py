@@ -450,7 +450,7 @@ def create_random_binary_mask(features):
     return mask
 
 
-def create_mlt_channel_mask(features, channels_per_level=(1,2,4,8), resolution=64):
+def create_mlt_channel_mask(features, channels_per_level=(1, 2, 4, 8), resolution=64):
     mask = torch.zeros(features).byte()
 
     pos = 0
@@ -461,7 +461,7 @@ def create_mlt_channel_mask(features, channels_per_level=(1,2,4,8), resolution=6
         total_size = total_size // 2
         res = res // 2
         active = channels * res * res
-        mask[pos:pos+active] += 1
+        mask[pos : pos + active] += 1
         pos += total_size
 
     assert pos <= features
