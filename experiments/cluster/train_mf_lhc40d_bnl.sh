@@ -8,7 +8,7 @@
 #SBATCH --time=3-00:00:00
 #SBATCH --gres=gpu:1
 
-module load cuda/10.1.105
+module load cuda/9.0
 source activate ml
 export OMP_NUM_THREADS=1
 cd /sdcc/u/brehmer/manifold-flow/experiments
