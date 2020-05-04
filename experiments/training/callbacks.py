@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def save_model_after_every_epoch(filename):
     """ Saves model checkpoints. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         torch.save(model.state_dict(), filename.format(i_epoch))
 
     return callback
@@ -18,7 +18,7 @@ def save_model_after_every_epoch(filename):
 def plot_sample_images(filename):
     """ Saves model checkpoints. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         x = model.sample(n=30).detach().cpu().numpy()
         x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
 
@@ -35,10 +35,59 @@ def plot_sample_images(filename):
     return callback
 
 
+def plot_reco_images(filename):
+    """ Saves model checkpoints. """
+
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
+        if last_batch is None:
+            return
+
+        x = last_batch["x"].detach().cpu().numpy()
+        x_reco = last_batch["x_reco"].detach().cpu().numpy()
+
+        x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+        x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+
+        plt.figure(figsize=(6 * 3.0, 5 * 3.0))
+        for i in range(15):
+            plt.subplot(5, 6, 2 * i + 1)
+            plt.imshow(x[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+
+            plt.subplot(5, 6, 2 * i + 2)
+            plt.imshow(x_reco[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+
+        plt.tight_layout()
+        plt.savefig(filename.format(i_epoch))
+        plt.close()
+
+    return callback
+
+
+def print_mf_latent_statistics():
+    """ Prints debug info about size of weights. """
+
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
+        if last_batch is None:
+            return
+
+        u = last_batch["u"]
+
+        logger.debug(f"           Latent variables: mean = {torch.mean(u):>8.5f}")
+        logger.debug(f"                             std  = {torch.std(u):>8.5f}")
+        logger.debug(f"                             min  = {torch.min(u):>8.5f}")
+        logger.debug(f"                             max  = {torch.max(u):>8.5f}")
+
+    return callback
+
+
 def print_mf_weight_statistics():
     """ Prints debug info about size of weights. """
 
-    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None):
+    def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, train_loader=None, val_loader=None):
         try:
             models = [model.outer_transform, model.inner_transform]
             labels = ["outer transform weights:", "inner transform weights:"]

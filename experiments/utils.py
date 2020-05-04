@@ -1,4 +1,7 @@
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_filename(type, label, args):
@@ -19,10 +22,10 @@ def create_filename(type, label, args):
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
 
     elif type == "checkpoint":
-        filename = "{}/experiments/data/models/checkpoints/{}.pt".format(args.dir, args.modelname)
+        filename = "{}/experiments/data/models/checkpoints/{}_{}{}.pt".format(args.dir, args.modelname, "epoch" if label is None else label, "{}")
 
     elif type == "training_plot":
-        filename = "{}/experiments/figures/training/{}_epoch{}{}.pdf".format(args.dir, args.modelname, "" if label is None else label, "{}")
+        filename = "{}/experiments/figures/training/{}_{}{}.pdf".format(args.dir, args.modelname, "epoch" if label is None else label, "{}")
 
     elif type == "learning_curve":
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)

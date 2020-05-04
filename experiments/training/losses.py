@@ -1,6 +1,7 @@
 import torch
 from torch.nn import MSELoss, SmoothL1Loss
 import logging
+
 SamplesLoss = None
 
 logger = logging.getLogger(__name__)
