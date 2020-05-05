@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-mf-g
-#SBATCH --output=log_train_mf1_gan2d.log
+#SBATCH --job-name=p-g2-lhc
+#SBATCH --output=log_paramscan_mf_gan2d_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
@@ -15,4 +15,4 @@ export OMP_NUM_THREADS=1
 dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
-python -u train.py -c cluster/configs/train_mfmf_gan2d_april_l1.config --modelname l1_april --algorithm mf --sequential --dir $dir
+python -u paramscan.py -c cluster/configs/paramscan_gan2d_may.config --paramscanstudyname paramscan_gan2d_may_${SLURM_ARRAY_TASK_ID}
