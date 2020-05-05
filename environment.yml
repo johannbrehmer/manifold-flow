@@ -18,4 +18,5 @@ dependencies:
     - black
     - geomloss
     - configargparse
+    - optuna
 prefix: /Users/johannbrehmer/anaconda3/envs/ml

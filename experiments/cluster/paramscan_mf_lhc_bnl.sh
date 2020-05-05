@@ -12,7 +12,7 @@
 
 source ~/.bashrc
 module load cuda/9.0
-source activate ml
+conda activate ml
 export OMP_NUM_THREADS=1
 cd /sdcc/u/brehmer/manifold-flow/experiments
 
