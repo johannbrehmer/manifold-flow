@@ -102,18 +102,18 @@ def pick_parameters(args, trial, counter):
 
     margs.modelname = "{}_{}".format(args.paramscanstudyname, counter)
 
-    margs.outerlayers = trial.suggest_categorical("outerlayers", [5, 10, 15, 20])
-    margs.innerlayers = trial.suggest_categorical("innerlayers", [5, 10, 15, 20])
+    margs.outerlayers = trial.suggest_int("outerlayers", 5, 25)
+    margs.innerlayers = trial.suggest_int("innerlayers", 5, 25)
     margs.lineartransform = trial.suggest_categorical("lineartransform", ["permutation", "lu", "svd"])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
     margs.splinerange = trial.suggest_categorical("splinerange", [6.0, 8.0, 10.0])
-    margs.splinebins = trial.suggest_categorical("splinebins", [5, 8, 13, 20])
-    margs.batchsize = trial.suggest_categorical("batchsize", [100, 200, 400])
-    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e1, 1.0e4)
+    margs.splinebins = trial.suggest_int("splinebins", 5, 20)
+    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 400])
+    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0, 1.0e5)
     margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
-    margs.weightdecay = trial.suggest_categorical("weightdecay", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
+    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
-    margs.uvl2reg = trial.suggest_categorical("uvl2reg", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
+    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
 
     create_modelname(margs)
 
@@ -150,13 +150,17 @@ if __name__ == "__main__":
         logger.info(f"Starting run {counter} / {args.trials}")
         logger.info(f"Hyperparams:")
         logger.info(f"  outer layers:      {margs.outerlayers}")
+        logger.info(f"  inner layers:      {margs.innerlayers}")
+        logger.info(f"  linear transform:  {margs.lineartransform}")
         logger.info(f"  spline range:      {margs.splinerange}")
         logger.info(f"  spline bins:       {margs.splinebins}")
+        logger.info(f"  batchnorm:         {margs.batchnorm}")
+        logger.info(f"  dropout:           {margs.dropout}")
         logger.info(f"  batch size:        {margs.batchsize}")
         logger.info(f"  MSE factor:        {margs.msefactor}")
+        logger.info(f"  latent L2 reg:     {margs.uvl2reg}")
         logger.info(f"  weight decay:      {margs.weightdecay}")
         logger.info(f"  gradient clipping: {margs.clip}")
-        logger.info(f"  dropout:           {margs.dropout}")
 
         # Bug fix related to some num_workers > 1 and CUDA. Bad things happen otherwise!
         torch.multiprocessing.set_start_method("spawn", force=True)
@@ -201,13 +205,16 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), create_filename("model", None, margs))
 
         # Evaluate reco error
+        logger.info("Evaluating reco error")
         model.eval()
-        x, _ = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
+        x, params = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
         x = x.to(device=trainer1.device, dtype=trainer1.dtype)
-        x_reco, _, _ = model(x, mode="projection")
+        params = params.to(device=trainer1.device, dtype=trainer1.dtype)
+        x_reco, _, _ = model(x, context=params, mode="projection")
         reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
 
         # Generate samples
+        logger.info("Evaluating sample closure")
         x_gen = evaluate.sample_from_model(margs, model, simulator)
         distances_gen = simulator.distance_from_manifold(x_gen)
         mean_gen_distance = np.mean(distances_gen)
@@ -227,8 +234,10 @@ if __name__ == "__main__":
         with open(filename, "rb") as file:
             study = pickle.load(file)
 
+    else:
+        study = optuna.create_study(study_name=args.paramscanstudyname, direction="minimize")
+
     # Optimize!
-    study = optuna.create_study(study_name=args.paramscanstudyname, direction="minimize")
     try:
         study.optimize(objective, n_trials=args.trials)
     except (KeyboardInterrupt, SystemExit):

@@ -40,7 +40,7 @@ def _create_vector_linear_transform(linear_transform_type, features):
         return transforms.CompositeTransform([transforms.RandomPermutation(features=features), transforms.LULinear(features, identity_init=True)])
     elif linear_transform_type == "svd":
         return transforms.CompositeTransform(
-            [transforms.RandomPermutation(features=features), transforms.SVDLinear(features, num_householder=10, identity_init=True)]
+            [transforms.RandomPermutation(features=features), transforms.SVDLinear(features, num_householder=10)]
         )
     else:
         raise ValueError
