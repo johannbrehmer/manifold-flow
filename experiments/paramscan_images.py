@@ -112,7 +112,7 @@ def pick_parameters(args, trial, counter):
     margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
     margs.actnorm = trial.suggest_categorical("actnorm", [False, True])
 
-    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100])
+    margs.batchsize = trial.suggest_categorical("batchsize", [50,])
     margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e-3, 10.)
     margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
     margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         np.random.seed(123)
         x, params = next(iter(trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
         x = x.to(device=trainer.device, dtype=trainer.dtype)
-        params = params.to(device=trainer.device, dtype=trainer.dtype)
+        params = None if simulator.parameter_dim() is None else params.to(device=trainer.device, dtype=trainer.dtype)
         x_reco, _, _ = model(x, context=params, mode="projection")
         reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
 
