@@ -37,7 +37,7 @@ class ManifoldFlow(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, mode="mf", context=None):
+    def forward(self, x, mode="mf", context=None, return_hidden=False):
         """
         Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
 
@@ -59,6 +59,8 @@ class ManifoldFlow(BaseFlow):
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
+        if return_hidden:
+            return x_reco, log_prob, u, torch.cat((h_manifold, h_orthogonal), -1)
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):

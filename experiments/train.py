@@ -123,6 +123,7 @@ def parse_args():
     parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
     parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
     parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
+    parser.add_argument("--uvl2reg", type=float, default=None, help="Add L2 regularization term on the latent variables after the outer flow (MFMF-M/D only)")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -304,14 +305,16 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
     assert not args.specified
 
-    trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
-    trainer2 = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    if simulator.parameter_dim() is None:
+        trainer1 = ForwardTrainer(model)
+        trainer2 = ForwardTrainer(model)
+    else:
+        trainer1 = ConditionalForwardTrainer(model)
+        if args.scandal is None:
+            trainer2 = ConditionalForwardTrainer(model)
+        else:
+            trainer2 = SCANDALForwardTrainer(model)
+
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
     callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args)), callbacks.print_mf_latent_statistics()]
@@ -324,15 +327,15 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
-        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse],
-        loss_labels=["L1" if args.l1 else "MSE"],
-        loss_weights=[args.msefactor],
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse] + [] if args.uvl2reg is None else [losses.hiddenl2reg],
+        loss_labels=["L1" if args.l1 else "MSE"] + [] if args.uvl2reg is None else ["L2_lat"],
+        loss_weights=[args.msefactor] + [] if args.uvl2reg is None else [args.uvl2reg],
         epochs=args.epochs // 2,
         parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
         if args.algorithm == "emf"
         else model.outer_transform.parameters(),
         callbacks=callbacks1,
-        forward_kwargs={"mode": "projection"},
+        forward_kwargs={"mode": "projection", "return_hidden": args.uvl2reg is not None},
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T

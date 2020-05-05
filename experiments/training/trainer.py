@@ -544,10 +544,17 @@ class ForwardTrainer(Trainer):
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
+
         if self.multi_gpu:
-            x_reco, log_prob, u = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
+            results = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
-            x_reco, log_prob, u = self.model(x, **forward_kwargs)
+            results = self.model(x, **forward_kwargs)
+        if len(results) == 4:
+            x_reco, log_prob, u, hidden = results
+        else:
+            x_reco, log_prob, u = results
+            hidden = None
+
         self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
@@ -558,7 +565,7 @@ class ForwardTrainer(Trainer):
             "u": u.detach().cpu().numpy(),
         }
 
-        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        losses = [loss_fn(x_reco, x, log_prob, hidden=hidden) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
 
         return losses
@@ -631,7 +638,7 @@ class SCANDALForwardTrainer(Trainer):
         else:
             x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
 
-        t, = grad(log_prob, params, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
+        (t,) = grad(log_prob, params, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
 
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:

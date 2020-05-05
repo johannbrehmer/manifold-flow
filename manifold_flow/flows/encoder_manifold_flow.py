@@ -38,7 +38,7 @@ class EncoderManifoldFlow(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, mode="mf", context=None):
+    def forward(self, x, mode="mf", context=None, return_hidden=False):
         """
         Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
 
@@ -60,6 +60,8 @@ class EncoderManifoldFlow(BaseFlow):
         # Log prob
         log_prob = self._log_prob(mode, u, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
+        if return_hidden:
+            return x_reco, log_prob, u, h_manifold
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):

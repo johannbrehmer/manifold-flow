@@ -95,8 +95,8 @@ class BaseLHCLoader(BaseSimulator):
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):
         latent_dim = 4 * n_final  # We don't assume an on-shell condition for the final states (e.g. for jets)
         latent_dim -= (
-            n_additional_constraints
-        )  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
+            n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
+        )
         # # or if you want to impose energy-momentum conservation
         return latent_dim
 
