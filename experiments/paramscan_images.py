@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-""" Top-level script for hyperparameter tuning (for vector data) """
+""" Top-level script for hyperparameter tuning (for image data) """
 
 import numpy as np
 import logging
@@ -18,6 +18,7 @@ from datasets import load_simulator, load_training_dataset, SIMULATORS, load_tes
 from training import ForwardTrainer, ConditionalForwardTrainer, losses
 from utils import create_filename, create_modelname
 from architectures import create_model, ALGORITHMS
+from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,13 @@ def parse_args():
     # Fixed model parameters
     parser.add_argument("--modellatentdim", type=int, default=2)
     parser.add_argument("--specified", action="store_true")
+    parser.add_argument(
+        "--lineartransform",
+        type=str,
+        default="permutation",
+        help="Type of linear transformations inserted between the base transformations: linear, permutation. See Neural Spline Flow paper.",
+    )
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
     parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
@@ -48,19 +56,11 @@ def parse_args():
     parser.add_argument("--encoderblocks", type=int, default=5)
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--encodermlp", action="store_true")
-    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
-    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
-    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
-    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument(
-        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
-    )
 
     # Fixed training params
     parser.add_argument("--load", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--densityepochs", type=int, default=5)
     parser.add_argument("--genbatchsize", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=1.0e-3, help="Initial learning rate")
     parser.add_argument("--addnllfactor", type=float, default=0.1)
@@ -101,18 +101,22 @@ def pick_parameters(args, trial, counter):
 
     margs.modelname = "{}_{}".format(args.paramscanstudyname, counter)
 
-    margs.outerlayers = trial.suggest_int("outerlayers", 5, 25)
-    margs.innerlayers = trial.suggest_int("innerlayers", 5, 25)
+    margs.outerlayers = trial.suggest_categorical("outerlayers", [4, 8, 12, 16, 20, 24, 28])
+    margs.innerlayers = trial.suggest_int("innerlayers", 3, 20)
+    margs.linlayers = trial.suggest_int("linlayers", 1, 5)
+    margs.linchannelfactor = trial.suggest_int("linchannelfactor", 1, 4)
     margs.lineartransform = trial.suggest_categorical("lineartransform", ["permutation", "lu", "svd"])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
     margs.splinerange = trial.suggest_categorical("splinerange", [6.0, 8.0, 10.0])
-    margs.splinebins = trial.suggest_int("splinebins", 5, 20)
-    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 400])
-    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0, 1.0e5)
+    margs.splinebins = trial.suggest_int("splinebins", 3, 20)
     margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
+    margs.actnorm = trial.suggest_categorical("actnorm", [False, True])
+
+    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200])
+    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e-3, 10.)
+    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
     margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
-    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
 
     create_modelname(margs)
 
@@ -172,13 +176,12 @@ if __name__ == "__main__":
         model = create_model(margs, simulator)
 
         # Train
-        trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
-        trainer2 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+        trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
         common_kwargs, _, _, _ = train.make_training_kwargs(margs, dataset)
 
-        logger.info("Starting training MF, phase 1: manifold training")
+        logger.info("Starting training MF: manifold training")
         np.random.seed(123)
-        _, val_losses = trainer1.train(
+        _, val_losses = trainer.train(
             loss_functions=[losses.mse, losses.hiddenl2reg],
             loss_labels=["MSE", "L2_lat"],
             loss_weights=[margs.msefactor, 0.0 if margs.uvl2reg is None else margs.uvl2reg],
@@ -190,18 +193,6 @@ if __name__ == "__main__":
             **common_kwargs,
         )
 
-        logger.info("Starting training MF, phase 2: density training")
-        np.random.seed(123)
-        _ = trainer2.train(
-            loss_functions=[losses.nll],
-            loss_labels=["NLL"],
-            loss_weights=[args.nllfactor],
-            epochs=args.densityepochs,
-            parameters=model.inner_transform.parameters(),
-            forward_kwargs={"mode": "mf-fixed-manifold"},
-            **common_kwargs,
-        )
-
         # Save
         torch.save(model.state_dict(), create_filename("model", None, margs))
 
@@ -209,24 +200,34 @@ if __name__ == "__main__":
         logger.info("Evaluating reco error")
         model.eval()
         np.random.seed(123)
-        x, params = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
-        x = x.to(device=trainer1.device, dtype=trainer1.dtype)
-        params = params.to(device=trainer1.device, dtype=trainer1.dtype)
+        x, params = next(iter(trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
+        x = x.to(device=trainer.device, dtype=trainer.dtype)
+        params = params.to(device=trainer.device, dtype=trainer.dtype)
         x_reco, _, _ = model(x, context=params, mode="projection")
         reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
-
-        # Generate samples
-        logger.info("Evaluating sample closure")
-        x_gen = evaluate.sample_from_model(margs, model, simulator)
-        distances_gen = simulator.distance_from_manifold(x_gen)
-        mean_gen_distance = np.mean(distances_gen)
 
         # Report results
         logger.info("Results:")
         logger.info("  reco err:     %s", reco_error)
-        logger.info("  gen distance: %s", mean_gen_distance)
 
-        return margs.metricrecoerrorfactor * reco_error + margs.metricdistancefactor * mean_gen_distance
+        # Plot reco error
+        x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+        x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+        plt.figure(figsize=(6 * 3.0, 5 * 3.0))
+        for i in range(15):
+            plt.subplot(5, 6, 2 * i + 1)
+            plt.imshow(x[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+            plt.subplot(5, 6, 2 * i + 2)
+            plt.imshow(x_reco[i])
+            plt.gca().get_xaxis().set_visible(False)
+            plt.gca().get_yaxis().set_visible(False)
+        plt.tight_layout()
+        filename = create_filename("training_plot", "reco_epoch_A", args)
+        plt.savefig(filename.format(i_epoch))
+
+        return reco_error
 
     # Load saved study object
     if args.resumestudy:
