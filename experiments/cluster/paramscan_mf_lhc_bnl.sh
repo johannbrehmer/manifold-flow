@@ -10,6 +10,7 @@
 #SBATCH --job-name=p-mf-lhc
 #SBATCH --output=log_paramscan_mf_lhc_%a.log
 
+source ~/.bashrc
 module load cuda/9.0
 source activate ml
 export OMP_NUM_THREADS=1
