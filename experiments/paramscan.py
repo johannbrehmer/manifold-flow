@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-""" Top-level script for hyperparameter tuning """
+""" Top-level script for hyperparameter tuning (for vector data) """
 
 import numpy as np
 import logging
@@ -51,7 +51,6 @@ def parse_args():
     parser.add_argument("--encodermlp", action="store_true")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
-    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
@@ -111,6 +110,7 @@ def pick_parameters(args, trial, counter):
     margs.splinebins = trial.suggest_categorical("splinebins", [5, 8, 13, 20])
     margs.batchsize = trial.suggest_categorical("batchsize", [100, 200, 400])
     margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e1, 1.0e4)
+    margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
     margs.weightdecay = trial.suggest_categorical("weightdecay", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
     margs.uvl2reg = trial.suggest_categorical("uvl2reg", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
@@ -202,8 +202,8 @@ if __name__ == "__main__":
 
         # Evaluate reco error
         model.eval()
-        x, _ = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args)), args.validationsplit, 1000, 0)[1])
-        x = x.to(trainer1.dtype, trainer1.device)
+        x, _ = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
+        x = x.to(device=trainer1.device, dtype=trainer1.dtype)
         x_reco, _, _ = model(x, mode="projection")
         reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
 
