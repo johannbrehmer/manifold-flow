@@ -14,7 +14,7 @@ import pickle
 sys.path.append("../")
 
 import train, evaluate
-from datasets import load_simulator, load_training_dataset, SIMULATORS
+from datasets import load_simulator, load_training_dataset, SIMULATORS, load_test_samples
 from training import ForwardTrainer, ConditionalForwardTrainer, losses
 from utils import create_filename, create_modelname
 from architectures import create_model, ALGORITHMS
@@ -41,7 +41,6 @@ def parse_args():
     parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--lineartransform", type=str, default="permutation")
     parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
     parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
     parser.add_argument("--outercouplinghidden", type=int, default=100)
@@ -51,10 +50,19 @@ def parse_args():
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--encodermlp", action="store_true")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
+    parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
+    parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
+    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
+    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
+    parser.add_argument(
+        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
+    )
 
     # Fixed training params
     parser.add_argument("--load", type=str, default=None)
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--densityepochs", type=int, default=5)
     parser.add_argument("--genbatchsize", type=int, default=1000)
     parser.add_argument("--lr", type=float, default=1.0e-3, help="Initial learning rate")
     parser.add_argument("--addnllfactor", type=float, default=0.1)
@@ -95,14 +103,17 @@ def pick_parameters(args, trial, counter):
 
     margs.modelname = "{}_{}".format(args.paramscanstudyname, counter)
 
-    margs.outerlayers = trial.suggest_categorical("outerlayers", [3, 5, 10])
+    margs.outerlayers = trial.suggest_categorical("outerlayers", [5, 10, 15, 20])
+    margs.innerlayers = trial.suggest_categorical("innerlayers", [5, 10, 15, 20])
+    margs.lineartransform = trial.suggest_categorical("lineartransform", ["permutation", "lu", "svd"])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
-    margs.splinerange = trial.suggest_categorical("splinerange", [5.0, 6.0, 8.0])
+    margs.splinerange = trial.suggest_categorical("splinerange", [6.0, 8.0, 10.0])
     margs.splinebins = trial.suggest_categorical("splinebins", [5, 8, 13, 20])
-    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 400])
-    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e0, 1.0e4)
-    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-9, 1.0e-2)
+    margs.batchsize = trial.suggest_categorical("batchsize", [100, 200, 400])
+    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e1, 1.0e4)
+    margs.weightdecay = trial.suggest_categorical("weightdecay", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
+    margs.uvl2reg = trial.suggest_categorical("uvl2reg", [None, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2])
 
     create_modelname(margs)
 
@@ -158,30 +169,43 @@ if __name__ == "__main__":
         model = create_model(margs, simulator)
 
         # Train
-        trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+        trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
+        trainer2 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
         common_kwargs, _, _, _ = train.make_training_kwargs(margs, dataset)
 
-        logger.info(f"Strarting training")
-        _, val_losses = trainer.train(
-            loss_functions=[losses.mse],
-            loss_labels=["MSE"],
-            loss_weights=[margs.msefactor],
+        logger.info("Starting training MF, phase 1: manifold training")
+        _, val_losses = trainer1.train(
+            loss_functions=[losses.mse, losses.hiddenl2reg],
+            loss_labels=["MSE", "L2_lat"],
+            loss_weights=[margs.msefactor, 0.0 if margs.uvl2reg is None else margs.uvl2reg],
             epochs=margs.epochs,
-            parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
-            if args.algorithm == "emf"
-            else model.outer_transform.parameters(),
-            forward_kwargs={"mode": "projection"},
+            parameters=(
+                list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+            ),
+            forward_kwargs={"mode": "projection", "return_hidden": True},
             **common_kwargs,
         )
 
-        # Best validation reco error
-        reco_mse = np.min(val_losses) / margs.msefactor
+        logger.info("Starting training MF, phase 2: density training")
+        _ = trainer2.train(
+            loss_functions=[losses.nll],
+            loss_labels=["NLL"],
+            loss_weights=[args.nllfactor],
+            epochs=args.densityepochs,
+            parameters=model.inner_transform.parameters(),
+            forward_kwargs={"mode": "mf-fixed-manifold"},
+            **common_kwargs,
+        )
 
         # Save
         torch.save(model.state_dict(), create_filename("model", None, margs))
 
-        # Evaluate
+        # Evaluate reco error
         model.eval()
+        x, _ = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args)), args.validationsplit, 1000, 0)[1])
+        x = x.to(trainer1.dtype, trainer1.device)
+        x_reco, _, _ = model(x, mode="projection")
+        reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
 
         # Generate samples
         x_gen = evaluate.sample_from_model(margs, model, simulator)
@@ -190,10 +214,10 @@ if __name__ == "__main__":
 
         # Report results
         logger.info("Results:")
-        logger.info("  reco err:     %s", reco_mse)
+        logger.info("  reco err:     %s", reco_error)
         logger.info("  gen distance: %s", mean_gen_distance)
 
-        return margs.metricrecoerrorfactor * reco_mse + margs.metricdistancefactor * mean_gen_distance
+        return margs.metricrecoerrorfactor * reco_error + margs.metricdistancefactor * mean_gen_distance
 
     # Load saved study object
     if args.resumestudy:

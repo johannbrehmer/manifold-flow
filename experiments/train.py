@@ -97,7 +97,10 @@ def parse_args():
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
-    parser.add_argument("--linchannels", type=int, default=32, help="Number of channels that are linearly transformed before the projection (for image data)")
+    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
+    parser.add_argument(
+        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
+    )
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
@@ -327,13 +330,13 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
     logger.info("Starting training MF, phase 1: manifold training")
     learning_curves = trainer1.train(
-        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse] + [] if args.uvl2reg is None else [losses.hiddenl2reg],
-        loss_labels=["L1" if args.l1 else "MSE"] + [] if args.uvl2reg is None else ["L2_lat"],
-        loss_weights=[args.msefactor] + [] if args.uvl2reg is None else [args.uvl2reg],
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse] + ([] if args.uvl2reg is None else [losses.hiddenl2reg]),
+        loss_labels=["L1" if args.l1 else "MSE"] + ([] if args.uvl2reg is None else ["L2_lat"]),
+        loss_weights=[args.msefactor] + ([] if args.uvl2reg is None else [args.uvl2reg]),
         epochs=args.epochs // 2,
-        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters())
-        if args.algorithm == "emf"
-        else model.outer_transform.parameters(),
+        parameters=(
+            list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+        ),
         callbacks=callbacks1,
         forward_kwargs={"mode": "projection", "return_hidden": args.uvl2reg is not None},
         **common_kwargs,

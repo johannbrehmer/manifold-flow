@@ -81,6 +81,15 @@ class Permutation(transforms.Transform):
         return self._permute(inputs, self._inverse_permutation, self._dim, full_jacobian=full_jacobian)
 
 
+class MaskBasedPermutation(Permutation):
+    """ Given a 1D binary mask, permutes inputs such that active elements come first, followed by inactive elements """
+
+    def __init__(self, mask, dim=1):
+        idx = torch.cat((torch.nonzero(mask).squeeze(), torch.nonzero(1 - mask).squeeze()), 0)
+
+        super().__init__(idx, dim)
+
+
 class RandomPermutation(Permutation):
     """Permutes using a random, but fixed, permutation. Only works with 1D inputs."""
 

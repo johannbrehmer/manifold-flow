@@ -1,6 +1,7 @@
 from torch import nn
 import logging
 import torch
+import numpy as np
 
 from manifold_flow import nn as nn_, transforms
 from manifold_flow.nn import Conv2dSameSize
@@ -140,6 +141,8 @@ def create_image_transform(
     use_actnorm=True,
     spline_params=None,
     postprocessing="permutation",
+    postprocessing_layers=2,
+    postprocessing_channel_factor=2,
 ):
     assert h == w
     res = h
@@ -252,10 +255,10 @@ def create_image_transform(
 
     elif postprocessing == "partial_linear":
         if multi_scale:
-            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 8], dtype=np.int), resolution=res)
             partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
         else:
-            partial_dim = 1024
+            partial_dim = postprocessing_channel_factor * 1024
             mask = various.create_split_binary_mask(dim, partial_dim)
 
         partial_transform = transforms.LULinear(partial_dim, identity_init=True)
@@ -264,19 +267,23 @@ def create_image_transform(
 
     elif postprocessing == "partial_mlp":
         if multi_scale:
-            mask = various.create_mlt_channel_mask(dim, channels_per_level=(1, 2, 4, 8), resolution=res)
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 8], dtype=np.int), resolution=res)
             partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
         else:
-            partial_dim = 1024
+            partial_dim = postprocessing_channel_factor * 1024
             mask = various.create_split_binary_mask(dim, partial_dim)
 
-        partial_transform = transforms.CompositeTransform(
-            [transforms.LULinear(partial_dim, identity_init=True), transforms.LogTanh(cut_point=1), transforms.LULinear(partial_dim, identity_init=True)]
-        )
-        final_transform = transforms.PartialTransform(mask, partial_transform)
+        partial_transforms = [transforms.LULinear(partial_dim, identity_init=True)]
         logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
-        logger.debug("PartialTransform (LogTanh) (%s)", partial_dim)
-        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        for _ in range(postprocessing_layers - 1):
+            partial_transforms.append(transforms.LogTanh(cut_point=1))
+            logger.debug("PartialTransform (LogTanh) (%s)", partial_dim)
+            partial_transforms.append(transforms.LULinear(partial_dim, identity_init=True))
+            logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        partial_transform = transforms.CompositeTransform(partial_transforms)
+
+        final_transform = transforms.CompositeTransform([transforms.PartialTransform(mask, partial_transform), transforms.MaskBasedPermutation(mask)])
+        logging.debug("MaskBasedPermutation (%s)", mask)
 
     elif postprocessing == "permutation":
         # Random permutation

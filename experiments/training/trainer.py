@@ -591,9 +591,16 @@ class ConditionalForwardTrainer(Trainer):
         self._check_for_nans("Training data", x, params)
 
         if self.multi_gpu:
-            x_reco, log_prob, u = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+            forward_kwargs["context"] = params
+            results = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
-            x_reco, log_prob, u = self.model(x, context=params, **forward_kwargs)
+            results = self.model(x, context=params, **forward_kwargs)
+        if len(results) == 4:
+            x_reco, log_prob, u, hidden = results
+        else:
+            x_reco, log_prob, u = results
+            hidden = None
+
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
@@ -605,7 +612,7 @@ class ConditionalForwardTrainer(Trainer):
             "u": u.detach().cpu().numpy(),
         }
 
-        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        losses = [loss_fn(x_reco, x, log_prob, hidden=hidden) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
 
         return losses

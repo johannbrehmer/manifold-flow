@@ -383,6 +383,8 @@ def create_model(args, simulator):
             multi_scale=True,
             spline_params=spline_params,
             postprocessing="partial_mlp",
+            postprocessing_layers=args.linlayers,
+            postprocessing_channel_factor=args.linchannelfactor,
             use_actnorm=args.actnorm,
             use_batchnorm=args.batchnorm,
         )

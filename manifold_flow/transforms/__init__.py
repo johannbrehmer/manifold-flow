@@ -33,6 +33,7 @@ from .orthogonal import HouseholderSequence
 from .permutations import Permutation
 from .permutations import RandomPermutation
 from .permutations import ReversePermutation
+from .permutations import MaskBasedPermutation
 
 from .coupling import (
     AffineCouplingTransform,
