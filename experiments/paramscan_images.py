@@ -103,8 +103,8 @@ def pick_parameters(args, trial, counter):
 
     margs.outerlayers = trial.suggest_categorical("outerlayers", [4, 8, 12, 16, 20, 24, 28])
     margs.innerlayers = trial.suggest_int("innerlayers", 3, 20)
-    margs.linlayers = trial.suggest_int("linlayers", 1, 5)
-    margs.linchannelfactor = trial.suggest_int("linchannelfactor", 1, 4)
+    margs.linlayers = trial.suggest_int("linlayers", 1, 3)
+    margs.linchannelfactor = trial.suggest_int("linchannelfactor", 1, 2)
     margs.lineartransform = trial.suggest_categorical("lineartransform", ["permutation", "lu", "svd"])
     margs.dropout = trial.suggest_categorical("dropout", [0.0, 0.20])
     margs.splinerange = trial.suggest_categorical("splinerange", [6.0, 8.0, 10.0])
@@ -112,7 +112,7 @@ def pick_parameters(args, trial, counter):
     margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
     margs.actnorm = trial.suggest_categorical("actnorm", [False, True])
 
-    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200])
+    margs.batchsize = trial.suggest_categorical("batchsize", [50, 100])
     margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e-3, 10.)
     margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
     margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
