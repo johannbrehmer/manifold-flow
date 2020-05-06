@@ -64,8 +64,13 @@ class LULinear(Linear):
         lower, upper = self._create_lower_upper()
         outputs = F.linear(inputs, upper)
         outputs = F.linear(outputs, lower, self.bias)
-        logabsdet = self.logabsdet() * inputs.new_ones(outputs.shape[0])
-        return outputs, logabsdet
+
+        if full_jacobian:
+            jacobian = torch.mm(lower, upper).unsqueeze(0)
+            return outputs, jacobian
+        else:
+            logabsdet = self.logabsdet() * inputs.new_ones(outputs.shape[0])
+            return outputs, logabsdet
 
     def inverse_no_cache(self, inputs, full_jacobian=False):
         """Cost:
@@ -81,10 +86,13 @@ class LULinear(Linear):
         outputs, _ = torch.triangular_solve(outputs, upper, upper=True, unitriangular=False)
         outputs = outputs.t()
 
-        logabsdet = -self.logabsdet()
-        logabsdet = logabsdet * inputs.new_ones(outputs.shape[0])
-
-        return outputs, logabsdet
+        if full_jacobian:
+            jacobian = torch.mm(lower, upper).inverse().unsqueeze(0)  # TODO: make this faster
+            return outputs, jacobian
+        else:
+            logabsdet = -self.logabsdet()
+            logabsdet = logabsdet * inputs.new_ones(outputs.shape[0])
+            return outputs, logabsdet
 
     def weight(self):
         """Cost:
