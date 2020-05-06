@@ -203,8 +203,9 @@ if __name__ == "__main__":
             # Evaluate reco error
             logger.info("Evaluating reco error")
             model.eval()
+            torch.cuda.empty_cache()
             np.random.seed(123)
-            dataloader = trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 50, 0)[1]
+            dataloader = trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 20, 4)[1]
             reco_errors = []
             x_plot, x_reco_plot = None, None
             for x, params in dataloader:
@@ -238,7 +239,7 @@ if __name__ == "__main__":
                 plt.gca().get_xaxis().set_visible(False)
                 plt.gca().get_yaxis().set_visible(False)
             plt.tight_layout()
-            filename = create_filename("training_plot", "reco_epoch_A", args)
+            filename = create_filename("training_plot", "reco", margs)
             plt.savefig(filename.format(""))
         except RuntimeError as e:
             logger.info("Error during training, returning 1e9\n  %s", e)
