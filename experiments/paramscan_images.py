@@ -206,20 +206,27 @@ if __name__ == "__main__":
             np.random.seed(123)
             dataloader = trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 50, 0)[1]
             reco_errors = []
+            x_plot, x_reco_plot = None, None
             for x, params in dataloader:
                 x = x.to(device=trainer.device, dtype=trainer.dtype)
                 params = None if simulator.parameter_dim() is None else params.to(device=trainer.device, dtype=trainer.dtype)
                 x_reco, _, _ = model(x, context=params, mode="projection")
                 reco_errors.append((torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy())
+                if x_plot is None:
+                    x_plot = x.detach().cpu().numpy()
+                    x_reco_plot = x_reco.detach().cpu().numpy()
             reco_error = np.mean(reco_errors)
+
+            if not np.isfinite(reco_error):
+                raise RuntimeError()
 
             # Report results
             logger.info("Results:")
             logger.info("  reco err:     %s", reco_error)
 
             # Plot reco error
-            x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
-            x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+            x = np.clip(np.transpose(x_plot, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+            x_reco = np.clip(np.transpose(x_reco_plot, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
             plt.figure(figsize=(6 * 3.0, 5 * 3.0))
             for i in range(15):
                 plt.subplot(5, 6, 2 * i + 1)
@@ -233,8 +240,8 @@ if __name__ == "__main__":
             plt.tight_layout()
             filename = create_filename("training_plot", "reco_epoch_A", args)
             plt.savefig(filename.format(""))
-        except RuntimeError:
-            logger.info("Error during training, returning 1e9")
+        except RuntimeError as e:
+            logger.info("Error during training, returning 1e9\n  %s", e)
             return 1e9
 
         return reco_error
