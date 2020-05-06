@@ -66,7 +66,7 @@ class LULinear(Linear):
         outputs = F.linear(outputs, lower, self.bias)
 
         if full_jacobian:
-            jacobian = torch.mm(lower, upper).unsqueeze(0)
+            jacobian = torch.mm(lower, upper).unsqueeze(0).expand(outputs.size(0), -1, -1)
             return outputs, jacobian
         else:
             logabsdet = self.logabsdet() * inputs.new_ones(outputs.shape[0])
@@ -87,7 +87,7 @@ class LULinear(Linear):
         outputs = outputs.t()
 
         if full_jacobian:
-            jacobian = torch.mm(lower, upper).inverse().unsqueeze(0)  # TODO: make this faster
+            jacobian = torch.mm(lower, upper).inverse().unsqueeze(0).expand(outputs.size(0), -1, -1)  # TODO: make this faster
             return outputs, jacobian
         else:
             logabsdet = -self.logabsdet()
