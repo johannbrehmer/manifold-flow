@@ -203,11 +203,14 @@ if __name__ == "__main__":
         logger.info("Evaluating reco error")
         model.eval()
         np.random.seed(123)
-        x, params = next(iter(trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
-        x = x.to(device=trainer.device, dtype=trainer.dtype)
-        params = None if simulator.parameter_dim() is None else params.to(device=trainer.device, dtype=trainer.dtype)
-        x_reco, _, _ = model(x, context=params, mode="projection")
-        reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
+        dataloader = trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 50, 0)[1]
+        reco_errors = []
+        for x, params in dataloader:
+            x = x.to(device=trainer.device, dtype=trainer.dtype)
+            params = None if simulator.parameter_dim() is None else params.to(device=trainer.device, dtype=trainer.dtype)
+            x_reco, _, _ = model(x, context=params, mode="projection")
+            reco_errors.append((torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy())
+        reco_error = np.mean(reco_errors)
 
         # Report results
         logger.info("Results:")
