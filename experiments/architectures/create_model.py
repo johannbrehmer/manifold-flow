@@ -1,6 +1,6 @@
 import logging
 
-from .image_transforms import create_image_transform
+from .image_transforms import create_image_transform, create_image_encoder
 from .vector_transforms import create_vector_encoder, create_vector_transform
 from manifold_flow import transforms
 from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionManifoldFlow, ManifoldFlow
@@ -326,7 +326,7 @@ def create_vector_emf(args, simulator):
         args.encoderblocks,
         dropout_probability=args.dropout,
         context_features=simulator.parameter_dim() if args.conditionalouter else None,
-        resnet=not args.encodermlp,
+        resnet=True,
         use_batch_norm=args.batchnorm,
     )
     outer_transform = create_vector_transform(
@@ -393,7 +393,7 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         args.encoderblocks,
         dropout_probability=args.dropout,
         context_features=simulator.parameter_dim() if args.conditionalouter else None,
-        resnet=not args.encodermlp,
+        resnet=True,
         use_batch_norm=args.batchnorm,
     )
     outer_transform = create_image_transform(

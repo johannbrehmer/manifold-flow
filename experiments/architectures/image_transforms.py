@@ -1,4 +1,5 @@
 from torch import nn
+from torch.nn import functional as F
 import logging
 import torch
 import numpy as np
@@ -27,9 +28,23 @@ class ConvNet(nn.Module):
 
 
 def create_image_encoder(
-    c, h, w, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
+    c, h, w, latent_dim, hidden_channels=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
 ):
-    raise NotImplementedError
+    if resnet:
+        encoder = nn_.ConvResidualNet(
+            in_channels=c,
+            out_channels=latent_dim,
+            flatten_outputs=True,
+            hidden_channels=hidden_channels,
+            context_features=context_features,
+            num_blocks=num_blocks,
+            activation=F.relu,
+            dropout_probability=dropout_probability,
+            use_batch_norm=use_batch_norm,
+        )
+    else:
+        raise NotImplementedError
+    return encoder
 
 
 def _create_image_transform_step(

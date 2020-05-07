@@ -86,7 +86,6 @@ def parse_args():
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
     parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
-    parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
