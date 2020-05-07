@@ -93,7 +93,6 @@ class LorenzSimulator(BaseSimulator):
         ts = np.linspace(warmup, tmax, steps)
         results = solve_ivp(fun=dxdt, y0=x0, t_span=[0.0, tmax], t_eval=ts)
         xs = results.y.T
-        logger.debug("Done")
         return xs
 
     def sample_from_prior(self, n):
@@ -106,11 +105,9 @@ class LorenzSimulator(BaseSimulator):
         x = np.copy(x)
         if self._x_means is not None and self._x_stds is not None:
             if inverse:
-                logger.debug("Scaling LHC data back to conventional normalization")
                 x *= self._x_stds
                 x += self._x_means
             else:
-                logger.debug("Scaling LHC data to zero mean and unit variance")
                 x = x - self._x_means
                 x /= self._x_stds
         else:

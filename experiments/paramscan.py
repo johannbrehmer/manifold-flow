@@ -211,7 +211,7 @@ if __name__ == "__main__":
         np.random.seed(123)
         x, params = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
         x = x.to(device=trainer1.device, dtype=trainer1.dtype)
-        params = None if simulator.parameter_dim() is None else params.to(device=trainer.device, dtype=trainer.dtype)
+        params = None if simulator.parameter_dim() is None else params.to(device=trainer1.device, dtype=trainer1.dtype)
         x_reco, _, _ = model(x, context=params, mode="projection")
         reco_error = torch.mean(torch.sum((x - x_reco) ** 2, dim=1) ** 0.5).detach().cpu().numpy()
 
