@@ -44,7 +44,6 @@ def parse_args():
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--encoderblocks", type=int, default=5)
     parser.add_argument("--encoderhidden", type=int, default=100)
-    parser.add_argument("--encodermlp", action="store_true")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
