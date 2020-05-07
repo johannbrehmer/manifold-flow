@@ -114,8 +114,6 @@ class ConvResidualNet(nn.Module):
     def __init__(
         self,
         in_channels,
-        h,
-        w,
         out_channels,
         hidden_channels,
         context_channels=None,
@@ -123,10 +121,9 @@ class ConvResidualNet(nn.Module):
         activation=F.relu,
         dropout_probability=0.0,
         use_batch_norm=False,
-        flatten_outputs=False,
     ):
         super().__init__()
-        self.context_features = context_channels
+        self.context_channels = context_channels
         self.hidden_channels = hidden_channels
         if context_channels is not None:
             self.initial_layer = nn.Conv2d(in_channels=in_channels + context_channels, out_channels=hidden_channels, kernel_size=1, padding=0)
@@ -144,26 +141,69 @@ class ConvResidualNet(nn.Module):
                 for _ in range(num_blocks)
             ]
         )
-        self.final_layer = nn.Conv2d(hidden_channels + context_channels, out_channels, kernel_size=1, padding=0)
-
-        if self.flatten:
-            self.flat_layer = nn.Linear(out_channels * h * w + context_channels, out_channels)
-        else:
-            self.flat_layer = None
+        self.final_layer = nn.Conv2d(hidden_channels, out_channels, kernel_size=1, padding=0)
 
     def forward(self, inputs, context=None):
         if context is None:
             temps = self.initial_layer(inputs)
         else:
-            if len(context.size()) == 4:
-                context_ = context
-            else:
-                context_ = context.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, inputs.size(2), inputs.size(3))  # (batch, context, h, w)
-            temps = self.initial_layer(torch.cat((inputs, context_), dim=1))
+            temps = self.initial_layer(torch.cat((inputs, context), dim=1))
+        for block in self.blocks:
+            temps = block(temps, context)
+        outputs = self.final_layer(temps)
+        return outputs
 
+
+class ScalarConvResidualNet(nn.Module):
+    def __init__(
+        self,
+        in_channels, h, w,
+        out_channels,
+        hidden_channels,
+        context_features=None,
+        num_blocks=2,
+        activation=F.relu,
+        dropout_probability=0.0,
+        use_batch_norm=False,
+    ):
+        super().__init__()
+        self.context_features = context_features
+        self.hidden_channels = hidden_channels
+
+        if context_features is not None:
+            self.initial_layer = nn.Conv2d(in_channels=in_channels + context_features, out_channels=hidden_channels, kernel_size=1, padding=0)
+        else:
+            self.initial_layer = nn.Conv2d(in_channels=in_channels, out_channels=hidden_channels, kernel_size=1, padding=0)
+
+        self.blocks = nn.ModuleList(
+            [
+                ConvResidualBlock(
+                    channels=hidden_channels,
+                    context_channels=context_features,
+                    activation=activation,
+                    dropout_probability=dropout_probability,
+                    use_batch_norm=use_batch_norm,
+                )
+                for _ in range(num_blocks)
+            ]
+        )
+        self.final_layer = nn.Conv2d(hidden_channels, out_channels, kernel_size=1, padding=0)
+
+        if context_features is None:
+            self.flat_layer = nn.Linear(out_channels * h * w, out_channels)
+        else:
+            self.flat_layer = nn.Linear(out_channels * h * w + context_features, out_channels)
+
+    def forward(self, inputs, context=None):
+        context_ = context
+        if context is not None:
+            if len(context.size()) < 4:
+                context_ = context.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, inputs.size(2), inputs.size(3))  # (batch, context, h, w)
+            inputs = torch.cat((inputs, context_), dim=1)
+
+        temps = self.initial_layer(inputs)
         for block in self.blocks:
             temps = block(temps, context_)
-
         outputs = self.final_layer(torch.cat((temps, context), dim=1))
 
         if self.flat_layer is not None:

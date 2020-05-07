@@ -31,12 +31,11 @@ def create_image_encoder(
     c, h, w, latent_dim, hidden_channels=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
 ):
     if resnet:
-        encoder = nn_.ConvResidualNet(
-            in_channels=c,
+        encoder = nn_.ScalarConvResidualNet(
+            in_channels=c, h=h, w=w,
             out_channels=latent_dim,
-            flatten_outputs=True,
             hidden_channels=hidden_channels,
-            context_channels=context_features,
+            context_features=context_features,
             num_blocks=num_blocks,
             activation=F.relu,
             dropout_probability=dropout_probability,

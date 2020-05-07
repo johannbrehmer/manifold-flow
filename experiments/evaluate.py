@@ -8,6 +8,8 @@ import sys
 import torch
 import configargparse
 import copy
+import tempfile
+from matplotlib import pyplot as plt
 
 sys.path.append("../")
 
@@ -18,6 +20,13 @@ from architectures import create_model
 from architectures.create_model import ALGORITHMS
 
 logger = logging.getLogger(__name__)
+
+try:
+    from fid_score import calculate_fid_given_paths
+except:
+    calculate_fid_given_paths = None
+    logger.info("Could not import fid_score, make sure that pytorch-fid is in the Python path")
+
 
 
 def parse_args():
@@ -130,7 +139,6 @@ def evaluate_model_samples(args, simulator, x_gen):
     """ Evaluate model samples and save results """
 
     logger.info("Calculating likelihood of generated samples")
-
     try:
         if simulator.parameter_dim() is None:
             log_likelihood_gen = simulator.log_density(x_gen)
@@ -143,13 +151,30 @@ def evaluate_model_samples(args, simulator, x_gen):
     except IntractableLikelihoodError:
         logger.info("True simulator likelihood is intractable for dataset %s", args.dataset)
 
-    # Distance from manifold
+    logger.info("Calculating distance from manifold of generated samples")
     try:
-        logger.info("Calculating distance from manifold of generated samples")
         distances_gen = simulator.distance_from_manifold(x_gen)
         np.save(create_filename("results", "samples_manifold_distance", args), distances_gen)
     except NotImplementedError:
         logger.info("Cannot calculate distance from manifold for dataset %s", args.dataset)
+
+    if simulator.is_image():
+        if calculate_fid_given_paths is None:
+            logger.info("Cannot compute FID score, did not find FID implementation")
+
+        logger.info("Calculating FID score of generated samples")
+        # The FID script needs an image folder
+        with tempfile.TemporaryDirectory as gen_dir:
+            logger.debug(f"Storing generated images in temporary folder {gen_dir}")
+            for i, x in enumerate(x_gen):
+                plt.imsave(f'{gen_dir}/{i}.jpg', x)
+            true_dir = create_filename("dataset", None, args) + "/test/"
+
+            logger.debug("Beginning FID calculation with batchsize 50")
+            fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)
+            logger.info(f"FID = {fid}")
+
+            np.save(create_filename("results", "samples_fid", args), [fid])
 
 
 def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False):
