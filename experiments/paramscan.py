@@ -40,9 +40,6 @@ def parse_args():
     parser.add_argument("--specified", action="store_true")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
-    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
-    parser.add_argument("--outercouplinghidden", type=int, default=100)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--encoderblocks", type=int, default=5)
@@ -110,9 +107,9 @@ def pick_parameters(args, trial, counter):
     margs.batchsize = trial.suggest_categorical("batchsize", [50, 100, 200, 400])
     margs.msefactor = trial.suggest_loguniform("msefactor", 1.0, 1.0e5)
     margs.batchnorm = trial.suggest_categorical("batchnorm", [False, True])
-    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
+    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-9, 0.1)
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
-    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
+    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.0e-9, 0.1)
 
     create_modelname(margs)
 

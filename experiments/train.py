@@ -82,9 +82,6 @@ def parse_args():
     parser.add_argument(
         "--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)"
     )
-    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
-    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
-    parser.add_argument("--outercouplinghidden", type=int, default=100, help="Number of hidden units for coupling layers")
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")

@@ -26,6 +26,12 @@ class ConvNet(nn.Module):
         return self.net.forward(inputs)
 
 
+def create_image_encoder(
+    c, h, w, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
+):
+    raise NotImplementedError
+
+
 def _create_image_transform_step(
     num_channels,
     hidden_channels=96,

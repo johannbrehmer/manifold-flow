@@ -29,23 +29,23 @@ def create_model(args, simulator):
         model = create_image_flow(args, c, h, simulator, w)
 
     # FOM for vector data
-    elif args.algorithm in ["mf", "emf", "gamf"] and args.specified and not simulator.is_image() :
+    elif args.algorithm in ["mf", "gamf"] and args.specified and not simulator.is_image():
         model = create_vector_specified_flow(args, simulator)
 
     # FOM for image data
-    elif args.algorithm in ["mf", "emf", "gamf"] and args.specified and simulator.is_image() :
+    elif args.algorithm in ["mf", "gamf"] and args.specified and simulator.is_image():
         raise NotImplementedError
 
     # M-flow or PIE for vector data
-    elif args.algorithm in ["mf", "emf", "gamf"] and not args.specified and not simulator.is_image():
+    elif args.algorithm in ["mf", "gamf"] and not args.specified and not simulator.is_image():
         model = create_vector_mf(args, simulator)
 
     # M-flow or PIE for image data, with structured (image) latent space
-    elif args.algorithm in ["mf", "emf", "gamf"] and not args.specified and simulator.is_image() and args.structuredlatents:
+    elif args.algorithm in ["mf", "gamf"] and not args.specified and simulator.is_image() and args.structuredlatents:
         model = create_image_mf_structured(args, c, h, simulator, w)
 
     # M-flow or PIE for image data, with scalar latent space
-    elif args.algorithm in ["mf", "emf", "gamf"] and not args.specified and simulator.is_image() and not args.structuredlatents:
+    elif args.algorithm in ["mf", "gamf"] and not args.specified and simulator.is_image() and not args.structuredlatents:
         model = create_image_mf_unstructured(args, c, h, simulator, w)
 
     # M-flow with sep. encoder for vector data
@@ -96,9 +96,9 @@ def create_image_mf_unstructured(args, c, h, simulator, w):
         h,
         w,
         levels=args.levels,
-        hidden_channels=args.outercouplinghidden,
+        hidden_channels=100,
         steps_per_level=steps_per_level,
-        num_res_blocks=args.outercouplinglayers,
+        num_res_blocks=2,
         alpha=0.05,
         num_bits=8,
         preprocessing="glow",
@@ -167,9 +167,9 @@ def create_image_mf_structured(args, c, h, simulator, w):
         h,
         w,
         levels=args.levels,
-        hidden_channels=args.outercouplinghidden,
+        hidden_channels=100,
         steps_per_level=steps_per_level,
-        num_res_blocks=args.outercouplinglayers,
+        num_res_blocks=2,
         alpha=0.05,
         num_bits=8,
         preprocessing="glow",
@@ -185,9 +185,9 @@ def create_image_mf_structured(args, c, h, simulator, w):
         h_inner,
         w_inner,
         levels=args.innerlevels,
-        hidden_channels=args.outercouplinghidden,
+        hidden_channels=100,
         steps_per_level=steps_per_level,
-        num_res_blocks=args.outercouplinglayers,
+        num_res_blocks=2,
         alpha=0.05,
         num_bits=8,
         preprocessing="unflatten",
@@ -219,14 +219,6 @@ def create_vector_mf(args, simulator):
         args.innertransform,
         simulator.parameter_dim(),
     )
-    outer_transform_kwargs = {}
-    try:
-        outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
-        outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
-        outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
-        logger.debug("Additional settings for outer transform: %s", outer_transform_kwargs)
-    except:
-        pass
     outer_transform = create_vector_transform(
         args.datadim,
         args.outerlayers,
@@ -237,7 +229,6 @@ def create_vector_mf(args, simulator):
         tail_bound=args.splinerange,
         num_bins=args.splinebins,
         use_batch_norm=args.batchnorm,
-        **outer_transform_kwargs,
     )
     inner_transform = create_vector_transform(
         args.modellatentdim,
@@ -311,7 +302,7 @@ def create_scalar_dough(args, simulator):
         dropout_probability=args.dropout,
         tail_bound=args.splinerange,
         num_bins=args.splinebins,
-        use_batch_norm=args.batchnorm
+        use_batch_norm=args.batchnorm,
     )
     model = VariableDimensionManifoldFlow(data_dim=args.datadim, transform=transform)
     return model
@@ -338,14 +329,6 @@ def create_vector_emf(args, simulator):
         resnet=not args.encodermlp,
         use_batch_norm=args.batchnorm,
     )
-    outer_transform_kwargs = {}
-    try:
-        outer_transform_kwargs["hidden_features"] = args.outercouplinghidden
-        outer_transform_kwargs["num_transform_blocks"] = args.outercouplinglayers
-        outer_transform_kwargs["resnet_transform"] = not args.outercouplingmlp
-        logger.debug("Additional settings for outer transform: %s", outer_transform_kwargs)
-    except:
-        pass
     outer_transform = create_vector_transform(
         args.datadim,
         args.outerlayers,
@@ -356,7 +339,82 @@ def create_vector_emf(args, simulator):
         tail_bound=args.splinerange,
         num_bins=args.splinebins,
         use_batch_norm=args.batchnorm,
-        **outer_transform_kwargs,
+    )
+    inner_transform = create_vector_transform(
+        args.modellatentdim,
+        args.innerlayers,
+        linear_transform_type=args.lineartransform,
+        base_transform_type=args.innertransform,
+        context_features=simulator.parameter_dim(),
+        dropout_probability=args.dropout,
+        tail_bound=args.splinerange,
+        num_bins=args.splinebins,
+        use_batch_norm=args.batchnorm,
+    )
+    model = EncoderManifoldFlow(
+        data_dim=args.datadim,
+        latent_dim=args.modellatentdim,
+        encoder=encoder,
+        outer_transform=outer_transform,
+        inner_transform=inner_transform,
+        apply_context_to_outer=args.conditionalouter,
+        pie_epsilon=args.pieepsilon,
+    )
+    return model
+
+
+def create_image_emf_unstructured(args, c, h, simulator, w):
+    if simulator.parameter_dim() is not None:
+        raise NotImplementedError
+    steps_per_level = (args.outerlayers) // args.levels
+    logger.info(
+        "Creating manifold flow + encoder for image data with %s levels and %s steps per level in the outer transformation, %s layers in the inner transformation, transforms %s / %s, %s context features",
+        args.levels,
+        steps_per_level,
+        args.innerlayers,
+        args.outertransform,
+        args.innertransform,
+        simulator.parameter_dim(),
+    )
+    spline_params = {
+        "apply_unconditional_transform": False,
+        "min_bin_height": 0.001,
+        "min_bin_width": 0.001,
+        "min_derivative": 0.001,
+        "num_bins": args.splinebins,
+        "tail_bound": args.splinerange,
+    }
+    encoder = create_image_encoder(
+        c,
+        h,
+        w,
+        args.modellatentdim,
+        args.encoderhidden,
+        args.encoderblocks,
+        dropout_probability=args.dropout,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
+        resnet=not args.encodermlp,
+        use_batch_norm=args.batchnorm,
+    )
+    outer_transform = create_image_transform(
+        c,
+        h,
+        w,
+        levels=args.levels,
+        hidden_channels=100,
+        steps_per_level=steps_per_level,
+        num_res_blocks=2,
+        alpha=0.05,
+        num_bits=8,
+        preprocessing="glow",
+        dropout_prob=args.dropout,
+        multi_scale=True,
+        spline_params=spline_params,
+        postprocessing="partial_mlp",
+        postprocessing_layers=args.linlayers,
+        postprocessing_channel_factor=args.linchannelfactor,
+        use_actnorm=args.actnorm,
+        use_batchnorm=args.batchnorm,
     )
     inner_transform = create_vector_transform(
         args.modellatentdim,
@@ -405,9 +463,9 @@ def create_image_flow(args, c, h, simulator, w):
         h,
         w,
         levels=args.levels,
-        hidden_channels=args.outercouplinghidden,
+        hidden_channels=100,
         steps_per_level=steps_per_level,
-        num_res_blocks=args.outercouplinglayers,
+        num_res_blocks=2,
         alpha=0.05,
         num_bits=8,
         preprocessing="glow",

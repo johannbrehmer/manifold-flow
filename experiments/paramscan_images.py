@@ -48,9 +48,6 @@ def parse_args():
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
     parser.add_argument("--outertransform", type=str, default="rq-coupling")
     parser.add_argument("--innertransform", type=str, default="rq-coupling")
-    parser.add_argument("--outercouplingmlp", action="store_true", help="Use MLP instead of ResNet for coupling layers")
-    parser.add_argument("--outercouplinglayers", type=int, default=2, help="Number of layers for coupling layers")
-    parser.add_argument("--outercouplinghidden", type=int, default=100)
     parser.add_argument("--conditionalouter", action="store_true")
     parser.add_argument("--pieepsilon", type=float, default=0.01)
     parser.add_argument("--encoderblocks", type=int, default=5)
@@ -113,9 +110,9 @@ def pick_parameters(args, trial, counter):
     margs.actnorm = trial.suggest_categorical("actnorm", [False, True])
 
     margs.batchsize = trial.suggest_categorical("batchsize", [50,])
-    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e-3, 10.)
-    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.e-9, 0.1)
-    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.e-9, 0.1)
+    margs.msefactor = trial.suggest_loguniform("msefactor", 1.0e-3, 10.0)
+    margs.uvl2reg = trial.suggest_loguniform("uvl2reg", 1.0e-9, 0.1)
+    margs.weightdecay = trial.suggest_loguniform("weightdecay", 1.0e-9, 0.1)
     margs.clip = trial.suggest_loguniform("clip", 1.0, 100.0)
 
     create_modelname(margs)
@@ -191,7 +188,9 @@ if __name__ == "__main__":
                 loss_weights=[margs.msefactor, 0.0 if margs.uvl2reg is None else margs.uvl2reg],
                 epochs=margs.epochs,
                 parameters=(
-                    list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+                    list(model.outer_transform.parameters()) + list(model.encoder.parameters())
+                    if args.algorithm == "emf"
+                    else model.outer_transform.parameters()
                 ),
                 forward_kwargs={"mode": "projection", "return_hidden": True},
                 **common_kwargs,
