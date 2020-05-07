@@ -32,7 +32,9 @@ def create_image_encoder(
 ):
     if resnet:
         encoder = nn_.ScalarConvResidualNet(
-            in_channels=c, h=h, w=w,
+            in_channels=c,
+            h=h,
+            w=w,
             out_channels=latent_dim,
             hidden_channels=hidden_channels,
             context_features=context_features,

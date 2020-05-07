@@ -112,15 +112,7 @@ class ConvResidualBlock(nn.Module):
 
 class ConvResidualNet(nn.Module):
     def __init__(
-        self,
-        in_channels,
-        out_channels,
-        hidden_channels,
-        context_channels=None,
-        num_blocks=2,
-        activation=F.relu,
-        dropout_probability=0.0,
-        use_batch_norm=False,
+        self, in_channels, out_channels, hidden_channels, context_channels=None, num_blocks=2, activation=F.relu, dropout_probability=0.0, use_batch_norm=False,
     ):
         super().__init__()
         self.context_channels = context_channels
@@ -157,7 +149,9 @@ class ConvResidualNet(nn.Module):
 class ScalarConvResidualNet(nn.Module):
     def __init__(
         self,
-        in_channels, h, w,
+        in_channels,
+        h,
+        w,
         out_channels,
         hidden_channels,
         context_features=None,

@@ -28,7 +28,6 @@ except:
     logger.info("Could not import fid_score, make sure that pytorch-fid is in the Python path")
 
 
-
 def parse_args():
     """ Parses command line arguments for the evaluation """
 
@@ -84,7 +83,6 @@ def parse_args():
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
     parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
-    parser.add_argument("--encodermlp", action="store_true", help="Use MLP instead of ResNet for MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
@@ -164,10 +162,13 @@ def evaluate_model_samples(args, simulator, x_gen):
 
         logger.info("Calculating FID score of generated samples")
         # The FID script needs an image folder
-        with tempfile.TemporaryDirectory as gen_dir:
+        with tempfile.TemporaryDirectory() as gen_dir:
             logger.debug(f"Storing generated images in temporary folder {gen_dir}")
             for i, x in enumerate(x_gen):
-                plt.imsave(f'{gen_dir}/{i}.jpg', x)
+                x = np.clip(np.transpose(x, [1, 2, 0]) / 256.0, 0.0, 1.0)
+                if i == 0:
+                    logger.debug("x: %s", x)
+                plt.imsave(f"{gen_dir}/{i}.jpg", x)
             true_dir = create_filename("dataset", None, args) + "/test/"
 
             logger.debug("Beginning FID calculation with batchsize 50")
@@ -298,6 +299,11 @@ if __name__ == "__main__":
     logging.basicConfig(
         format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
     )
+    # Silence PIL
+    for key in logging.Logger.manager.loggerDict:
+        if "PIL" in key:
+            logging.getLogger(key).setLevel(logging.WARNING)
+
     logger.info("Hi!")
     logger.debug("Starting evaluate.py with arguments %s", args)
 
