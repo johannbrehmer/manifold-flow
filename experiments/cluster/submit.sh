@@ -26,9 +26,13 @@
 
 for i in 0 1 2 3 4 5 6 7 8 9
 do
-    sbatch --array $i-$i train_mf_lhc40d.sh
-    sbatch --array $i-$i train_emf_lhc40d.sh
-    sbatch --array $i-$i train_flow_lhc40d.sh
-    sbatch --array $i-$i train_pie_lhc40d.sh
-    sbatch --array $i-$i train_flow_lhc2d.sh
+    sbatch --array $i-$i train_mf_lhc.sh
+    sbatch --array $i-$i train_emf_lhc.sh
+    sbatch --array $i-$i train_flow_lhc.sh
+    sbatch --array $i-$i train_pie_lhc.sh
+    sbatch --array $i-$i train_mf_lhc_scandal.sh
+    sbatch --array $i-$i train_emf_lhc_scandal.sh
+    sbatch --array $i-$i train_flow_lhc_scandal.sh
+    sbatch --array $i-$i train_pie_lhc_scandal.sh
+    sleep 5
 done
