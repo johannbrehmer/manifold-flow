@@ -9,6 +9,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu_12gb
 
+module load cuda-10.2
 conda activate ml
 export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
