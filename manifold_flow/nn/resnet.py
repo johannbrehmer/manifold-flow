@@ -199,7 +199,7 @@ class ScalarConvResidualNet(nn.Module):
         for block in self.blocks:
             temps = block(temps, context_)
         if context is None:
-            outputs = self.final_layer(temp)
+            outputs = self.final_layer(temps)
         else:
             outputs = self.final_layer(torch.cat((temps, context), dim=1))
 
