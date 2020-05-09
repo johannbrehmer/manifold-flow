@@ -15,13 +15,13 @@ class EncoderManifoldFlow(BaseFlow):
     def __init__(self, data_dim, latent_dim, encoder, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
         super(EncoderManifoldFlow, self).__init__()
 
-        assert latent_dim < data_dim
-
         self.data_dim = data_dim
         self.latent_dim = latent_dim
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
         self.apply_context_to_outer = apply_context_to_outer
+
+        assert self.total_latent_dim < self.total_data_dim
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal(

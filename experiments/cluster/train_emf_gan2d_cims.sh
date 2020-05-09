@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-mf-g
-#SBATCH --output=log_train_mf_gan2d_%a.log
+#SBATCH --job-name=t-emf-g
+#SBATCH --output=log_train_emf_gan2d_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
@@ -19,4 +19,4 @@ cd $dir/experiments
 nvcc --version
 which python
 
-python -u train.py -c cluster/configs/train_mf_gan2d_april.config -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c cluster/configs/train_mf_gan2d_april.config --algorithm emf -i ${SLURM_ARRAY_TASK_ID}

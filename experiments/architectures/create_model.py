@@ -52,8 +52,12 @@ def create_model(args, simulator):
     elif args.algorithm == "emf" and not simulator.is_image():
         model = create_vector_emf(args, simulator)
 
-    # M-flow with sep. encoder for image data
-    elif args.algorithm == "emf" and simulator.is_image():
+    # M-flow with sep. encoder for image data (unstructured latents)
+    elif args.algorithm == "emf" and simulator.is_image() and not args.structuredlatents:
+        model = create_image_emf_unstructured(args, c, h, simulator, w)
+
+    # M-flow with sep. encoder for image data (structured latents)
+    elif args.algorithm == "emf" and simulator.is_image() and args.structuredlatents:
         raise NotImplementedError
 
     # # PIE with variable epsilon for vector data
