@@ -29,23 +29,23 @@ def create_model(args, simulator):
         model = create_image_flow(args, c, h, simulator, w)
 
     # FOM for vector data
-    elif args.algorithm in ["mf", "gamf"] and args.specified and not simulator.is_image():
+    elif args.algorithm in ["mf", "gamf", "pie"] and args.specified and not simulator.is_image():
         model = create_vector_specified_flow(args, simulator)
 
     # FOM for image data
-    elif args.algorithm in ["mf", "gamf"] and args.specified and simulator.is_image():
+    elif args.algorithm in ["mf", "gamf", "pie"] and args.specified and simulator.is_image():
         raise NotImplementedError
 
     # M-flow or PIE for vector data
-    elif args.algorithm in ["mf", "gamf"] and not args.specified and not simulator.is_image():
+    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and not simulator.is_image():
         model = create_vector_mf(args, simulator)
 
     # M-flow or PIE for image data, with structured (image) latent space
-    elif args.algorithm in ["mf", "gamf"] and not args.specified and simulator.is_image() and args.structuredlatents:
+    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and simulator.is_image() and args.structuredlatents:
         model = create_image_mf_structured(args, c, h, simulator, w)
 
     # M-flow or PIE for image data, with scalar latent space
-    elif args.algorithm in ["mf", "gamf"] and not args.specified and simulator.is_image() and not args.structuredlatents:
+    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and simulator.is_image() and not args.structuredlatents:
         model = create_image_mf_unstructured(args, c, h, simulator, w)
 
     # M-flow with sep. encoder for vector data
