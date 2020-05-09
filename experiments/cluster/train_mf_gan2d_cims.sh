@@ -17,6 +17,6 @@ dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
 nvcc --version
-which python
+nvidia-smi
 
 python -u train.py -c cluster/configs/train_mf_gan2d_april.config -i ${SLURM_ARRAY_TASK_ID}
