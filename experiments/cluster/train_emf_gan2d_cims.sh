@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
 #SBATCH --time=2-00:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:1080ti:1
 #SBATCH --constraint=gpu_12gb
 
 module load cuda-10.2
