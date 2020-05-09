@@ -198,7 +198,10 @@ class ScalarConvResidualNet(nn.Module):
         temps = self.initial_layer(inputs)
         for block in self.blocks:
             temps = block(temps, context_)
-        outputs = self.final_layer(torch.cat((temps, context), dim=1))
+        if context is None:
+            outputs = self.final_layer(temp)
+        else:
+            outputs = self.final_layer(torch.cat((temps, context), dim=1))
 
         if self.flat_layer is not None:
             assert len(context.size()) == 2
