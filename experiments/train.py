@@ -174,7 +174,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_labels=["NLL"] + scandal_label,
             loss_weights=[args.nllfactor] + scandal_weight,
             epochs=args.epochs // args.prepostfraction,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "pie"},
             **common_kwargs,
         )
@@ -186,7 +186,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_labels=["MSE"],
             loss_weights=[args.msefactor],
             epochs=args.epochs // args.prepostfraction,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "projection"},
             **common_kwargs,
         )
@@ -199,7 +199,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         loss_weights=[args.msefactor, args.addnllfactor] + scandal_weight,
         epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // args.prepostfraction),
         parameters=model.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -216,7 +216,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_weights=[0.0, args.nllfactor] + scandal_weight,
             epochs=args.epochs // args.prepostfraction,
             parameters=model.inner_transform.parameters(),
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
             forward_kwargs={"mode": "mf-fixed-manifold"},
             **common_kwargs,
         )
@@ -243,7 +243,7 @@ def train_specified_manifold_flow(args, dataset, model, simulator):
         loss_labels=["MSE", "NLL"] + scandal_label,
         loss_weights=[0.0, args.nllfactor] + scandal_weight,
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         forward_kwargs={"mode": "mf"},
         **common_kwargs,
     )
@@ -290,7 +290,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         subsets=args.subsets,
         batch_sizes=[args.batchsize, args.batchsize],
         parameters=[phase1_parameters, phase2_parameters],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         **meta_kwargs,
     )
@@ -364,7 +364,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
 
     logger.info("Starting training GAMF: Sinkhorn-GAN")
 
-    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
+    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if args.debug:
         callbacks_.append(callbacks.print_mf_weight_statistics())
 
@@ -417,7 +417,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         batch_sizes=[args.genbatchsize, args.batchsize],
         epochs=args.epochs // 2,
         parameters=[phase1_parameters, phase2_parameters],
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         trainer_kwargs=[phase1_kwargs, phase2_kwargs],
         subsets=args.subsets,
         subset_callbacks=[callbacks.print_mf_weight_statistics()] if args.debug else None,
@@ -450,7 +450,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
             loss_labels=["MSE"],
             loss_weights=[args.initialmsefactor],
             epochs=args.epochs // 3,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_A{}.pt")],
+            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "projection"},
             **common_kwargs,
         )
@@ -463,7 +463,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[args.initialmsefactor, args.initialnllfactor] + scandal_weight,
         epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_B{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -476,7 +476,7 @@ def train_slice_of_pie(args, dataset, model, simulator):
         loss_weights=[args.msefactor, args.nllfactor] + scandal_weight,
         epochs=args.epochs // 3,
         parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_C{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
         forward_kwargs={"mode": "slice"},
         **common_kwargs,
     )
@@ -495,7 +495,7 @@ def train_flow(args, dataset, model, simulator):
         else SCANDALForwardTrainer(model)
     )
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
-    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")]
+    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if simulator.is_image():
         callbacks_.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
 
@@ -530,7 +530,7 @@ def train_pie(args, dataset, model, simulator):
         loss_labels=["NLL"] + scandal_label,
         loss_weights=[args.nllfactor] + scandal_weight,
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         forward_kwargs={"mode": "pie"},
         **common_kwargs,
     )
@@ -549,7 +549,7 @@ def train_pie(args, dataset, model, simulator):
 #         loss_labels=["NLL"],
 #         loss_weights=[args.nllfactor],
 #         epochs=args.epochs,
-#         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args)[:-3] + "_epoch_{}.pt")],
+#         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
 #         l1=args.doughl1reg,
 #         **common_kwargs,
 #     )
