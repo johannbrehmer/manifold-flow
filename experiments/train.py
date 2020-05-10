@@ -25,7 +25,7 @@ from training import (
     SCANDALForwardTrainer,
 )
 from datasets import load_simulator, load_training_dataset, SIMULATORS
-from utils import create_filename, create_modelname
+from utils import create_filename, create_modelname, nat_to_bit_per_dim
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
 
@@ -172,7 +172,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         learning_curves = trainer.train(
             loss_functions=[losses.nll] + scandal_loss,
             loss_labels=["NLL"] + scandal_label,
-            loss_weights=[args.nllfactor] + scandal_weight,
+            loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
             epochs=args.epochs // args.prepostfraction,
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "pie"},
@@ -196,7 +196,7 @@ def train_manifold_flow(args, dataset, model, simulator):
     learning_curves_ = trainer.train(
         loss_functions=[losses.mse, losses.nll] + scandal_loss,
         loss_labels=["MSE", "NLL"] + scandal_label,
-        loss_weights=[args.msefactor, args.addnllfactor] + scandal_weight,
+        loss_weights=[args.msefactor, args.addnllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
         epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // args.prepostfraction),
         parameters=model.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
@@ -213,7 +213,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         learning_curves_ = trainer.train(
             loss_functions=[losses.mse, losses.nll] + scandal_loss,
             loss_labels=["MSE", "NLL"] + scandal_label,
-            loss_weights=[0.0, args.nllfactor] + scandal_weight,
+            loss_weights=[0.0, args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
             epochs=args.epochs // args.prepostfraction,
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
@@ -241,7 +241,7 @@ def train_specified_manifold_flow(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.mse, losses.nll] + scandal_loss,
         loss_labels=["MSE", "NLL"] + scandal_label,
-        loss_weights=[0.0, args.nllfactor] + scandal_weight,
+        loss_weights=[0.0, args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         forward_kwargs={"mode": "mf"},
@@ -285,7 +285,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
         loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse, losses.nll] + scandal_loss,
         loss_function_trainers=[0, 1] + [1] if args.scandal is not None else [],
         loss_labels=["L1" if args.l1 else "MSE", "NLL"] + scandal_label,
-        loss_weights=[args.msefactor, args.nllfactor] + scandal_weight,
+        loss_weights=[args.msefactor, args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
         epochs=args.epochs // 2,
         subsets=args.subsets,
         batch_sizes=[args.batchsize, args.batchsize],
@@ -343,7 +343,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     learning_curves_ = trainer2.train(
         loss_functions=[losses.nll] + scandal_loss,
         loss_labels=["NLL"] + scandal_label,
-        loss_weights=[args.nllfactor] + scandal_weight,
+        loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
         epochs=args.epochs - (args.epochs // 2),
         parameters=model.inner_transform.parameters(),
         callbacks=callbacks2,
@@ -413,7 +413,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         loss_functions=[losses.make_sinkhorn_divergence(), losses.nll] + scandal_loss,
         loss_function_trainers=[0, 1] + [1] if args.scandal is not None else [],
         loss_labels=["GED", "NLL"] + scandal_label,
-        loss_weights=[args.sinkhornfactor, args.nllfactor] + scandal_weight,
+        loss_weights=[args.sinkhornfactor, args.nllfactor * nat_to_bit_per_dim(args.latentdim)] + scandal_weight,
         batch_sizes=[args.genbatchsize, args.batchsize],
         epochs=args.epochs // 2,
         parameters=[phase1_parameters, phase2_parameters],
@@ -424,63 +424,6 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
         **meta_kwargs,
     )
     learning_curves = np.vstack(learning_curves_).T
-
-    return learning_curves
-
-
-def train_slice_of_pie(args, dataset, model, simulator):
-    """ SLICE training """
-
-    trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
-    common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
-
-    if args.nopretraining or args.epochs // 3 < 1:
-        logger.info("Skipping pretraining phase")
-        learning_curves = np.zeros((0, 2))
-    else:
-        logger.info("Starting training slice of PIE, phase 1: pretraining on reconstruction error")
-        learning_curves = trainer.train(
-            loss_functions=[losses.mse],
-            loss_labels=["MSE"],
-            loss_weights=[args.initialmsefactor],
-            epochs=args.epochs // 3,
-            callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
-            forward_kwargs={"mode": "projection"},
-            **common_kwargs,
-        )
-        learning_curves = np.vstack(learning_curves).T
-
-    logger.info("Starting training slice of PIE, phase 2: mixed training")
-    learning_curves_ = trainer.train(
-        loss_functions=[losses.mse, losses.nll] + scandal_loss,
-        loss_labels=["MSE", "NLL"] + scandal_label,
-        loss_weights=[args.initialmsefactor, args.initialnllfactor] + scandal_weight,
-        epochs=args.epochs - (1 if args.nopretraining else 2) * (args.epochs // 3),
-        parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
-        forward_kwargs={"mode": "slice"},
-        **common_kwargs,
-    )
-    learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
-
-    logger.info("Starting training slice of PIE, phase 3: training only inner flow on NLL")
-    learning_curves_ = trainer.train(
-        loss_functions=[losses.mse, losses.nll] + scandal_loss,
-        loss_labels=["MSE", "NLL"] + scandal_loss,
-        loss_weights=[args.msefactor, args.nllfactor] + scandal_weight,
-        epochs=args.epochs // 3,
-        parameters=model.inner_transform.parameters(),
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
-        forward_kwargs={"mode": "slice"},
-        **common_kwargs,
-    )
-    learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
 
     return learning_curves
 
@@ -503,7 +446,7 @@ def train_flow(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.nll] + scandal_loss,
         loss_labels=["NLL"] + scandal_label,
-        loss_weights=[args.nllfactor] + scandal_weight,
+        loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.datadim)] + scandal_weight,
         epochs=args.epochs,
         callbacks=callbacks_,
         **common_kwargs,
@@ -528,7 +471,7 @@ def train_pie(args, dataset, model, simulator):
     learning_curves = trainer.train(
         loss_functions=[losses.nll] + scandal_loss,
         loss_labels=["NLL"] + scandal_label,
-        loss_weights=[args.nllfactor] + scandal_weight,
+        loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.datadim)] + scandal_weight,
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         forward_kwargs={"mode": "pie"},
@@ -564,8 +507,6 @@ def train_model(args, dataset, model, simulator):
         learning_curves = train_pie(args, dataset, model, simulator)
     elif args.algorithm == "flow":
         learning_curves = train_flow(args, dataset, model, simulator)
-    elif args.algorithm == "slice":
-        learning_curves = train_slice_of_pie(args, dataset, model, simulator)
     elif args.algorithm in ["mf", "emf"]:
         if args.alternate:
             learning_curves = train_manifold_flow_alternating(args, dataset, model, simulator)

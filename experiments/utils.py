@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -88,3 +89,10 @@ def create_modelname(args):
         )
     else:
         args.modelname = "{}{}_{}_{}{}{}".format(args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, appendix, run_label)
+
+
+def nat_to_bit_per_dim(dim):
+    if isinstance(dim, (tuple, list, np.ndarray)):
+        dim = np.product(dim)
+    logger.debug("Nat to bit per dim: factor %s", 1. / (np.log(2) * dim))
+    return 1. / (np.log(2) * dim)

@@ -9,7 +9,7 @@ from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionMani
 logger = logging.getLogger(__name__)
 
 
-ALGORITHMS = ["flow", "pie", "mf", "slice", "gamf", "hybrid", "emf"]  # , "dough"
+ALGORITHMS = ["flow", "pie", "mf", "gamf", "hybrid", "emf"]  # , "dough"
 
 
 def create_model(args, simulator):
