@@ -206,17 +206,25 @@ class IMDBLoader(BaseImageLoader):
             filename_key="filename",
             root_dir=dataset_dir,
             image_transform=transform,
-            label_transform=lambda x: self._preprocess_age(x),
+            label_transform=lambda x: self.preprocess_params(x),
         )
 
     def sample_from_prior(self, n):
-        raise NotImplementedError
+        parameters = np.random.choice(self._AGES, size=n, p=self._AGE_PROBS)
+        parameters = self.preprocess_params(parameters)
+        return parameters
 
     def evaluate_log_prior(self, parameters):
-        raise NotImplementedError
+        parameters = self.preprocess_params(parameters, inverse=True)
+        parameters = np.around(parameters, 0).astype(np.int)
 
-    def _preprocess_age(self, x, inverse=False):
-        x = np.copy(x)
+        min_, max_ = np.min(self._AGES), np.max(self._AGES)
+        idx = np.clip(parameters - min_, 0, max_ - min_).astype(np.int)
+        probs = np.where(parameters < min_, 0, np.where(parameters > max_, 0, self._AGE_PROBS[idx]))
+        return np.log(probs)
+
+    def preprocess_params(self, x, inverse=False):
+        x = np.copy(x).astype(np.float)
         if inverse:
             x *= self._AGE_STD
             x += self._AGE_MEAN
