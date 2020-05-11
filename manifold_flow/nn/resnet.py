@@ -204,9 +204,12 @@ class ScalarConvResidualNet(nn.Module):
             outputs = self.final_layer(torch.cat((temps, context), dim=1))
 
         if self.flat_layer is not None:
-            assert len(context.size()) == 2
             outputs = outputs.view(outputs.size(0), -1)
-            outputs = self.flat_layer(torch.cat((outputs, context), dim=1))
+            if context is None:
+                outputs = self.flat_layer(outputs)
+            else:
+                assert len(context.size()) == 2
+                outputs = self.flat_layer(torch.cat((outputs, context), dim=1))
 
         return outputs
 
