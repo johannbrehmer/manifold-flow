@@ -44,7 +44,6 @@ def plot_reco_images(filename):
         if last_batch is None:
             return
 
-
         if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
             x = last_batch["x"]
             x_reco = last_batch["x_reco"]

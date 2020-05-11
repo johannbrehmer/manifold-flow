@@ -19,4 +19,5 @@ dependencies:
     - geomloss
     - configargparse
     - optuna
+    - Pillow
 prefix: /Users/johannbrehmer/anaconda3/envs/ml

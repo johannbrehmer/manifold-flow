@@ -94,5 +94,5 @@ def create_modelname(args):
 def nat_to_bit_per_dim(dim):
     if isinstance(dim, (tuple, list, np.ndarray)):
         dim = np.product(dim)
-    logger.debug("Nat to bit per dim: factor %s", 1. / (np.log(2) * dim))
-    return 1. / (np.log(2) * dim)
+    logger.debug("Nat to bit per dim: factor %s", 1.0 / (np.log(2) * dim))
+    return 1.0 / (np.log(2) * dim)
