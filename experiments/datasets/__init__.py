@@ -5,7 +5,7 @@ import logging
 from .base import IntractableLikelihoodError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
-from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader
+from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader, IMDBLoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .polynomial_surface_simulator import PolynomialSurfaceSimulator
 from .lorenz import LorenzSimulator
@@ -40,6 +40,8 @@ def load_simulator(args):
         simulator = FFHQStyleGAN2DLoader()
     elif args.dataset == "lorenz":
         simulator = LorenzSimulator()
+    elif args.dataset == "imdb":
+        simulator = IMDBLoader()
     else:
         raise ValueError("Unknown dataset {}".format(args.dataset))
 
