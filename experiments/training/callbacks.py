@@ -10,7 +10,8 @@ def save_model_after_every_epoch(filename):
     """ Saves model checkpoints. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
-        torch.save(model.state_dict(), filename.format(i_epoch))
+        if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
+            torch.save(model.state_dict(), filename.format(i_epoch))
 
     return callback
 
@@ -19,18 +20,19 @@ def plot_sample_images(filename):
     """ Saves model checkpoints. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
-        x = model.sample(n=30).detach().cpu().numpy()
-        x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+        if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
+            x = model.sample(n=30).detach().cpu().numpy()
+            x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
 
-        plt.figure(figsize=(6 * 3.0, 5 * 3.0))
-        for i in range(30):
-            plt.subplot(5, 6, i + 1)
-            plt.imshow(x[i])
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
-        plt.tight_layout()
-        plt.savefig(filename.format(i_epoch))
-        plt.close()
+            plt.figure(figsize=(6 * 3.0, 5 * 3.0))
+            for i in range(30):
+                plt.subplot(5, 6, i + 1)
+                plt.imshow(x[i])
+                plt.gca().get_xaxis().set_visible(False)
+                plt.gca().get_yaxis().set_visible(False)
+            plt.tight_layout()
+            plt.savefig(filename.format(i_epoch))
+            plt.close()
 
     return callback
 
@@ -42,27 +44,29 @@ def plot_reco_images(filename):
         if last_batch is None:
             return
 
-        x = last_batch["x"]
-        x_reco = last_batch["x_reco"]
 
-        x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
-        x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+        if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
+            x = last_batch["x"]
+            x_reco = last_batch["x_reco"]
 
-        plt.figure(figsize=(6 * 3.0, 5 * 3.0))
-        for i in range(15):
-            plt.subplot(5, 6, 2 * i + 1)
-            plt.imshow(x[i])
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
+            x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
+            x_reco = np.clip(np.transpose(x_reco, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
 
-            plt.subplot(5, 6, 2 * i + 2)
-            plt.imshow(x_reco[i])
-            plt.gca().get_xaxis().set_visible(False)
-            plt.gca().get_yaxis().set_visible(False)
+            plt.figure(figsize=(6 * 3.0, 5 * 3.0))
+            for i in range(15):
+                plt.subplot(5, 6, 2 * i + 1)
+                plt.imshow(x[i])
+                plt.gca().get_xaxis().set_visible(False)
+                plt.gca().get_yaxis().set_visible(False)
 
-        plt.tight_layout()
-        plt.savefig(filename.format(i_epoch))
-        plt.close()
+                plt.subplot(5, 6, 2 * i + 2)
+                plt.imshow(x_reco[i])
+                plt.gca().get_xaxis().set_visible(False)
+                plt.gca().get_yaxis().set_visible(False)
+
+            plt.tight_layout()
+            plt.savefig(filename.format(i_epoch))
+            plt.close()
 
     return callback
 
