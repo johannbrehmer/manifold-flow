@@ -100,7 +100,7 @@ class CelebALoader(BaseImageLoader):
 
 class FFHQStyleGAN2DLoader(BaseImageLoader):
     def __init__(self):
-        super().__init__(resolution=64, n_bits=8, random_horizontal_flips=True)
+        super().__init__(resolution=64, n_bits=8, random_horizontal_flips=False)  # For the 2D demo we don't want random flips, as they would essentially create a second disjoint manifold
 
     def latent_dim(self):
         return 2
