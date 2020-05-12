@@ -233,7 +233,13 @@ def create_image_transform(
         all_transforms.append(transforms.ReshapeTransform(input_shape=(c, h, w), output_shape=(c * h * w,)))
         mct = transforms.CompositeTransform(all_transforms)
 
-    # Final transformation: random permutation or learnable linear matrix
+    # Final transformation
+    final_transform = _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res)
+
+    return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
+
+
+def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res):
     if postprocessing == "linear":
         final_transform = transforms.LULinear(dim, identity_init=True)
         logger.debug("LULinear(%s)", dim)
@@ -280,8 +286,7 @@ def create_image_transform(
 
     else:
         raise NotImplementedError(postprocessing)
-
-    return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
+    return final_transform
 
 
 def _create_preprocessing(alpha, c, h, num_bits, preprocessing, w):
