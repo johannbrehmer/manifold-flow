@@ -75,7 +75,7 @@ def create_model(args, simulator):
 
 
 def create_image_mf_unstructured(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None:
+    if simulator.parameter_dim() is not None and args.conditionalouter:
         raise NotImplementedError
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(

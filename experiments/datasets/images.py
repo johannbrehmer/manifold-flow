@@ -175,8 +175,6 @@ class IMDBLoader(BaseImageLoader):
             0.00073117231294175,
         ]
     )
-    _AGE_MEAN = 37.45325282219468
-    _AGE_STD = 35.52156863651862
 
     def __init__(self):
         super().__init__(resolution=64, n_bits=8, random_horizontal_flips=True)
@@ -206,7 +204,7 @@ class IMDBLoader(BaseImageLoader):
             filename_key="filename",
             root_dir=dataset_dir,
             image_transform=transform,
-            label_transform=lambda x: self.preprocess_params(x),
+            label_transform=self.preprocess_params,
         )
 
     def sample_from_prior(self, n):
@@ -223,12 +221,15 @@ class IMDBLoader(BaseImageLoader):
         probs = np.where(parameters < min_, 0, np.where(parameters > max_, 0, self._AGE_PROBS[idx]))
         return np.log(probs)
 
-    def preprocess_params(self, x, inverse=False):
+    @staticmethod
+    def preprocess_params(x, inverse=False):
+        _AGE_MEAN = 37.45325282219468
+        _AGE_STD = 35.52156863651862
         x = np.copy(x).astype(np.float)
         if inverse:
-            x *= self._AGE_STD
-            x += self._AGE_MEAN
+            x *= _AGE_STD
+            x += _AGE_MEAN
         else:
-            x -= self._AGE_MEAN
-            x /= self._AGE_STD
+            x -= _AGE_MEAN
+            x /= _AGE_STD
         return x
