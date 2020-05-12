@@ -8,8 +8,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32GB
-#SBATCH --job-name=t-mf-i
-#SBATCH --output=log_train_mf_imdb_%a.log
+#SBATCH --job-name=t-emf-i
+#SBATCH --output=log_train_emf_imdb_%a.log
 
 source ~/.bashrc
 module load cuda/10.1
@@ -20,4 +20,4 @@ cd /sdcc/u/brehmer/manifold-flow/experiments
 nvcc --version
 nvidia-smi
 
-python -u train.py -c cluster/configs/train_mf_imdb_april.config -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c cluster/configs/train_mf_imdb_april.config --algorithm emf --modelname emf_april -i ${SLURM_ARRAY_TASK_ID}
