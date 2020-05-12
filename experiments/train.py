@@ -466,6 +466,9 @@ def train_pie(args, dataset, model, simulator):
         else SCANDALForwardTrainer(model)
     )
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
+    callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
+    if simulator.is_image():
+        callbacks_.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
 
     logger.info("Starting training PIE on NLL")
     learning_curves = trainer.train(
@@ -473,7 +476,7 @@ def train_pie(args, dataset, model, simulator):
         loss_labels=["NLL"] + scandal_label,
         loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.datadim)] + scandal_weight,
         epochs=args.epochs,
-        callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
+        callbacks=callbacks_,
         forward_kwargs={"mode": "pie"},
         **common_kwargs,
     )

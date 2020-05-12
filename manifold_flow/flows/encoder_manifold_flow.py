@@ -96,7 +96,6 @@ class EncoderManifoldFlow(BaseFlow):
         return x
 
     def _encode(self, x, context=None):
-
         h_manifold = self.encoder(x, context=context if self.apply_context_to_outer else None)
         u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
 
