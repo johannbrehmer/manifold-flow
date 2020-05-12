@@ -15,7 +15,7 @@ from .utils import NumpyDataset
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d", "lorenz"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d", "lorenz", "imdb"]
 
 
 def load_simulator(args):
