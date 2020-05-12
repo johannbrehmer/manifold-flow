@@ -5,26 +5,9 @@ import torch
 import numpy as np
 
 from manifold_flow import nn as nn_, transforms
-from manifold_flow.nn import Conv2dSameSize
 from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
-
-
-class ConvNet(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels):
-        super().__init__()
-        self.hidden_channels = hidden_channels
-        self.net = nn.Sequential(
-            Conv2dSameSize(in_channels, hidden_channels, kernel_size=3),
-            nn.ReLU(),
-            Conv2dSameSize(hidden_channels, hidden_channels, kernel_size=1),
-            nn.ReLU(),
-            Conv2dSameSize(hidden_channels, out_channels, kernel_size=3),
-        )
-
-    def forward(self, inputs, context=None):
-        return self.net.forward(inputs)
 
 
 class PreprocessingEncoder(nn.Module):
@@ -49,14 +32,10 @@ def create_image_encoder(
     dropout_probability=0.0,
     use_batch_norm=False,
     context_features=None,
-    resnet=True,
     preprocessing="glow",
     alpha=0.05,
     num_bits=8,
 ):
-    if not resnet:
-        raise NotImplementedError
-
     preprocessing_transform = _create_preprocessing(alpha, c, h, num_bits, preprocessing, w)
     encoder = nn_.ScalarConvResidualNet(
         in_channels=c,
@@ -81,30 +60,20 @@ def _create_image_transform_step(
     actnorm=True,
     coupling_layer_type="rational_quadratic_spline",
     spline_params=None,
-    use_resnet=True,
     num_res_blocks=3,
     resnet_batchnorm=True,
     dropout_prob=0.0,
 ):
-    if use_resnet:
-
-        def create_convnet(in_channels, out_channels):
-            net = nn_.ConvResidualNet(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                hidden_channels=hidden_channels,
-                num_blocks=num_res_blocks,
-                use_batch_norm=resnet_batchnorm,
-                dropout_probability=dropout_prob,
-            )
-            return net
-
-    else:
-        if dropout_prob != 0.0:
-            raise ValueError()
-
-        def create_convnet(in_channels, out_channels):
-            return ConvNet(in_channels, hidden_channels, out_channels)
+    def create_convnet(in_channels, out_channels):
+        net = nn_.ConvResidualNet(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            hidden_channels=hidden_channels,
+            num_blocks=num_res_blocks,
+            use_batch_norm=resnet_batchnorm,
+            dropout_probability=dropout_prob,
+        )
+        return net
 
     if spline_params is None:
         spline_params = {
@@ -182,7 +151,6 @@ def create_image_transform(
     num_bits=8,
     preprocessing="glow",
     multi_scale=True,
-    use_resnet=True,
     dropout_prob=0.0,
     num_res_blocks=3,
     coupling_layer_type="rational_quadratic_spline",
@@ -222,7 +190,6 @@ def create_image_transform(
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
                         spline_params=spline_params,
-                        use_resnet=use_resnet,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
@@ -253,7 +220,6 @@ def create_image_transform(
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
                         spline_params=spline_params,
-                        use_resnet=use_resnet,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,

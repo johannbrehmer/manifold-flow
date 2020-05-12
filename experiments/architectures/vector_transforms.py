@@ -8,28 +8,18 @@ logger = logging.getLogger(__name__)
 
 
 def create_vector_encoder(
-    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None, resnet=True
+    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None
 ):
-
-    if resnet:
-        encoder = nn_.ResidualNet(
-            in_features=data_dim,
-            out_features=latent_dim,
-            hidden_features=hidden_features,
-            context_features=context_features,
-            num_blocks=num_blocks,
-            activation=F.relu,
-            dropout_probability=dropout_probability,
-            use_batch_norm=use_batch_norm,
-        )
-    else:
-        encoder = nn_.MLP(
-            in_shape=(data_dim,),
-            out_shape=(latent_dim,),
-            hidden_sizes=[hidden_features for _ in range(num_blocks)],
-            context_features=context_features,
-            activation=F.relu,
-        )
+    encoder = nn_.ResidualNet(
+        in_features=data_dim,
+        out_features=latent_dim,
+        hidden_features=hidden_features,
+        context_features=context_features,
+        num_blocks=num_blocks,
+        activation=F.relu,
+        dropout_probability=dropout_probability,
+        use_batch_norm=use_batch_norm,
+    )
     return encoder
 
 
@@ -56,27 +46,17 @@ def _create_vector_base_transform(
     tail_bound,
     apply_unconditional_transform,
     context_features,
-    resnet_transform,
 ):
-    if resnet_transform:
-        transform_net_create_fn = lambda in_features, out_features: nn_.ResidualNet(
-            in_features=in_features,
-            out_features=out_features,
-            hidden_features=hidden_features,
-            context_features=context_features,
-            num_blocks=num_transform_blocks,
-            activation=F.relu,
-            dropout_probability=dropout_probability,
-            use_batch_norm=use_batch_norm,
-        )
-    else:
-        transform_net_create_fn = lambda in_features, out_features: nn_.MLP(
-            in_shape=(in_features,),
-            out_shape=(out_features,),
-            hidden_sizes=[hidden_features for _ in range(num_transform_blocks)],
-            context_features=context_features,
-            activation=F.relu,
-        )
+    transform_net_create_fn = lambda in_features, out_features: nn_.ResidualNet(
+        in_features=in_features,
+        out_features=out_features,
+        hidden_features=hidden_features,
+        context_features=context_features,
+        num_blocks=num_transform_blocks,
+        activation=F.relu,
+        dropout_probability=dropout_probability,
+        use_batch_norm=use_batch_norm,
+    )
 
     if base_transform_type == "affine-coupling":
         return transforms.AffineCouplingTransform(
@@ -159,7 +139,6 @@ def create_vector_transform(
     tail_bound=3,
     apply_unconditional_transform=False,
     context_features=None,
-    resnet_transform=True,
 ):
     transform = transforms.CompositeTransform(
         [
@@ -178,7 +157,6 @@ def create_vector_transform(
                         tail_bound,
                         apply_unconditional_transform,
                         context_features,
-                        resnet_transform,
                     ),
                 ]
             )

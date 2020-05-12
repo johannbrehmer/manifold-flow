@@ -330,7 +330,6 @@ def create_vector_emf(args, simulator):
         args.encoderblocks,
         dropout_probability=args.dropout,
         context_features=simulator.parameter_dim() if args.conditionalouter else None,
-        resnet=True,
         use_batch_norm=args.batchnorm,
     )
     outer_transform = create_vector_transform(
@@ -397,7 +396,6 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         args.encoderblocks,
         dropout_probability=args.dropout,
         context_features=simulator.parameter_dim() if args.conditionalouter else None,
-        resnet=True,
         use_batch_norm=args.batchnorm,
     )
     outer_transform = create_image_transform(
