@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ManifoldFlow(BaseFlow):
     """ Manifold-based flow (base class for FOM, MFMF, PIE, and others) """
 
-    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
+    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True, clip_pie=False):
         super(ManifoldFlow, self).__init__()
 
         self.data_dim = data_dim
@@ -25,7 +25,7 @@ class ManifoldFlow(BaseFlow):
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal(
-            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.0 * pie_epsilon
+            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=None if not clip_pie else clip_pie * pie_epsilon
         )
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 

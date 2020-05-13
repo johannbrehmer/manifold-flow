@@ -81,6 +81,7 @@ def parse_args():
     )
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
+    parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
     parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
     parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")

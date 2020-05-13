@@ -133,6 +133,7 @@ def create_image_mf_unstructured(args, c, h, simulator, w):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
@@ -209,6 +210,7 @@ def create_image_mf_structured(args, c, h, simulator, w):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
@@ -252,6 +254,7 @@ def create_vector_mf(args, simulator):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
@@ -286,6 +289,7 @@ def create_vector_specified_flow(args, simulator):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
@@ -362,6 +366,7 @@ def create_vector_emf(args, simulator):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
@@ -437,6 +442,7 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         inner_transform=inner_transform,
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
+        clip_pie=args.pieclip,
     )
     return model
 
