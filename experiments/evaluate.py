@@ -123,21 +123,34 @@ def parse_args():
     return parser.parse_args()
 
 
-def sample_from_model(args, model, simulator):
+def sample_from_model(args, model, simulator, batchsize=200):
     """ Generate samples from model and store """
 
     logger.info("Sampling from model")
-    if simulator.parameter_dim() is None:
-        x_gen = model.sample(n=args.generate).detach().numpy()
-    elif args.trueparam is None:  # Sample fromm prior
-        raise NotImplementedError  # TODO
-    else:
-        params = simulator.default_parameters(true_param_id=args.trueparam)
-        params = np.asarray([params for _ in range(args.generate)])
-        params = torch.tensor(params, dtype=torch.float)
-        x_gen = model.sample(n=args.generate, context=params).detach().numpy()
-    np.save(create_filename("results", "samples", args), x_gen)
-    return x_gen
+
+    x_gen_all = []
+    while len(x_gen_all) < args.generate:
+        n = min(batchsize, args.generate - len(x_gen_all))
+
+        if simulator.parameter_dim() is None:
+            x_gen = model.sample(n=n).detach().numpy()
+
+        elif args.trueparam is None:  # Sample fromm prior
+            params = simulator.sample_from_prior(n)
+            params = torch.tensor(params, dtype=torch.float)
+            x_gen = model.sample(n=n, context=params).detach().numpy()
+
+        else:
+            params = simulator.default_parameters(true_param_id=args.trueparam)
+            params = np.asarray([params for _ in range(n)])
+            params = torch.tensor(params, dtype=torch.float)
+            x_gen = model.sample(n=n, context=params).detach().numpy()
+
+        x_gen_all += list(x_gen)
+
+    x_gen_all = np.array(x_gen_all)
+    np.save(create_filename("results", "samples", args), x_gen_all)
+    return x_gen_all
 
 
 def evaluate_model_samples(args, simulator, x_gen):
