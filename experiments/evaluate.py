@@ -15,7 +15,7 @@ sys.path.append("../")
 
 from evaluation import mcmc, sq_maximum_mean_discrepancy
 from datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError
-from utils import create_filename, create_modelname
+from utils import create_filename, create_modelname, sum_except_batch
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
 
@@ -201,7 +201,7 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
-    x_recos = []
+    x_recos = None
     reco_error = None
 
     # Evaluate
@@ -214,6 +214,7 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
         else:
             log_prob = []
             reco_error_ = []
+            x_recos_ = []
             n_batches = (args.evaluate - 1) // args.evalbatchsize + 1
             for j in range(n_batches):
                 x_ = torch.tensor(x[j * args.evalbatchsize : (j + 1) * args.evalbatchsize], dtype=torch.float)
@@ -232,14 +233,15 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
 
                 if not args.skiplikelihood:
                     log_prob.append(log_prob_.detach().numpy())
-                reco_error_.append((torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5).detach().numpy())
-                if len(x_recos) < n_save_reco:
-                    x_recos.append(x_reco)
+                reco_error_.append((sum_except_batch((x_ - x_reco) ** 2) ** 0.5).detach().numpy())
+                x_recos_.append(x_reco.detach().numpy())
 
             if not args.skiplikelihood:
                 log_prob = np.concatenate(log_prob, axis=0)
             if reco_error is None:
                 reco_error = np.concatenate(reco_error_, axis=0)
+            if x_recos is None:
+                x_recos = np.concatenate(x_recos_, axis=0)
 
         if not args.skiplikelihood:
             log_probs.append(log_prob)
@@ -252,10 +254,10 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
         np.save(create_filename("results", filename.format("log_likelihood"), args), log_probs)
 
     if len(x_recos) > 0:
-        np.save(create_filename("results", filename.format("x_reco"), args), log_probs)
+        np.save(create_filename("results", filename.format("x_reco"), args), x_recos[:n_save_reco])
 
     if reco_error is not None:
-        np.save(create_filename("results", filename.format("reco_error"), args), log_probs)
+        np.save(create_filename("results", filename.format("reco_error"), args), reco_error)
 
     if parameter_grid is not None:
         np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)

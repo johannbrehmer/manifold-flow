@@ -1,6 +1,7 @@
 import os
 import logging
 import numpy as np
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -96,3 +97,9 @@ def nat_to_bit_per_dim(dim):
         dim = np.product(dim)
     logger.debug("Nat to bit per dim: factor %s", 1.0 / (np.log(2) * dim))
     return 1.0 / (np.log(2) * dim)
+
+
+
+def sum_except_batch(x, num_batch_dims=1):
+    reduce_dims = list(range(num_batch_dims, x.ndimension()))
+    return torch.sum(x, dim=reduce_dims)

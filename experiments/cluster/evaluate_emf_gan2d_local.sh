@@ -6,5 +6,5 @@ cd $dir/experiments
 
 for i in 0 1
 do
-    python evaluate.py -c cluster/configs/evaluate_mf_gan2d_april.config --algorithm emf -i $i
+    python evaluate.py -c cluster/configs/evaluate_mf_gan2d_april.config --algorithm emf -i $i --skipgeneration
 done

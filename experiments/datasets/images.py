@@ -44,9 +44,9 @@ class BaseImageLoader(BaseSimulator):
             x = x[:limit_samplesize]
 
         if numpy:
-            logger.warning(
-                "Loading image data as numpy array, these data do not have preprocessing applied! Generally you might want this for evaluation, but not for training."
-            )
+            # 8-bit preprocessing, but without the dequantization
+            assert self.n_bits == 8
+            x = 0.5 + 255.0 * x
             return x, None
 
         # Transforms
