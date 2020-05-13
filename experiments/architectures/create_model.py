@@ -367,7 +367,7 @@ def create_vector_emf(args, simulator):
 
 
 def create_image_emf_unstructured(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None:
+    if simulator.parameter_dim() is not None and args.conditionalouter:
         raise NotImplementedError
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(
