@@ -16,12 +16,12 @@ def save_model_after_every_epoch(filename):
     return callback
 
 
-def plot_sample_images(filename):
+def plot_sample_images(filename, context=None):
     """ Saves model checkpoints. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
-            x = model.sample(n=30).detach().cpu().numpy()
+            x = model.sample(n=30, context=context).detach().cpu().numpy()
             x = np.clip(np.transpose(x, [0, 2, 3, 1]) / 256.0, 0.0, 1.0)
 
             plt.figure(figsize=(6 * 3.0, 5 * 3.0))

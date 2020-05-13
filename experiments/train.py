@@ -319,9 +319,19 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args)), callbacks.print_mf_latent_statistics()]
     callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args)), callbacks.print_mf_latent_statistics()]
     if simulator.is_image():
-        callbacks1.append(callbacks.plot_sample_images(create_filename("training_plot", "sample_epoch_A", args)))
+        callbacks1.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", "sample_epoch_A", args),
+                context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+            )
+        )
+        callbacks2.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", "sample_epoch_B", args),
+                context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+            )
+        )
         callbacks1.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_A", args)))
-        callbacks2.append(callbacks.plot_sample_images(create_filename("training_plot", "sample_epoch_B", args)))
         callbacks2.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_B", args)))
 
     logger.info("Starting training MF, phase 1: manifold training")
@@ -440,7 +450,11 @@ def train_flow(args, dataset, model, simulator):
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
     callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if simulator.is_image():
-        callbacks_.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+        callbacks_.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", None, args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim())
+            )
+        )
 
     logger.info("Starting training standard flow on NLL")
     learning_curves = trainer.train(
@@ -468,7 +482,11 @@ def train_pie(args, dataset, model, simulator):
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
     callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if simulator.is_image():
-        callbacks_.append(callbacks.plot_sample_images(create_filename("training_plot", None, args)))
+        callbacks_.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", None, args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim())
+            )
+        )
 
     logger.info("Starting training PIE on NLL")
     learning_curves = trainer.train(

@@ -99,7 +99,6 @@ def nat_to_bit_per_dim(dim):
     return 1.0 / (np.log(2) * dim)
 
 
-
 def sum_except_batch(x, num_batch_dims=1):
     reduce_dims = list(range(num_batch_dims, x.ndimension()))
     return torch.sum(x, dim=reduce_dims)
