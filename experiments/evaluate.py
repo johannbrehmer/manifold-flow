@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 try:
     from fid_score import calculate_fid_given_paths
 except:
+    logger.warning("Could not import fid_score, make sure that pytorch-fid is in the Python path")
     calculate_fid_given_paths = None
-    logger.info("Could not import fid_score, make sure that pytorch-fid is in the Python path")
 
 
 def parse_args():
@@ -90,7 +90,10 @@ def parse_args():
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
-    parser.add_argument("--linchannels", type=int, default=32, help="Number of channels that are linearly transformed before the projection (for image data)")
+    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
+    parser.add_argument(
+        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
+    )
 
     # Evaluation settings
     parser.add_argument("--gridresolution", type=int, default=11, help="Grid ressolution (per axis) for likelihood eval")
@@ -158,44 +161,53 @@ def evaluate_model_samples(args, simulator, x_gen):
 
     if simulator.is_image():
         if calculate_fid_given_paths is None:
-            logger.info("Cannot compute FID score, did not find FID implementation")
+            logger.warning("Cannot compute FID score, did not find FID implementation")
 
-        logger.info("Calculating FID score of generated samples")
-        # The FID script needs an image folder
-        with tempfile.TemporaryDirectory() as gen_dir:
-            logger.debug(f"Storing generated images in temporary folder {gen_dir}")
-            for i, x in enumerate(x_gen):
-                x = np.clip(np.transpose(x, [1, 2, 0]) / 256.0, 0.0, 1.0)
-                if i == 0:
-                    logger.debug("x: %s", x)
-                plt.imsave(f"{gen_dir}/{i}.jpg", x)
-            true_dir = create_filename("dataset", None, args) + "/test/"
+        else:
+            logger.info("Calculating FID score of generated samples")
+            # The FID script needs an image folder
+            with tempfile.TemporaryDirectory() as gen_dir:
+                logger.debug(f"Storing generated images in temporary folder {gen_dir}")
+                for i, x in enumerate(x_gen):
+                    x = np.clip(np.transpose(x, [1, 2, 0]) / 256.0, 0.0, 1.0)
+                    if i == 0:
+                        logger.debug("x: %s", x)
+                    plt.imsave(f"{gen_dir}/{i}.jpg", x)
+                true_dir = create_filename("dataset", None, args) + "/test/"
 
-            logger.debug("Beginning FID calculation with batchsize 50")
-            fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)
-            logger.info(f"FID = {fid}")
+                logger.debug("Beginning FID calculation with batchsize 50")
+                fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)
+                logger.info(f"FID = {fid}")
 
-            np.save(create_filename("results", "samples_fid", args), [fid])
+                np.save(create_filename("results", "samples_fid", args), [fid])
 
 
-def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False):
+def evaluate_test_samples(
+    args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False, eval_likelihood=True, filename=None, n_save_reco=100
+):
     """ Likelihood evaluation """
 
-    logger.info("Evaluating %s likelihood of %s samples", "true" if model is None else "model", "ood" if ood else "test")
+    logger.info(
+        "Evaluating %s samples, %s likelihood evaluation",
+        "true" if model is None else "model",
+        "ood" if ood else "test",
+        "with" if eval_likelihood else "without",
+    )
 
+    # Prepare
     x = load_test_samples(simulator, args, ood=ood, paramscan=paramscan)[:samples]
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
+    x_recos = []
     reco_error = None
 
+    # Evaluate
     for i, params in enumerate(parameter_grid):
         logger.debug("Evaluating grid point %s / %s", i + 1, len(parameter_grid))
         if model is None:
             params_ = None if params is None else np.asarray([params for _ in x])
             log_prob = simulator.log_density(x, parameters=params_)
-            if reco_error is None:
-                reco_error = np.zeros(x.shape[0])
 
         else:
             log_prob = []
@@ -212,13 +224,15 @@ def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=1
                 if args.algorithm == "flow":
                     x_reco, log_prob_, _ = model(x_, context=params_)
                 elif args.algorithm in ["pie", "slice"]:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode="projection" if args.skiplikelihood else args.algorithm)
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode=args.algorithm if eval_likelihood else "projection")
                 else:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode="projection" if args.skiplikelihood else "mf")
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode="mf" if eval_likelihood else "projection")
 
-                if not args.skiplikelihood:
+                if eval_likelihood:
                     log_prob.append(log_prob_.detach().numpy())
                 reco_error_.append((torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5).detach().numpy())
+                if len(x_recos) < n_save_reco:
+                    x_recos.append(x_reco)
 
             if not args.skiplikelihood:
                 log_prob = np.concatenate(log_prob, axis=0)
@@ -228,9 +242,21 @@ def evaluate_test_samples(args, simulator, model=None, samples=1000, batchsize=1
         if not args.skiplikelihood:
             log_probs.append(log_prob)
 
-    if simulator.parameter_dim() is None:
-        return None if args.skiplikelihood else np.asarray(log_probs[0]), reco_error, None
-    return None if args.skiplikelihood else np.asarray(log_probs), reco_error, parameter_grid
+    # Save results
+    if len(log_probs) > 0:
+        if simulator.parameter_dim() is None:
+            log_probs = log_probs[0]
+
+        np.save(create_filename("results", filename.format("log_likelihood"), args), log_probs)
+
+    if len(x_recos) > 0:
+        np.save(create_filename("results", filename.format("x_reco"), args), log_probs)
+
+    if reco_error is not None:
+        np.save(create_filename("results", filename.format("reco_error"), args), log_probs)
+
+    if parameter_grid is not None:
+        np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
 
 
 def run_mcmc(args, simulator, model=None):
@@ -341,54 +367,31 @@ if __name__ == "__main__":
         exit()
 
     # Evaluate test and ood samples
-    if args.skiplikelihood:
-        logger.info("Skipping likelihood evaluation")
     if args.truth:
-        try:
-            log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
-            np.save(create_filename("results", "true_log_likelihood_test", args), log_likelihood_test)
-
-            if args.skipood:
-                logger.info("Skipping OOD evaluation")
-            else:
-                log_likelihood_ood, _, _ = evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize)
-                np.save(create_filename("results", "true_log_likelihood_ood", args), log_likelihood_ood)
-        except IntractableLikelihoodError:
-            logger.info("Ground truth likelihood not tractable, skipping true log likelihood evaluation of test samples")
-
-    else:
-        log_likelihood_test, reconstruction_error_test, parameter_grid = evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize)
-        if not args.skiplikelihood:
-            np.save(create_filename("results", "model_log_likelihood_test", args), log_likelihood_test)
-        np.save(create_filename("results", "model_reco_error_test", args), reconstruction_error_test)
-        if parameter_grid is not None:
-            np.save(create_filename("results", "parameter_grid_test", args), parameter_grid)
-
+        evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="true_{}_test")
         if args.skipood:
             logger.info("Skipping OOD evaluation")
         else:
-            try:
-                log_likelihood_ood, reconstruction_error_ood, _ = evaluate_test_samples(args, simulator, model, ood=True, batchsize=args.evalbatchsize)
-                if not args.skiplikelihood:
-                    np.save(create_filename("results", "model_log_likelihood_ood", args), log_likelihood_ood)
-                np.save(create_filename("results", "model_reco_error_ood", args), reconstruction_error_ood)
-            except:
-                pass
+            evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="true_{}_ood")
+    else:
+        evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="model_{}_test")
+        if args.skipood:
+            logger.info("Skipping OOD evaluation")
+        else:
+            evaluate_test_samples(
+                args, simulator, model, ood=True, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="model_{}_ood"
+            )
 
+    # Inference on model parameters
     if args.skipmcmc:
         logger.info("Skipping MCMC")
-
-    # Truth MCMC
-    elif simulator.parameter_dim() is not None and args.truth:
+    elif simulator.parameter_dim() is not None and args.truth:  # Truth MCMC
         try:
             true_posterior_samples = run_mcmc(args, simulator)
             np.save(create_filename("mcmcresults", "posterior_samples", args), true_posterior_samples)
-
         except IntractableLikelihoodError:
             logger.info("Ground truth likelihood not tractable, skipping MCMC based on true likelihood")
-
-    # Model-based MCMC
-    elif simulator.parameter_dim() is not None and not args.truth:
+    elif simulator.parameter_dim() is not None and not args.truth:  # Model-based MCMC
         model_posterior_samples = run_mcmc(args, simulator, model)
         np.save(create_filename("mcmcresults", "posterior_samples", args), model_posterior_samples)
 

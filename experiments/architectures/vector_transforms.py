@@ -7,9 +7,7 @@ from manifold_flow.utils import various
 logger = logging.getLogger(__name__)
 
 
-def create_vector_encoder(
-    data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None
-):
+def create_vector_encoder(data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None):
     encoder = nn_.ResidualNet(
         in_features=data_dim,
         out_features=latent_dim,
