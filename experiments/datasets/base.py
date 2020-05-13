@@ -5,6 +5,10 @@ class IntractableLikelihoodError(Exception):
     pass
 
 
+class TorchDatasetNotAvailableError(Exception):
+    pass
+
+
 class BaseSimulator:
     def is_image(self):
         raise NotImplementedError
@@ -25,7 +29,7 @@ class BaseSimulator:
         raise IntractableLikelihoodError
 
     def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
-        raise NotImplementedError
+        raise TorchDatasetNotAvailableError
 
     def sample(self, n, parameters=None):
         raise NotImplementedError

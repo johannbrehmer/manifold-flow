@@ -139,3 +139,13 @@ class EncoderManifoldFlow(BaseFlow):
             log_prob = None
 
         return log_prob
+
+    def _report_model_parameters(self):
+        """ Reports the model size """
+        super()._report_model_parameters()
+        encoder_params = sum(p.numel() for p in self.encoder.parameters())
+        inner_params = sum(p.numel() for p in self.inner_transform.parameters())
+        outer_params = sum(p.numel() for p in self.outer_transform.parameters())
+        logger.info("  Encoder:         %.1f M parameters", encoder_params / 1.0e06)
+        logger.info("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
+        logger.info("  Inner transform: %.1f M parameters", inner_params / 1.0e06)

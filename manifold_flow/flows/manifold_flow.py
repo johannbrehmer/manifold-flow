@@ -161,5 +161,5 @@ class ManifoldFlow(BaseFlow):
         super()._report_model_parameters()
         inner_params = sum(p.numel() for p in self.inner_transform.parameters())
         outer_params = sum(p.numel() for p in self.outer_transform.parameters())
-        logger.debug("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
-        logger.debug("  Inner transform: %.1f M parameters", inner_params / 1.0e06)
+        logger.info("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
+        logger.info("  Inner transform: %.1f M parameters", inner_params / 1.0e06)

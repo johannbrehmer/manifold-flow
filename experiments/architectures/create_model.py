@@ -396,12 +396,8 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         c,
         h,
         w,
-        args.modellatentdim,
-        args.encoderhidden,
-        args.encoderblocks,
-        dropout_probability=args.dropout,
+        latent_dim=args.modellatentdim,
         context_features=simulator.parameter_dim() if args.conditionalouter else None,
-        use_batch_norm=args.batchnorm,
     )
     outer_transform = create_image_transform(
         c,

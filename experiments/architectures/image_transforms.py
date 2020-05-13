@@ -27,27 +27,20 @@ def create_image_encoder(
     h,
     w,
     latent_dim,
-    hidden_channels=100,
-    num_blocks=2,
-    dropout_probability=0.0,
-    use_batch_norm=False,
     context_features=None,
     preprocessing="glow",
     alpha=0.05,
     num_bits=8,
 ):
+    assert context_features is None
     preprocessing_transform = _create_preprocessing(alpha, c, h, num_bits, preprocessing, w)
-    encoder = nn_.ScalarConvResidualNet(
-        in_channels=c,
-        h=h,
-        w=w,
-        out_channels=latent_dim,
-        hidden_channels=hidden_channels,
-        context_features=context_features,
-        num_blocks=num_blocks,
+    encoder = nn_.ModifiedConvEncoder(
+        h, w,
+        channels_in=c,
+        channels_multiplier=1,
+        levels=4,
+        out_features=latent_dim,
         activation=F.relu,
-        dropout_probability=dropout_probability,
-        use_batch_norm=use_batch_norm,
     )
     encoder = PreprocessingEncoder(encoder, preprocessing_transform)
 

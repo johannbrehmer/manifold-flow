@@ -2,7 +2,7 @@ import copy
 import numpy as np
 import logging
 
-from .base import IntractableLikelihoodError
+from .base import IntractableLikelihoodError, TorchDatasetNotAvailableError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
 from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader, IMDBLoader
@@ -54,23 +54,23 @@ def load_training_dataset(simulator, args):
         return simulator.load_dataset(
             train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize, joint_score=args.scandal is not None
         )
-    except NotImplementedError:
+    except TorchDatasetNotAvailableError:
         pass
 
-    x = np.load(create_filename("sample", "x_train", args))
-    try:
-        params = np.load(create_filename("sample", "parameters_train", args))
-    except:
-        params = np.ones(x.shape[0])
-    if args.scandal is not None:
-        raise NotImplementedError("SCANDAL training not implemented for this dataset")
+        x = np.load(create_filename("sample", "x_train", args))
+        try:
+            params = np.load(create_filename("sample", "parameters_train", args))
+        except:
+            params = np.ones(x.shape[0])
+        if args.scandal is not None:
+            raise NotImplementedError("SCANDAL training not implemented for this dataset")
 
-    if args.samplesize is not None:
-        logger.info("Only using %s of %s available samples", args.samplesize, x.shape[0])
-        x = x[: args.samplesize]
-        params = params[: args.samplesize]
+        if args.samplesize is not None:
+            logger.info("Only using %s of %s available samples", args.samplesize, x.shape[0])
+            x = x[: args.samplesize]
+            params = params[: args.samplesize]
 
-    return NumpyDataset(x, params)
+        return NumpyDataset(x, params)
 
 
 def load_test_samples(simulator, args, ood=False, paramscan=False, limit_samplesize=None):
