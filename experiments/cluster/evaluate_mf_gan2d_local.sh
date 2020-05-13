@@ -6,5 +6,5 @@ cd $dir/experiments
 
 for i in 0 1 2 3 4
 do
-    python evaluate.py -c cluster/configs/evaluate_mf_gan2d_april.config -i $i --skipgeneration
+    python evaluate.py -c cluster/configs/evaluate_mf_gan2d_april.config -i $i
 done
