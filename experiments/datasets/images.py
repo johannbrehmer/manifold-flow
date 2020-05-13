@@ -44,8 +44,9 @@ class BaseImageLoader(BaseSimulator):
             x = x[:limit_samplesize]
 
         if numpy:
-            # TODO: implement transforms here as well
-            logger.warning("Loading image data as numpy array, these data do not have preprocessing applied!")
+            logger.warning(
+                "Loading image data as numpy array, these data do not have preprocessing applied! Generally you might want this for evaluation, but not for training."
+            )
             return x, None
 
         # Transforms
@@ -56,6 +57,7 @@ class BaseImageLoader(BaseSimulator):
 
         # Dataset
         dataset = UnlabelledImageDataset(x, transform=transform)
+
         return dataset
 
     def sample(self, n, parameters=None):

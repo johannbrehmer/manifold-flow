@@ -73,10 +73,15 @@ def load_training_dataset(simulator, args):
     return NumpyDataset(x, params)
 
 
-def load_test_samples(simulator, args, ood=False, paramscan=False):
+def load_test_samples(simulator, args, ood=False, paramscan=False, limit_samplesize=None):
     try:
         x, _ = simulator.load_dataset(
-            train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False
+            train=False,
+            numpy=True,
+            dataset_dir=create_filename("dataset", None, args),
+            true_param_id=args.trueparam,
+            joint_score=False,
+            limit_samplesize=limit_samplesize,
         )
 
         # TODO: implement OOD
@@ -87,4 +92,7 @@ def load_test_samples(simulator, args, ood=False, paramscan=False):
         args_ = copy.deepcopy(args)
         args_.i = 0
 
-        return np.load(create_filename("sample", "x_ood" if ood else "x_paramscan" if paramscan else "x_test", args_))
+        x = np.load(create_filename("sample", "x_ood" if ood else "x_paramscan" if paramscan else "x_test", args_))
+        if limit_samplesize is None:
+            x = x[:limit_samplesize]
+        return x

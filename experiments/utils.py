@@ -32,11 +32,11 @@ def create_filename(type_, label, args):
         filename = "{}/experiments/data/learning_curves/{}.npy".format(args.dir, args.modelname)
 
     elif type_ == "results":
-        trueparam_name = "_trueparam{}".format(args.trueparam) if args.trueparam > 0 else ""
+        trueparam_name = "" if args.trueparam is None or args.trueparam == 0 else "_trueparam{}".format(args.trueparam)
         filename = "{}/experiments/data/results/{}_{}{}.npy".format(args.dir, args.modelname, label, trueparam_name)
 
     elif type_ == "mcmcresults":
-        trueparam_name = "_trueparam{}".format(args.trueparam) if args.trueparam > 0 else ""
+        trueparam_name = "" if args.trueparam is None or args.trueparam == 0 else "_trueparam{}".format(args.trueparam)
         chain_name = "_chain{}".format(args.chain) if args.chain > 0 else ""
         filename = "{}/experiments/data/results/{}_{}{}{}.npy".format(args.dir, args.modelname, label, trueparam_name, chain_name)
 

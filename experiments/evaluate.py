@@ -96,8 +96,9 @@ def parse_args():
     )
 
     # Evaluation settings
+    parser.add_argument("--evaluate", type=int, default=1000, help="Number of test samples to be evaluated")
+    parser.add_argument("--generate", type=int, default=10000, help="Number of samples to be generated from model")
     parser.add_argument("--gridresolution", type=int, default=11, help="Grid ressolution (per axis) for likelihood eval")
-    parser.add_argument("--generate", type=int, default=10000, help="Number of samples for generative mode eval")
     parser.add_argument("--observedsamples", type=int, default=20, help="Number of iid samples in synthetic 'observed' set for inference tasks")
     parser.add_argument("--slicesampler", action="store_true", help="Use slice sampler for MCMC")
     parser.add_argument("--mcmcstep", type=float, default=0.15, help="MCMC step size")
@@ -106,7 +107,7 @@ def parse_args():
     parser.add_argument("--burnin", type=int, default=100, help="MCMC burn in")
     parser.add_argument("--evalbatchsize", type=int, default=100, help="Likelihood eval batch size")
     parser.add_argument("--chain", type=int, default=0, help="MCMC chain")
-    parser.add_argument("--trueparam", type=int, default=0, help="Index of true parameter point for inference tasks")
+    parser.add_argument("--trueparam", type=int, default=None, help="Index of true parameter point for inference tasks")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -127,6 +128,8 @@ def sample_from_model(args, model, simulator):
     logger.info("Sampling from model")
     if simulator.parameter_dim() is None:
         x_gen = model.sample(n=args.generate).detach().numpy()
+    elif args.trueparam is None:  # Sample fromm prior
+        raise NotImplementedError  # TODO
     else:
         params = simulator.default_parameters(true_param_id=args.trueparam)
         params = np.asarray([params for _ in range(args.generate)])
@@ -182,20 +185,19 @@ def evaluate_model_samples(args, simulator, x_gen):
                 np.save(create_filename("results", "samples_fid", args), [fid])
 
 
-def evaluate_test_samples(
-    args, simulator, model=None, samples=1000, batchsize=100, ood=False, paramscan=False, eval_likelihood=True, filename=None, n_save_reco=100
-):
+def evaluate_test_samples(args, simulator, filename, model=None, ood=False, paramscan=False, n_save_reco=100):
     """ Likelihood evaluation """
 
     logger.info(
-        "Evaluating %s samples, %s likelihood evaluation",
-        "true" if model is None else "model",
+        "Evaluating %s samples according to %s, %s likelihood evaluation, saving in %s",
+        "the ground truth" if model is None else "a trained model",
         "ood" if ood else "test",
-        "with" if eval_likelihood else "without",
+        "with" if not args.skiplikelihood else "without",
+        filename,
     )
 
     # Prepare
-    x = load_test_samples(simulator, args, ood=ood, paramscan=paramscan)[:samples]
+    x = load_test_samples(simulator, args, ood=ood, paramscan=paramscan, limit_samplesize=args.evaluate)
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
@@ -212,9 +214,9 @@ def evaluate_test_samples(
         else:
             log_prob = []
             reco_error_ = []
-            n_batches = (samples - 1) // batchsize + 1
+            n_batches = (args.evaluate - 1) // args.evalbatchsize + 1
             for j in range(n_batches):
-                x_ = torch.tensor(x[j * batchsize : (j + 1) * batchsize], dtype=torch.float)
+                x_ = torch.tensor(x[j * args.evalbatchsize : (j + 1) * args.evalbatchsize], dtype=torch.float)
                 if params is None:
                     params_ = None
                 else:
@@ -224,11 +226,11 @@ def evaluate_test_samples(
                 if args.algorithm == "flow":
                     x_reco, log_prob_, _ = model(x_, context=params_)
                 elif args.algorithm in ["pie", "slice"]:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode=args.algorithm if eval_likelihood else "projection")
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode=args.algorithm if not args.skiplikelihood else "projection")
                 else:
-                    x_reco, log_prob_, _ = model(x_, context=params_, mode="mf" if eval_likelihood else "projection")
+                    x_reco, log_prob_, _ = model(x_, context=params_, mode="mf" if not args.skiplikelihood else "projection")
 
-                if eval_likelihood:
+                if not args.skiplikelihood:
                     log_prob.append(log_prob_.detach().numpy())
                 reco_error_.append((torch.sum((x_ - x_reco) ** 2, dim=1) ** 0.5).detach().numpy())
                 if len(x_recos) < n_save_reco:
@@ -368,19 +370,17 @@ if __name__ == "__main__":
 
     # Evaluate test and ood samples
     if args.truth:
-        evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="true_{}_test")
+        evaluate_test_samples(args, simulator, model=None, filename="true_{}_test")
         if args.skipood:
             logger.info("Skipping OOD evaluation")
         else:
-            evaluate_test_samples(args, simulator, model=None, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="true_{}_ood")
+            evaluate_test_samples(args, simulator, model=None, filename="true_{}_ood")
     else:
-        evaluate_test_samples(args, simulator, model, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="model_{}_test")
+        evaluate_test_samples(args, simulator, model=model, filename="model_{}_test")
         if args.skipood:
             logger.info("Skipping OOD evaluation")
         else:
-            evaluate_test_samples(
-                args, simulator, model, ood=True, batchsize=args.evalbatchsize, eval_likelihood=not args.skiplikelihood, filename="model_{}_ood"
-            )
+            evaluate_test_samples(args, simulator, model=model, ood=True, filename="model_{}_ood")
 
     # Inference on model parameters
     if args.skipmcmc:
