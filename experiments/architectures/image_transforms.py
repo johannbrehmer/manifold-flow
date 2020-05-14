@@ -23,25 +23,11 @@ class PreprocessingEncoder(nn.Module):
 
 
 def create_image_encoder(
-    c,
-    h,
-    w,
-    latent_dim,
-    context_features=None,
-    preprocessing="glow",
-    alpha=0.05,
-    num_bits=8,
+    c, h, w, latent_dim, context_features=None, preprocessing="glow", alpha=0.05, num_bits=8,
 ):
     assert context_features is None
     preprocessing_transform = _create_preprocessing(alpha, c, h, num_bits, preprocessing, w)
-    encoder = nn_.ModifiedConvEncoder(
-        h, w,
-        channels_in=c,
-        channels_multiplier=1,
-        levels=4,
-        out_features=latent_dim,
-        activation=F.relu,
-    )
+    encoder = nn_.ModifiedConvEncoder(h, w, channels_in=c, channels_multiplier=1, levels=4, out_features=latent_dim, activation=F.relu,)
     encoder = PreprocessingEncoder(encoder, preprocessing_transform)
 
     return encoder
@@ -50,6 +36,7 @@ def create_image_encoder(
 def _create_image_transform_step(
     num_channels,
     hidden_channels=96,
+    context_channels=None,
     actnorm=True,
     coupling_layer_type="rational_quadratic_spline",
     spline_params=None,
@@ -62,6 +49,7 @@ def _create_image_transform_step(
             in_channels=in_channels,
             out_channels=out_channels,
             hidden_channels=hidden_channels,
+            context_channels=context_channels,
             num_blocks=num_res_blocks,
             use_batch_norm=resnet_batchnorm,
             dropout_probability=dropout_prob,
@@ -153,6 +141,7 @@ def create_image_transform(
     postprocessing="permutation",
     postprocessing_layers=2,
     postprocessing_channel_factor=2,
+    context_features=None,
 ):
     assert h == w
     res = h
@@ -186,6 +175,7 @@ def create_image_transform(
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
+                        context_channels=context_features,
                     )
                     for _ in range(steps_per_level)
                 ]
@@ -216,6 +206,7 @@ def create_image_transform(
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
+                        context_channels=context_features,
                     )
                     for _ in range(steps_per_level)
                 ]
@@ -227,12 +218,14 @@ def create_image_transform(
         mct = transforms.CompositeTransform(all_transforms)
 
     # Final transformation
-    final_transform = _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res)
+    final_transform = _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features)
 
     return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
 
 
-def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res):
+def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features):
+    # TODO: take context_features into account here
+
     if postprocessing == "linear":
         final_transform = transforms.LULinear(dim, identity_init=True)
         logger.debug("LULinear(%s)", dim)

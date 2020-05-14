@@ -194,14 +194,14 @@ class ModifiedConvEncoder(nn.Module):
         self.channels_multiplier = channels_multiplier
         self.activation = activation
 
-        self.initial_layer = nn.Conv2d(channels_in, channels_in*channels_multiplier, kernel_size=1)
+        self.initial_layer = nn.Conv2d(channels_in, channels_in * channels_multiplier, kernel_size=1)
         blocks = []
         for i in range(levels):
-            blocks.append(ResidualBlock(in_channels=channels_in*channels_multiplier * 2**i))
-            blocks.append(ResidualBlock(in_channels=channels_in*channels_multiplier * 2**i, resample="down"))
+            blocks.append(ResidualBlock(in_channels=channels_in * channels_multiplier * 2 ** i))
+            blocks.append(ResidualBlock(in_channels=channels_in * channels_multiplier * 2 ** i, resample="down"))
         self.residual_blocks = nn.ModuleList(blocks)
 
-        self.flat_dim = (h // 2**levels) * (w // 2**levels) * channels_in * channels_multiplier * 2**levels
+        self.flat_dim = (h // 2 ** levels) * (w // 2 ** levels) * channels_in * channels_multiplier * 2 ** levels
         self.final_layer = nn.Linear(in_features=self.flat_dim, out_features=out_features)
 
     def forward(self, inputs, context=None):

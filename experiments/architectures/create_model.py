@@ -75,8 +75,6 @@ def create_model(args, simulator):
 
 
 def create_image_mf_unstructured(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None and args.conditionalouter:
-        raise NotImplementedError
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(
         "Creating manifold flow for image data with %s levels and %s steps per level in the outer transformation, %s layers in the inner transformation, transforms %s / %s, %s context features",
@@ -114,6 +112,7 @@ def create_image_mf_unstructured(args, c, h, simulator, w):
         postprocessing_channel_factor=args.linchannelfactor,
         use_actnorm=args.actnorm,
         use_batchnorm=args.batchnorm,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
     )
     inner_transform = create_vector_transform(
         args.modellatentdim,
@@ -139,8 +138,6 @@ def create_image_mf_unstructured(args, c, h, simulator, w):
 
 
 def create_image_mf_structured(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None:
-        raise NotImplementedError
     steps_per_level = args.outerlayers // args.levels
     inner_steps_per_level = args.innerlayers // args.innerlevels
     h_inner = h // 2 ** args.levels
@@ -184,6 +181,7 @@ def create_image_mf_structured(args, c, h, simulator, w):
         postprocessing="none",
         use_actnorm=args.actnorm,
         use_batchnorm=args.batchnorm,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
     )
     inner_transform = create_image_transform(
         inner_channels,
@@ -202,6 +200,7 @@ def create_image_mf_structured(args, c, h, simulator, w):
         postprocessing="permutation",
         use_actnorm=args.actnorm,
         use_batchnorm=args.batchnorm,
+        context_features=simulator.parameter_dim(),
     )
     model = ManifoldFlow(
         data_dim=args.datadim,
@@ -372,8 +371,6 @@ def create_vector_emf(args, simulator):
 
 
 def create_image_emf_unstructured(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None and args.conditionalouter:
-        raise NotImplementedError
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(
         "Creating manifold flow + encoder for image data with %s levels and %s steps per level in the outer transformation, %s layers in the inner transformation, transforms %s / %s, %s context features",
@@ -392,13 +389,7 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         "num_bins": args.splinebins,
         "tail_bound": args.splinerange,
     }
-    encoder = create_image_encoder(
-        c,
-        h,
-        w,
-        latent_dim=args.modellatentdim,
-        context_features=simulator.parameter_dim() if args.conditionalouter else None,
-    )
+    encoder = create_image_encoder(c, h, w, latent_dim=args.modellatentdim, context_features=simulator.parameter_dim() if args.conditionalouter else None,)
     outer_transform = create_image_transform(
         c,
         h,
@@ -418,6 +409,7 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
         postprocessing_channel_factor=args.linchannelfactor,
         use_actnorm=args.actnorm,
         use_batchnorm=args.batchnorm,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
     )
     inner_transform = create_vector_transform(
         args.modellatentdim,
@@ -444,8 +436,6 @@ def create_image_emf_unstructured(args, c, h, simulator, w):
 
 
 def create_image_flow(args, c, h, simulator, w):
-    if simulator.parameter_dim() is not None:
-        raise NotImplementedError
     steps_per_level = (args.innerlayers + args.outerlayers) // args.levels
     logger.info(
         "Creating standard flow for image data with %s levels and %s steps per level, transform %s, %s context features",
@@ -479,6 +469,7 @@ def create_image_flow(args, c, h, simulator, w):
         use_batchnorm=args.batchnorm,
         use_actnorm=args.actnorm,
         postprocessing="permutation",
+        context_features=simulator.parameter_dim(),
     )
     model = Flow(data_dim=args.datadim, transform=transform)
     return model
