@@ -16,4 +16,4 @@ export OMP_NUM_THREADS=1
 dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
-python -u paramscan_images.py -c cluster/configs/paramscan_gan2d_may.config --paramscanstudyname paramscan_gan2d_may_${SLURM_ARRAY_TASK_ID}
+python -u paramscan_images.py -c configs/paramscan_gan2d_may.config --paramscanstudyname paramscan_gan2d_may_${SLURM_ARRAY_TASK_ID}

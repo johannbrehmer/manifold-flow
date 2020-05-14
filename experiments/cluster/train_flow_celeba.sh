@@ -13,4 +13,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/image-mf/experiments
 
-python -u train.py -c cluster/configs/train_flow_celeba_may.config --algorithm flow
+python -u train.py -c configs/train_flow_celeba_may.config --algorithm flow

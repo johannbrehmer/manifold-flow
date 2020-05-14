@@ -14,4 +14,4 @@ export OMP_NUM_THREADS=1
 dir=/data/brehmer/manifold-flow
 cd $dir/experiments
 
-python -u paramscan.py -c cluster/configs/paramscan_lhc_june.config --paramscanstudyname paramscan_june_${SLURM_ARRAY_TASK_ID} --dir $dir
+python -u paramscan.py -c configs/paramscan_lhc_june.config --paramscanstudyname paramscan_june_${SLURM_ARRAY_TASK_ID} --dir $dir
