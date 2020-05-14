@@ -39,7 +39,13 @@ COLOR_FLMEA = COLORS[0]
 
 
 def setup():
-    matplotlib.rcParams.update({'font.size': FONTSIZE})
+    matplotlib.rcParams.update({'font.size': FONTSIZE})  # controls default text sizes
+    matplotlib.rcParams.update({'axes.titlesize': FONTSIZE})  # fontsize of the axes title
+    matplotlib.rcParams.update({'axes.labelsize': FONTSIZE})  # fontsize of the x and y labels
+    matplotlib.rcParams.update({'xtick.labelsize': FONTSIZE})  # fontsize of the tick labels
+    matplotlib.rcParams.update({'ytick.labelsize': FONTSIZE})  # fontsize of the tick labels
+    matplotlib.rcParams.update({'legend.fontsize': FONTSIZE})  # legend fontsize
+    matplotlib.rcParams.update({'figure.titlesize': FONTSIZE})  # fontsize of the figure title
     matplotlib.rcParams.update({'figure.dpi': 600})
     matplotlib.rcParams.update({'savefig.dpi': 600})
 
