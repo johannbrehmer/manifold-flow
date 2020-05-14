@@ -12,7 +12,7 @@
 #SBATCH --output=log_train_flow_imdb_%a.log
 
 source ~/.bashrc
-module load cuda/9.0
+module load cuda/10.1
 conda activate ml
 export OMP_NUM_THREADS=1
 cd /sdcc/u/brehmer/manifold-flow/experiments
