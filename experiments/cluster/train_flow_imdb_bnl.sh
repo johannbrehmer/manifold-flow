@@ -20,4 +20,4 @@ cd /sdcc/u/brehmer/manifold-flow/experiments
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_flow_imdb_april.config -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/train_flow_imdb_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /sdcc/u/brehmer/manifold-flow
