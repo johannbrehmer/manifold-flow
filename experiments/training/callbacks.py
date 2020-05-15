@@ -11,7 +11,7 @@ def save_model_after_every_epoch(filename):
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
         if i_epoch in [0, 1, 4] or (i_epoch + 1) % 10 == 0:
-            torch.save(model.state_dict(), filename.format(i_epoch))
+            torch.save(model.state_dict(), filename.format(i_epoch + 1))
 
     return callback
 
@@ -31,7 +31,7 @@ def plot_sample_images(filename, context=None):
                 plt.gca().get_xaxis().set_visible(False)
                 plt.gca().get_yaxis().set_visible(False)
             plt.tight_layout()
-            plt.savefig(filename.format(i_epoch))
+            plt.savefig(filename.format(i_epoch + 1))
             plt.close()
 
     return callback
@@ -44,7 +44,7 @@ def plot_reco_images(filename):
         if last_batch is None:
             return
 
-        if i_epoch == 0 or (i_epoch + 1) % 10 == 0:
+        if i_epoch in [0, 1, 4] or (i_epoch + 1) % 10 == 0:
             x = last_batch["x"]
             x_reco = last_batch["x_reco"]
 
@@ -64,7 +64,7 @@ def plot_reco_images(filename):
                 plt.gca().get_yaxis().set_visible(False)
 
             plt.tight_layout()
-            plt.savefig(filename.format(i_epoch))
+            plt.savefig(filename.format(i_epoch + 1))
             plt.close()
 
     return callback
