@@ -218,15 +218,21 @@ class Trainer(BaseTrainer):
         early_stopping=True,
         early_stopping_patience=None,
         clip_gradient=1.0,
-        verbose="some",
+        verbose="all",
         parameters=None,
         callbacks=None,
         forward_kwargs=None,
         custom_kwargs=None,
         compute_loss_variance=False,
+        seed=None,
+        initial_epoch=None,
     ):
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
+
+        if seed is not None:
+            np.random.seed(seed)
+            torch.manual_seed(seed)
 
         logger.debug("Initialising training data")
         train_loader, val_loader = self.make_dataloader(dataset, validation_split, batch_size)
@@ -240,7 +246,7 @@ class Trainer(BaseTrainer):
         logger.debug("Setting up LR scheduler")
         if epochs < 2:
             scheduler = None
-            logger.debug("Deactivating scheduler for only %s epoch", epochs)
+            logger.info("Deactivating scheduler for only %s epoch", epochs)
         scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
         sched = None
         epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
@@ -267,8 +273,16 @@ class Trainer(BaseTrainer):
         logger.debug("Beginning main training loop")
         losses_train, losses_val = [], []
 
+        # Resuming training
+        if initial_epoch is None:
+            initial_epoch = 0
+        else:
+            logger.info("Resuming with epoch %s", initial_epoch + 1)
+            for _ in range(initial_epoch):
+                sched.step()  # Hacky, but last_epoch doesn't work when not saving the optimizer state
+
         # Loop over epochs
-        for i_epoch in range(epochs):
+        for i_epoch in range(initial_epoch, epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
             # LR schedule

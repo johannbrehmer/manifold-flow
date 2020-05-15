@@ -24,7 +24,7 @@ def create_filename(type_, label, args):
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
 
     elif type_ == "checkpoint":
-        filename = "{}/experiments/data/models/checkpoints/{}_{}_{}.pt".format(args.dir, args.modelname, "epoch_" if label is None else "epoch" + label, "{}")
+        filename = "{}/experiments/data/models/checkpoints/{}_{}_{}.pt".format(args.dir, args.modelname, "epoch" if label is None else "epoch_" + label, "{}")
 
     elif type_ == "training_plot":
         filename = "{}/experiments/figures/training/{}_{}_{}.pdf".format(args.dir, args.modelname, "epoch" if label is None else label, "{}")

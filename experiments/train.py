@@ -103,6 +103,7 @@ def parse_args():
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
     parser.add_argument("--sequential", action="store_true", help="Use sequential training algorithm")
     parser.add_argument("--load", type=str, default=None, help="Model name to load rather than training from scratch, run is affixed automatically")
+    parser.add_argument("--startepoch", type=int, default=None, help="If not None, this sets the first trained epoch for resuming partial training")
     parser.add_argument("--samplesize", type=int, default=None, help="If not None, number of samples used for training")
     parser.add_argument("--epochs", type=int, default=50, help="Maximum number of epochs")
     parser.add_argument("--subsets", type=int, default=1, help="Number of subsets per epoch in an alternating training")
@@ -124,6 +125,7 @@ def parse_args():
     parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
     parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
     parser.add_argument("--uvl2reg", type=float, default=None, help="Add L2 regularization term on the latent variables after the outer flow (MFMF-M/D only)")
+    parser.add_argument("--seed", type=int, default=1357, help="Random seed (--i is always added to it)")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -141,6 +143,8 @@ def make_training_kwargs(args, dataset):
         "scheduler": optim.lr_scheduler.CosineAnnealingLR,
         "clip_gradient": args.clip,
         "validation_split": args.validationsplit,
+        "seed": args.seed + args.i,
+        "initial_epoch": args.startepoch,
     }
     if args.weightdecay is not None:
         kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}

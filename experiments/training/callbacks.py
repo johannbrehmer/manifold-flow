@@ -10,7 +10,8 @@ def save_model_after_every_epoch(filename):
     """ Saves model checkpoints. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
-        if i_epoch in [0, 1, 4] or (i_epoch + 1) % 10 == 0:
+        torch.save(model.state_dict(), filename.format("last"))
+        if i_epoch(i_epoch + 1) % 10 == 0:
             torch.save(model.state_dict(), filename.format(i_epoch + 1))
 
     return callback
