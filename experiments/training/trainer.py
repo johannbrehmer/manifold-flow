@@ -558,7 +558,7 @@ class ForwardTrainer(Trainer):
         self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
-        if x.size(0) >= 30:
+        if x.size(0) >= 15:
             self.last_batch = {
                 "x": x.detach().cpu().numpy(),
                 "x_reco": x_reco.detach().cpu().numpy(),
@@ -605,7 +605,7 @@ class ConditionalForwardTrainer(Trainer):
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
-        if x.size(0) >= 30:
+        if x.size(0) >= 15:
             self.last_batch = {
                 "x": x.detach().cpu().numpy(),
                 "params": params.detach().cpu().numpy(),
