@@ -126,6 +126,7 @@ def parse_args():
     parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
     parser.add_argument("--uvl2reg", type=float, default=None, help="Add L2 regularization term on the latent variables after the outer flow (MFMF-M/D only)")
     parser.add_argument("--seed", type=int, default=1357, help="Random seed (--i is always added to it)")
+    parser.add_argument("--resume", type=int, default=None, help="Resume training at a given epoch (overwrites --load and --startepoch)")
 
     # Other settings
     parser.add_argument("-c", is_config_file=True, type=str, help="Config file path")
@@ -566,7 +567,11 @@ if __name__ == "__main__":
 
     create_modelname(args)
 
-    if args.load is None:
+    if args.resume is not None:
+        resume_filename = create_filename("resume", None, args)
+        args.startepoch = args.resume
+        logger.info("Resuming training after epoch %s. Loading file %s and continuing with epoch %s.", args.resume, resume_filename)
+    elif args.load is None:
         logger.info("Training model %s with algorithm %s on data set %s", args.modelname, args.algorithm, args.dataset)
     else:
         logger.info("Loading model %s and training it as %s with algorithm %s on data set %s", args.load, args.modelname, args.algorithm, args.dataset)
@@ -582,7 +587,9 @@ if __name__ == "__main__":
     model = create_model(args, simulator)
 
     # Maybe load pretrained model
-    if args.load is not None:
+    if args.resume is not None:
+        model.load_state_dict(torch.load(resume_filename, map_location=torch.device("cpu")))
+    elif args.load is not None:
         args_ = copy.deepcopy(args)
         args_.modelname = args.load
         if args_.i > 0:

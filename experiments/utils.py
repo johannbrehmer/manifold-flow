@@ -26,6 +26,14 @@ def create_filename(type_, label, args):
     elif type_ == "checkpoint":
         filename = "{}/experiments/data/models/checkpoints/{}_{}_{}.pt".format(args.dir, args.modelname, "epoch" if label is None else "epoch_" + label, "{}")
 
+    elif type_ == "resume":
+        for label in ["D_", "C_", "B_", "A_", ""]:
+            filename = "{}/experiments/data/models/checkpoints/{}_epoch_{}last.pt".format(args.dir, args.modelname, label, "last")
+            if os.path.exists(filename):
+                return filename
+
+            raise FileNotFoundError(f"Trying to resume training from {filename}, but file does not exist")
+
     elif type_ == "training_plot":
         filename = "{}/experiments/figures/training/{}_{}_{}.pdf".format(args.dir, args.modelname, "epoch" if label is None else label, "{}")
 
