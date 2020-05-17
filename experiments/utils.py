@@ -32,7 +32,7 @@ def create_filename(type_, label, args):
             if os.path.exists(filename):
                 return filename
 
-            raise FileNotFoundError(f"Trying to resume training from {filename}, but file does not exist")
+        raise FileNotFoundError(f"Trying to resume training from {filename}, but file does not exist")
 
     elif type_ == "training_plot":
         filename = "{}/experiments/figures/training/{}_{}_{}.pdf".format(args.dir, args.modelname, "epoch" if label is None else label, "{}")
