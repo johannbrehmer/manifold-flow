@@ -4,7 +4,7 @@ conda activate ml
 dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
-for run in 0 1 2 3 4 5 6 7
+for run in 2 3 4 5 6 7  # done: 0
 do
     for chain in 0 1 2 3
     do
