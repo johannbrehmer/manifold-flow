@@ -286,6 +286,11 @@ class Trainer(BaseTrainer):
             for _ in range(initial_epoch):
                 sched.step()  # Hacky, but last_epoch doesn't work when not saving the optimizer state
 
+        # Initial callbacks
+        if callbacks is not None:
+            for callback in callbacks:
+                callback(-1, self.model, 0., 0., last_batch=self.last_batch)
+
         # Loop over epochs
         for i_epoch in range(initial_epoch, epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
