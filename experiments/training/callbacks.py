@@ -102,7 +102,7 @@ def print_mf_weight_statistics():
         subset_str = "          " if subset is None or trainer is None else "  {:>2d} / {:>2d}:".format(subset, trainer)
 
         for model_, label_ in zip(models, labels):
-            weights = np.hstack([param.detach().numpy().flatten() for param in model_.parameters()])
+            weights = np.hstack([param.detach().cpu().numpy().flatten() for param in model_.parameters()])
             logger.debug(
                 "{} {:26.26s} mean {:>8.5f}, std {:>8.5f}, range {:>8.5f} ... {:>8.5f}".format(
                     subset_str, label_, np.mean(weights), np.std(weights), np.min(weights), np.max(weights)
