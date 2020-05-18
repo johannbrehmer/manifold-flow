@@ -570,7 +570,7 @@ if __name__ == "__main__":
     if args.resume is not None:
         resume_filename = create_filename("resume", None, args)
         args.startepoch = args.resume
-        logger.info("Resuming training after epoch %s. Loading file %s and continuing with epoch %s.", args.resume, resume_filename)
+        logger.info("Resuming training. Loading file %s and continuing with epoch %s.", resume_filename, args.resume + 1)
     elif args.load is None:
         logger.info("Training model %s with algorithm %s on data set %s", args.modelname, args.algorithm, args.dataset)
     else:
