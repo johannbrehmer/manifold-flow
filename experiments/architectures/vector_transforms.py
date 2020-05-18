@@ -57,9 +57,7 @@ def _create_vector_base_transform(
     )
 
     if base_transform_type == "affine-coupling":
-        return transforms.AffineCouplingTransform(
-            mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)), transform_net_create_fn=transform_net_create_fn
-        )
+        return transforms.AffineCouplingTransform(mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)), transform_net_create_fn=transform_net_create_fn)
     elif base_transform_type == "quadratic-coupling":
         return transforms.PiecewiseQuadraticCouplingTransform(
             mask=various.create_alternating_binary_mask(features, even=(i % 2 == 0)),

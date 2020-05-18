@@ -83,9 +83,7 @@ class BaseLHCLoader(BaseSimulator):
         raise NotImplementedError
 
     def sample_from_prior(self, n):
-        return np.random.normal(
-            loc=np.zeros((n, self._parameter_dim)), scale=self._prior_scale * np.ones((n, self._parameter_dim)), size=(n, self._parameter_dim)
-        )
+        return np.random.normal(loc=np.zeros((n, self._parameter_dim)), scale=self._prior_scale * np.ones((n, self._parameter_dim)), size=(n, self._parameter_dim))
 
     def evaluate_log_prior(self, parameters):
         parameters = parameters.reshape((-1, self.parameter_dim()))
@@ -94,9 +92,7 @@ class BaseLHCLoader(BaseSimulator):
     @staticmethod
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):
         latent_dim = 4 * n_final  # We don't assume an on-shell condition for the final states (e.g. for jets)
-        latent_dim -= (
-            n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
-        )
+        latent_dim -= n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
         # # or if you want to impose energy-momentum conservation
         return latent_dim
 
@@ -345,11 +341,7 @@ class WBFLoader(BaseLHCLoader):
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.minimum(
-            np.abs(x_raw[:, id_phi] - phi_expected),
-            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        )
+        return np.minimum(np.abs(x_raw[:, id_phi] - phi_expected), np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected), np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),)
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
         costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5
@@ -621,11 +613,7 @@ class WBF40DLoader(BaseLHCLoader):
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.minimum(
-            np.abs(x_raw[:, id_phi] - phi_expected),
-            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        )
+        return np.minimum(np.abs(x_raw[:, id_phi] - phi_expected), np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected), np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),)
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
         costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5

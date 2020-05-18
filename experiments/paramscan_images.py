@@ -124,9 +124,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Output -- silence the normal training output
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO)
     if not args.debug:
         for key in logging.Logger.manager.loggerDict:
             if "__main__" not in key and "optuna" not in key:
@@ -186,11 +184,7 @@ if __name__ == "__main__":
                 loss_labels=["MSE", "L2_lat"],
                 loss_weights=[margs.msefactor, 0.0 if margs.uvl2reg is None else margs.uvl2reg],
                 epochs=margs.epochs,
-                parameters=(
-                    list(model.outer_transform.parameters()) + list(model.encoder.parameters())
-                    if args.algorithm == "emf"
-                    else model.outer_transform.parameters()
-                ),
+                parameters=(list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()),
                 forward_kwargs={"mode": "projection", "return_hidden": True},
                 **common_kwargs,
             )

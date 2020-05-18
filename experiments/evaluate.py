@@ -37,15 +37,9 @@ def parse_args():
     parser.add_argument("--truth", action="store_true", help="Evaluate ground truth rather than learned model")
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
     parser.add_argument(
-        "--algorithm",
-        type=str,
-        default="flow",
-        choices=ALGORITHMS,
-        help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
+        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
     )
-    parser.add_argument(
-        "--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others"
-    )
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
 
     # Dataset details
@@ -76,9 +70,7 @@ def parse_args():
     )
     parser.add_argument("--outerlayers", type=int, default=5, help="Number of transformations in f (not counting linear transformations)")
     parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
-    parser.add_argument(
-        "--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)"
-    )
+    parser.add_argument("--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)")
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
@@ -92,9 +84,7 @@ def parse_args():
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument(
-        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
-    )
+    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
 
     # Evaluation settings
     parser.add_argument("--evaluate", type=int, default=1000, help="Number of test samples to be evaluated")
@@ -340,9 +330,7 @@ def run_mcmc(args, simulator, model=None):
 if __name__ == "__main__":
     # Parse args
     args = parse_args()
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO)
     # Silence PIL
     for key in logging.Logger.manager.loggerDict:
         if "PIL" in key:

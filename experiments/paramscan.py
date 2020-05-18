@@ -49,9 +49,7 @@ def parse_args():
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument(
-        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
-    )
+    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
 
     # Fixed training params
     parser.add_argument("--load", type=str, default=None)
@@ -120,9 +118,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Output -- silence the normal training output
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO)
     if not args.debug:
         for key in logging.Logger.manager.loggerDict:
             if "__main__" not in key and "optuna" not in key:
@@ -179,9 +175,7 @@ if __name__ == "__main__":
             loss_labels=["MSE", "L2_lat"],
             loss_weights=[margs.msefactor, 0.0 if margs.uvl2reg is None else margs.uvl2reg],
             epochs=margs.epochs,
-            parameters=(
-                list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
-            ),
+            parameters=(list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()),
             forward_kwargs={"mode": "projection", "return_hidden": True},
             **common_kwargs,
         )

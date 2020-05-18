@@ -295,11 +295,7 @@ def _create_preprocessing(alpha, c, h, num_bits, preprocessing, w):
         logger.debug("Preprocessing: RealNVP")
     elif preprocessing == "realnvp_2alpha":
         preprocess_transform = transforms.CompositeTransform(
-            [
-                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
-                transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)),
-                transforms.Logit(),
-            ]
+            [transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)), transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)), transforms.Logit(),]
         )
         logger.debug("Preprocessing: RealNVP2alpha")
     elif preprocessing == "unflatten":

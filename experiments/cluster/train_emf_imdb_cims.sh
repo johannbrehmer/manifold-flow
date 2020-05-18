@@ -19,4 +19,4 @@ cd $dir/experiments
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_mf_imdb_april.config --algorithm emf -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/train_mf_imdb_april.config --algorithm emf --resume 26 -i ${SLURM_ARRAY_TASK_ID}

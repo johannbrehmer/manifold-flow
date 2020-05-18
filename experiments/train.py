@@ -40,15 +40,9 @@ def parse_args():
     # What what what
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
     parser.add_argument(
-        "--algorithm",
-        type=str,
-        default="flow",
-        choices=ALGORITHMS,
-        help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
+        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
     )
-    parser.add_argument(
-        "--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others"
-    )
+    parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
 
     # Dataset details
@@ -79,9 +73,7 @@ def parse_args():
     )
     parser.add_argument("--outerlayers", type=int, default=5, help="Number of transformations in f (not counting linear transformations)")
     parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
-    parser.add_argument(
-        "--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)"
-    )
+    parser.add_argument("--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)")
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
@@ -95,9 +87,7 @@ def parse_args():
     parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
     parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument(
-        "--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data"
-    )
+    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
@@ -160,13 +150,7 @@ def train_manifold_flow(args, dataset, model, simulator):
 
     assert not args.specified
 
-    trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
     if args.nopretraining or args.epochs // args.prepostfraction < 1:
@@ -238,13 +222,7 @@ def train_manifold_flow(args, dataset, model, simulator):
 def train_specified_manifold_flow(args, dataset, model, simulator):
     """ FOM training """
 
-    trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
 
     logger.info("Starting training MF with specified manifold on NLL")
@@ -269,13 +247,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     assert not args.specified
 
     trainer1 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model)
-    trainer2 = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    trainer2 = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     metatrainer = AlternatingTrainer(model, trainer1, trainer2)
 
     meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "validation_split": args.validationsplit}
@@ -286,9 +258,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
-    phase1_parameters = (
-        list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
-    )
+    phase1_parameters = list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
     phase2_parameters = model.inner_transform.parameters()
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
@@ -332,14 +302,12 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     if simulator.is_image():
         callbacks1.append(
             callbacks.plot_sample_images(
-                create_filename("training_plot", "sample_epoch_A", args),
-                context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+                create_filename("training_plot", "sample_epoch_A", args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
             )
         )
         callbacks2.append(
             callbacks.plot_sample_images(
-                create_filename("training_plot", "sample_epoch_B", args),
-                context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+                create_filename("training_plot", "sample_epoch_B", args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
             )
         )
         callbacks1.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_A", args)))
@@ -351,9 +319,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_labels=["L1" if args.l1 else "MSE"] + ([] if args.uvl2reg is None else ["L2_lat"]),
         loss_weights=[args.msefactor] + ([] if args.uvl2reg is None else [args.uvl2reg]),
         epochs=args.epochs // 2,
-        parameters=(
-            list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
-        ),
+        parameters=(list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()),
         callbacks=callbacks1,
         forward_kwargs={"mode": "projection", "return_hidden": args.uvl2reg is not None},
         initial_epoch=args.startepoch,
@@ -412,13 +378,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
     assert not args.specified
 
     gen_trainer = AdversarialTrainer(model) if simulator.parameter_dim() is None else ConditionalAdversarialTrainer(model)
-    likelihood_trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    likelihood_trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     metatrainer = AlternatingTrainer(model, gen_trainer, likelihood_trainer)
 
     meta_kwargs = {"dataset": dataset, "initial_lr": args.lr, "scheduler": optim.lr_scheduler.CosineAnnealingLR, "validation_split": args.validationsplit}
@@ -454,13 +414,7 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
 
 def train_flow(args, dataset, model, simulator):
     """ AF training """
-    trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
     callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if simulator.is_image():
@@ -487,13 +441,7 @@ def train_flow(args, dataset, model, simulator):
 
 def train_pie(args, dataset, model, simulator):
     """ PIE training """
-    trainer = (
-        ForwardTrainer(model)
-        if simulator.parameter_dim() is None
-        else ConditionalForwardTrainer(model)
-        if args.scandal is None
-        else SCANDALForwardTrainer(model)
-    )
+    trainer = ForwardTrainer(model) if simulator.parameter_dim() is None else ConditionalForwardTrainer(model) if args.scandal is None else SCANDALForwardTrainer(model)
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
     callbacks_ = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))]
     if simulator.is_image():
@@ -502,6 +450,7 @@ def train_pie(args, dataset, model, simulator):
                 create_filename("training_plot", None, args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim())
             )
         )
+        callbacks_.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch", args)))
 
     logger.info("Starting training PIE on NLL")
     learning_curves = trainer.train(
@@ -569,9 +518,7 @@ def train_model(args, dataset, model, simulator):
 if __name__ == "__main__":
     # Logger
     args = parse_args()
-    logging.basicConfig(
-        format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s", datefmt="%H:%M", level=logging.DEBUG if args.debug else logging.INFO)
     logger.info("Hi!")
     logger.debug("Starting train.py with arguments %s", args)
 

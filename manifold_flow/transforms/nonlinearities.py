@@ -234,13 +234,7 @@ class PiecewiseLinearCDF(transforms.Transform):
 
 class PiecewiseQuadraticCDF(transforms.Transform):
     def __init__(
-        self,
-        shape,
-        num_bins=10,
-        tails=None,
-        tail_bound=1.0,
-        min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH,
-        min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT,
+        self, shape, num_bins=10, tails=None, tail_bound=1.0, min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH, min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT,
     ):
         super().__init__()
         self.min_bin_width = min_bin_width
@@ -293,13 +287,7 @@ class PiecewiseQuadraticCDF(transforms.Transform):
 
 class PiecewiseCubicCDF(transforms.Transform):
     def __init__(
-        self,
-        shape,
-        num_bins=10,
-        tails=None,
-        tail_bound=1.0,
-        min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH,
-        min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT,
+        self, shape, num_bins=10, tails=None, tail_bound=1.0, min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH, min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT,
     ):
         super().__init__()
 

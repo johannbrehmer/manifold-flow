@@ -142,11 +142,7 @@ class AlternatingTrainer(BaseTrainer):
 
                         # Number of batches for this subset
                         logger.debug(
-                            "Trainer %s / %s: %s (%s) batches",
-                            i_tr_unsrt + 1,
-                            len(self.trainers),
-                            len(train_loader),
-                            "-" if val_loader is None else len(val_loader),
+                            "Trainer %s / %s: %s (%s) batches", i_tr_unsrt + 1, len(self.trainers), len(train_loader), "-" if val_loader is None else len(val_loader),
                         )
 
                         # Train

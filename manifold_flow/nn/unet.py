@@ -17,9 +17,7 @@ class UNet(nn.Module):
 
         self.initial_layer = nn.Linear(in_features, max_hidden_features)
 
-        self.down_layers = nn.ModuleList(
-            [nn.Linear(in_features=max_hidden_features // 2 ** i, out_features=max_hidden_features // 2 ** (i + 1)) for i in range(num_layers)]
-        )
+        self.down_layers = nn.ModuleList([nn.Linear(in_features=max_hidden_features // 2 ** i, out_features=max_hidden_features // 2 ** (i + 1)) for i in range(num_layers)])
 
         self.middle_layer = nn.Linear(in_features=max_hidden_features // 2 ** num_layers, out_features=max_hidden_features // 2 ** num_layers)
 

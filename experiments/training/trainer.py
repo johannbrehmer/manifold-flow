@@ -99,9 +99,7 @@ class BaseTrainer(object):
 
         if loss_val is not None:
             try:
-                val_report = "           val. loss  {:>8.5f} +/- {:>8.5f} ({})".format(
-                    loss_val[0], loss_val[1], contribution_summary(loss_labels, loss_contributions_val)
-                )
+                val_report = "           val. loss  {:>8.5f} +/- {:>8.5f} ({})".format(loss_val[0], loss_val[1], contribution_summary(loss_labels, loss_contributions_val))
             except:
                 val_report = "           val. loss  {:>8.5f} ({})".format(loss_val, contribution_summary(loss_labels, loss_contributions_val))
             logging_fn(val_report)
@@ -289,7 +287,7 @@ class Trainer(BaseTrainer):
         # Initial callbacks
         if callbacks is not None:
             for callback in callbacks:
-                callback(-1, self.model, 0., 0., last_batch=self.last_batch)
+                callback(-1, self.model, 0.0, 0.0, last_batch=self.last_batch)
 
         # Loop over epochs
         for i_epoch in range(initial_epoch, epochs):
@@ -350,17 +348,7 @@ class Trainer(BaseTrainer):
         return np.array(losses_train), np.array(losses_val)
 
     def epoch(
-        self,
-        i_epoch,
-        train_loader,
-        val_loader,
-        optimizer,
-        loss_functions,
-        loss_weights,
-        clip_gradient=1.0,
-        forward_kwargs=None,
-        custom_kwargs=None,
-        compute_loss_variance=False,
+        self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=1.0, forward_kwargs=None, custom_kwargs=None, compute_loss_variance=False,
     ):
         n_losses = len(loss_weights)
 
@@ -395,9 +383,7 @@ class Trainer(BaseTrainer):
             loss_val = [] if compute_loss_variance else 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
-                batch_loss, batch_loss_contributions = self.batch_val(
-                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                )
+                batch_loss, batch_loss_contributions = self.batch_val(batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
                 if compute_loss_variance:
                     loss_val.append(batch_loss)
                 else:
@@ -476,9 +462,7 @@ class Trainer(BaseTrainer):
             i_batch = i_batch_start_val
 
             for batch_data in val_loader:
-                batch_loss, batch_loss_contributions = self.batch_val(
-                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                )
+                batch_loss, batch_loss_contributions = self.batch_val(batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
                 if compute_loss_variance:
                     loss_val.append(batch_loss)
                 else:

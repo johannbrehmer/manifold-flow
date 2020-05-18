@@ -86,15 +86,7 @@ def create_modelname(args):
 
     if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
         args.modelname = "{}{}_{}_{}_{}_{}_{:.3f}{}{}".format(
-            args.algorithm,
-            "_specified" if args.specified else "",
-            args.modellatentdim,
-            args.dataset,
-            args.truelatentdim,
-            args.datadim,
-            args.epsilon,
-            appendix,
-            run_label,
+            args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, args.truelatentdim, args.datadim, args.epsilon, appendix, run_label,
         )
     else:
         args.modelname = "{}{}_{}_{}{}{}".format(args.algorithm, "_specified" if args.specified else "", args.modellatentdim, args.dataset, appendix, run_label)

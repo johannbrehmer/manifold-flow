@@ -51,9 +51,7 @@ def load_simulator(args):
 
 def load_training_dataset(simulator, args):
     try:
-        return simulator.load_dataset(
-            train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize, joint_score=args.scandal is not None
-        )
+        return simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize, joint_score=args.scandal is not None)
     except TorchDatasetNotAvailableError:
         pass
 
@@ -76,12 +74,7 @@ def load_training_dataset(simulator, args):
 def load_test_samples(simulator, args, ood=False, paramscan=False, limit_samplesize=None):
     try:
         x, _ = simulator.load_dataset(
-            train=False,
-            numpy=True,
-            dataset_dir=create_filename("dataset", None, args),
-            true_param_id=args.trueparam,
-            joint_score=False,
-            limit_samplesize=limit_samplesize,
+            train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False, limit_samplesize=limit_samplesize,
         )
 
         # TODO: implement OOD

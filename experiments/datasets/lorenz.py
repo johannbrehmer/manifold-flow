@@ -82,9 +82,7 @@ class LorenzSimulator(BaseSimulator):
     def _lorenz(sigma, beta, rho, x0, tmax, steps, warmup):
         """ Based on https://en.wikipedia.org/wiki/Lorenz_system#Python_simulation """
 
-        logger.info(
-            f"Solving Lorenz system with sigma = {sigma}, beta = {beta}, rho = {rho}, initial conditions x0 = {x0}, saving {steps} time steps from {warmup} to {tmax}"
-        )
+        logger.info(f"Solving Lorenz system with sigma = {sigma}, beta = {beta}, rho = {rho}, initial conditions x0 = {x0}, saving {steps} time steps from {warmup} to {tmax}")
 
         def dxdt(t, x):
             """ Computes x' for a given x """

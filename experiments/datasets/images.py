@@ -83,20 +83,14 @@ class BaseImageLoader(BaseSimulator):
 class ImageNetLoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64,
-            n_bits=8,
-            random_horizontal_flips=False,
-            gdrive_file_ids={"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"},
+            resolution=64, n_bits=8, random_horizontal_flips=False, gdrive_file_ids={"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"},
         )
 
 
 class CelebALoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64,
-            n_bits=8,
-            random_horizontal_flips=True,
-            gdrive_file_ids={"train": "1bcaqMKWzJ-2ca7HCQrUPwN61lfk115TO", "valid": "1WfE64z9FNgOnLliGshUDuCrGBfJSwf-t"},
+            resolution=64, n_bits=8, random_horizontal_flips=True, gdrive_file_ids={"train": "1bcaqMKWzJ-2ca7HCQrUPwN61lfk115TO", "valid": "1WfE64z9FNgOnLliGshUDuCrGBfJSwf-t"},
         )
 
 
@@ -203,12 +197,7 @@ class IMDBLoader(BaseImageLoader):
         # Dataset
         category = "train" if train else "test"
         return CSVLabelledImageDataset(
-            f"{dataset_dir}/{category}.csv",
-            label_key="age",
-            filename_key="filename",
-            root_dir=dataset_dir,
-            image_transform=transform,
-            label_transform=self.preprocess_params,
+            f"{dataset_dir}/{category}.csv", label_key="age", filename_key="filename", root_dir=dataset_dir, image_transform=transform, label_transform=self.preprocess_params,
         )
 
     def sample_from_prior(self, n):

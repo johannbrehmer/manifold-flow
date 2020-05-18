@@ -107,12 +107,8 @@ class ResidualBlock(nn.Module):
             self.shortcut_layer = nn.Conv2d(in_channels=in_channels, out_channels=2 * in_channels, kernel_size=3, stride=2, padding=1)
             self.residual_2_layer = nn.Conv2d(in_channels=in_channels, out_channels=2 * in_channels, kernel_size=3, stride=2, padding=1)
         elif resample == "up":
-            self.shortcut_layer = nn.ConvTranspose2d(
-                in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1
-            )
-            self.residual_2_layer = nn.ConvTranspose2d(
-                in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1
-            )
+            self.shortcut_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1)
+            self.residual_2_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1)
 
     def forward(self, inputs):
 
