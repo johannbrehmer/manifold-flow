@@ -227,6 +227,9 @@ class Trainer(BaseTrainer):
         seed=None,
         initial_epoch=None,
     ):
+        if initial_epoch is not None and initial_epoch >= epochs:
+            logging.info("Initial epoch is larger than epochs, nothing to do in this training phase!")
+
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
 

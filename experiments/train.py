@@ -145,7 +145,6 @@ def make_training_kwargs(args, dataset):
         "clip_gradient": args.clip,
         "validation_split": args.validationsplit,
         "seed": args.seed + args.i,
-        "initial_epoch": args.startepoch,
     }
     if args.weightdecay is not None:
         kwargs["optimizer_kwargs"] = {"weight_decay": float(args.weightdecay)}
@@ -182,10 +181,12 @@ def train_manifold_flow(args, dataset, model, simulator):
             epochs=args.epochs // args.prepostfraction,
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "pie"},
+            initial_epoch=args.startepoch,
             **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
     else:
+
         logger.info("Starting training MF, phase 1: pretraining on reconstruction error")
         learning_curves = trainer.train(
             loss_functions=[losses.mse],
@@ -194,6 +195,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             epochs=args.epochs // args.prepostfraction,
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args))],
             forward_kwargs={"mode": "projection"},
+            initial_epoch=args.startepoch,
             **common_kwargs,
         )
         learning_curves = np.vstack(learning_curves).T
@@ -207,6 +209,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         parameters=model.parameters(),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
         forward_kwargs={"mode": "mf"},
+        initial_epoch=args.startepoch - (1 - int(args.nopretraining)) * (args.epochs // args.prepostfraction),
         **common_kwargs,
     )
     learning_curves_ = np.vstack(learning_curves_).T
@@ -224,6 +227,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             parameters=model.inner_transform.parameters(),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
             forward_kwargs={"mode": "mf-fixed-manifold"},
+            initial_epoch=args.startepoch - (2 - int(args.nopretraining)) * (args.epochs // args.prepostfraction),
             **common_kwargs,
         )
         learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
@@ -251,6 +255,7 @@ def train_specified_manifold_flow(args, dataset, model, simulator):
         epochs=args.epochs,
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", None, args))],
         forward_kwargs={"mode": "mf"},
+        initial_epoch=args.startepoch,
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
@@ -351,6 +356,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         ),
         callbacks=callbacks1,
         forward_kwargs={"mode": "projection", "return_hidden": args.uvl2reg is not None},
+        initial_epoch=args.startepoch,
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
@@ -364,6 +370,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         parameters=model.inner_transform.parameters(),
         callbacks=callbacks2,
         forward_kwargs={"mode": "mf-fixed-manifold"},
+        initial_epoch=args.startepoch - args.epochs // 2,
         **common_kwargs,
     )
     learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
@@ -391,6 +398,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
         epochs=args.epochs,
         callbacks=callbacks_,
         compute_loss_variance=True,
+        initial_epoch=args.startepoch,
         **common_kwargs,
     )
 
@@ -469,6 +477,7 @@ def train_flow(args, dataset, model, simulator):
         loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.datadim)] + scandal_weight,
         epochs=args.epochs,
         callbacks=callbacks_,
+        initial_epoch=args.startepoch,
         **common_kwargs,
     )
 
@@ -502,6 +511,7 @@ def train_pie(args, dataset, model, simulator):
         epochs=args.epochs,
         callbacks=callbacks_,
         forward_kwargs={"mode": "pie"},
+        initial_epoch=args.startepoch,
         **common_kwargs,
     )
     learning_curves = np.vstack(learning_curves).T
