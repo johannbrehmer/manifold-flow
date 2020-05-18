@@ -12,18 +12,9 @@ from torch import optim
 
 sys.path.append("../")
 
-from training import (
-    ForwardTrainer,
-    losses,
-    ConditionalForwardTrainer,
-    callbacks,
-    AdversarialTrainer,
-    ConditionalAdversarialTrainer,
-    AlternatingTrainer,
-    # VarDimForwardTrainer,
-    # ConditionalVarDimForwardTrainer,
-    SCANDALForwardTrainer,
-)
+from training import losses, callbacks
+from training import ForwardTrainer, ConditionalForwardTrainer, SCANDALForwardTrainer, AdversarialTrainer, ConditionalAdversarialTrainer, AlternatingTrainer
+# from training import VarDimForwardTrainer, ConditionalVarDimForwardTrainer
 from datasets import load_simulator, load_training_dataset, SIMULATORS
 from utils import create_filename, create_modelname, nat_to_bit_per_dim
 from architectures import create_model
@@ -40,7 +31,7 @@ def parse_args():
     # What what what
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
     parser.add_argument(
-        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Algorithm: flow (for AF), mf (for FOM, MFMF), emf (for MFMFE), pie (for PIE), gamf (for MFMF-OT)...",
+        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, MFMF), emf (MFMFE), pie (PIE), gamf (MFMF-OT)...",
     )
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
@@ -53,24 +44,9 @@ def parse_args():
     # Model details
     parser.add_argument("--modellatentdim", type=int, default=2, help="Model manifold dimensionality")
     parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of MFMF")
-    parser.add_argument(
-        "--outertransform",
-        type=str,
-        default="rq-coupling",
-        help="Type of transformations for f: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
-    )
-    parser.add_argument(
-        "--innertransform",
-        type=str,
-        default="rq-coupling",
-        help="Type of transformations for h: affine-coupling, quadratic-coupling, rq-coupling, affine-autoregressive, quadratic-autoregressive, rq-autoregressive. See Neural Spline Flow paper.",
-    )
-    parser.add_argument(
-        "--lineartransform",
-        type=str,
-        default="permutation",
-        help="Type of linear transformations inserted between the base transformations: linear, permutation. See Neural Spline Flow paper.",
-    )
+    parser.add_argument("--outertransform", type=str, default="rq-coupling", help="Scalar base trf. for f: {affine | quadratic | rq}-{coupling | autoregressive}")
+    parser.add_argument("--innertransform", type=str, default="rq-coupling", help="Scalar base trf. for h: {affine | quadratic | rq}-{coupling | autoregressive}")
+    parser.add_argument("--lineartransform", type=str, default="permutation", help="Scalar linear trf: linear | permutation")
     parser.add_argument("--outerlayers", type=int, default=5, help="Number of transformations in f (not counting linear transformations)")
     parser.add_argument("--innerlayers", type=int, default=5, help="Number of transformations in h (not counting linear transformations)")
     parser.add_argument("--conditionalouter", action="store_true", help="If dataset is conditional, use this to make f conditional (otherwise only h is conditional)")
