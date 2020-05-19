@@ -83,14 +83,14 @@ class BaseImageLoader(BaseSimulator):
 class ImageNetLoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64, n_bits=8, random_horizontal_flips=False, gdrive_file_ids={"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "valid": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"},
+            resolution=64, n_bits=8, random_horizontal_flips=False, gdrive_file_ids={"train": "15AMmVSX-LDbP7LqC3R9Ns0RPbDI9301D", "test": "1Me8EhsSwWbQjQ91vRG1emkIOCgDKK4yC"},
         )
 
 
 class CelebALoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64, n_bits=8, random_horizontal_flips=True, gdrive_file_ids={"train": "1bcaqMKWzJ-2ca7HCQrUPwN61lfk115TO", "valid": "1WfE64z9FNgOnLliGshUDuCrGBfJSwf-t"},
+            resolution=64, n_bits=8, random_horizontal_flips=True, gdrive_file_ids={"train": "1bcaqMKWzJ-2ca7HCQrUPwN61lfk115TO", "test": "1WfE64z9FNgOnLliGshUDuCrGBfJSwf-t"},
         )
 
 
