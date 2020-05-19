@@ -4,8 +4,6 @@ from torch import nn
 from torch.nn import functional as F
 import logging
 
-logger = logging.getLogger(__name__)
-
 
 class GatedConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding, dilation=1):
@@ -202,15 +200,11 @@ class ModifiedConvEncoder(nn.Module):
 
     def forward(self, inputs, context=None):
         assert context is None
-        logger.debug(inputs.shape)
         temps = self.initial_layer(inputs)
-        logger.debug(temps.shape)
         for residual_block in self.residual_blocks:
             temps = residual_block(temps)
-            logger.debug(temps.shape)
         temps = self.activation(temps)
         outputs = self.final_layer(temps.reshape(-1, self.flat_dim))
-        logger.debug(outputs.shape)
         return outputs
 
 
