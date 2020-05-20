@@ -321,7 +321,7 @@ class Trainer(BaseTrainer):
                 losses_val.append(loss_val)
             except NanException:
                 logger.info("Ending training during epoch %s because NaNs appeared", i_epoch + 1)
-                break
+                raise
 
             if early_stopping:
                 try:
