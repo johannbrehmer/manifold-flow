@@ -169,12 +169,11 @@ class BaseTrainer(object):
             loss = loss + _w * _l
         return loss
 
-    def optimizer_step(self, optimizer, loss, clip_gradient):
+    def optimizer_step(self, optimizer, loss, clip_gradient, parameters):
         optimizer.zero_grad()
         loss.backward()
         if clip_gradient is not None:
-            grad_norm = clip_grad_norm_(self.model.parameters(), clip_gradient)
-            # logger.debug("  Gradient norm (clipping at %s): %s", clip_gradient, grad_norm)
+            grad_norm = clip_grad_norm_(parameters, clip_gradient)
         optimizer.step()
 
     @staticmethod
@@ -306,6 +305,7 @@ class Trainer(BaseTrainer):
                     loss_functions,
                     loss_weights,
                     clip_gradient,
+                    parameters,
                     forward_kwargs=forward_kwargs,
                     custom_kwargs=custom_kwargs,
                     compute_loss_variance=compute_loss_variance,
@@ -348,7 +348,7 @@ class Trainer(BaseTrainer):
         return np.array(losses_train), np.array(losses_val)
 
     def epoch(
-        self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient=1.0, forward_kwargs=None, custom_kwargs=None, compute_loss_variance=False,
+        self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient, parameters, forward_kwargs=None, custom_kwargs=None, compute_loss_variance=False,
     ):
         n_losses = len(loss_weights)
 
@@ -360,7 +360,7 @@ class Trainer(BaseTrainer):
             if i_batch == 0 and i_epoch == 0:
                 self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
-                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, parameters, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
             if compute_loss_variance:
                 loss_train.append(batch_loss)
@@ -489,11 +489,11 @@ class Trainer(BaseTrainer):
     def first_batch(self, batch_data):
         pass
 
-    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=1.0, forward_kwargs=None, custom_kwargs=None):
+    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient, parameters, forward_kwargs=None, custom_kwargs=None):
         loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
-        self.optimizer_step(optimizer, loss, clip_gradient)
+        self.optimizer_step(optimizer, loss, clip_gradient, parameters)
 
         loss = loss.item()
         loss_contributions = [contrib.item() for contrib in loss_contributions]
