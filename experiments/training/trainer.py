@@ -144,8 +144,8 @@ class BaseTrainer(object):
             np.random.shuffle(indices)
             train_idx, valid_idx = indices[split:], indices[:split]
 
-            logger.debug("Training partition indices: %s", train_idx)
-            logger.debug("Validation partition indices: %s", valid_idx)
+            logger.debug("Training partition indices: %s...", train_idx[:10])
+            logger.debug("Validation partition indices: %s...", valid_idx[:10])
 
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
