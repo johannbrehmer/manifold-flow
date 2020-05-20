@@ -173,7 +173,9 @@ class BaseTrainer(object):
         optimizer.zero_grad()
         loss.backward()
         if clip_gradient is not None:
-            grad_norm = clip_grad_norm_(parameters, clip_gradient)
+            clip_grad_norm_(parameters, clip_gradient)
+            # grad_norm = clip_grad_norm_(parameters_, clip_gradient)
+            # logger.debug("  Gradient norm (clipping at %s): %s", clip_gradient, grad_norm)
         optimizer.step()
 
     @staticmethod
@@ -242,7 +244,7 @@ class Trainer(BaseTrainer):
         logger.debug("Setting up optimizer")
         optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
         if parameters is None:
-            parameters = self.model.parameters()
+            parameters = list(self.model.parameters())
         opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
 
         logger.debug("Setting up LR scheduler")

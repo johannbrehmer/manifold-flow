@@ -166,7 +166,7 @@ def train_manifold_flow(args, dataset, model, simulator):
         loss_labels=["MSE", "NLL"] + scandal_label,
         loss_weights=[args.msefactor, args.addnllfactor * nat_to_bit_per_dim(args.modellatentdim)] + scandal_weight,
         epochs=args.epochs - (2 - int(args.nopretraining) - int(args.noposttraining)) * (args.epochs // args.prepostfraction),
-        parameters=model.parameters(),
+        parameters=list(model.parameters()),
         callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args))],
         forward_kwargs={"mode": "mf"},
         initial_epoch=args.startepoch - (1 - int(args.nopretraining)) * (args.epochs // args.prepostfraction),
@@ -184,7 +184,7 @@ def train_manifold_flow(args, dataset, model, simulator):
             loss_labels=["MSE", "NLL"] + scandal_label,
             loss_weights=[0.0, args.nllfactor * nat_to_bit_per_dim(args.modellatentdim)] + scandal_weight,
             epochs=args.epochs // args.prepostfraction,
-            parameters=model.inner_transform.parameters(),
+            parameters=list(model.inner_transform.parameters()),
             callbacks=[callbacks.save_model_after_every_epoch(create_filename("checkpoint", "C", args))],
             forward_kwargs={"mode": "mf-fixed-manifold"},
             initial_epoch=args.startepoch - (2 - int(args.nopretraining)) * (args.epochs // args.prepostfraction),
@@ -235,7 +235,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
     phase1_parameters = list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
-    phase2_parameters = model.inner_transform.parameters()
+    phase2_parameters = list(model.inner_transform.parameters())
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
@@ -295,7 +295,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_labels=["L1" if args.l1 else "MSE"] + ([] if args.uvl2reg is None else ["L2_lat"]),
         loss_weights=[args.msefactor] + ([] if args.uvl2reg is None else [args.uvl2reg]),
         epochs=args.epochs // 2,
-        parameters=(list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()),
+        parameters=list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else list(model.outer_transform.parameters()),
         callbacks=callbacks1,
         forward_kwargs={"mode": "projection", "return_hidden": args.uvl2reg is not None},
         initial_epoch=args.startepoch,
@@ -309,7 +309,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
         loss_labels=["NLL"] + scandal_label,
         loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.modellatentdim)] + scandal_weight,
         epochs=args.epochs - (args.epochs // 2),
-        parameters=model.inner_transform.parameters(),
+        parameters=list(model.inner_transform.parameters()),
         callbacks=callbacks2,
         forward_kwargs={"mode": "mf-fixed-manifold"},
         initial_epoch=args.startepoch - args.epochs // 2,
@@ -365,8 +365,8 @@ def train_generative_adversarial_manifold_flow_alternating(args, dataset, model,
     phase1_kwargs = {"clip_gradient": args.clip}
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
-    phase1_parameters = model.parameters()
-    phase2_parameters = model.inner_transform.parameters()
+    phase1_parameters = list(model.parameters())
+    phase2_parameters = list(model.inner_transform.parameters())
 
     logger.info("Starting training GAMF, alternating between Sinkhorn divergence and log likelihood")
     learning_curves_ = metatrainer.train(
