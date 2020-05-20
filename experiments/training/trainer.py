@@ -123,6 +123,8 @@ class BaseTrainer(object):
 
     @staticmethod
     def make_dataloader(dataset, validation_split, batch_size, n_workers=4):
+        logger.debug("Setting up dataloaders with %s workers", n_workers)
+
         if validation_split is None or validation_split <= 0.0:
             train_loader = DataLoader(
                 dataset,
@@ -141,6 +143,9 @@ class BaseTrainer(object):
             split = int(np.floor(validation_split * n_samples))
             np.random.shuffle(indices)
             train_idx, valid_idx = indices[split:], indices[:split]
+
+            logger.debug("Training partition indices: %s", train_idx)
+            logger.debug("Validation partition indices: %s", valid_idx)
 
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
