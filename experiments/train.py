@@ -494,8 +494,7 @@ def train_model(args, dataset, model, simulator):
 
 def fix_act_norm_issue(model):
     if isinstance(model, ActNorm):
-        pass
-        # model.initialized=True
+        model.initialized=True
 
     for _, submodel in model._modules.items():
         fix_act_norm_issue(submodel)

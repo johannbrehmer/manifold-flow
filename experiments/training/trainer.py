@@ -376,7 +376,7 @@ class Trainer(BaseTrainer):
             for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
-            self.report_batch(i_epoch, i_batch, True, batch_data)
+            self.report_batch(i_epoch, i_batch, True, batch_data, batch_loss)
 
         loss_contributions_train /= len(train_loader)
         if compute_loss_variance:
@@ -398,7 +398,7 @@ class Trainer(BaseTrainer):
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
-                self.report_batch(i_epoch, i_batch, False, batch_data)
+                self.report_batch(i_epoch, i_batch, False, batch_data, batch_loss)
 
             loss_contributions_val /= len(val_loader)
             if compute_loss_variance:
@@ -451,7 +451,7 @@ class Trainer(BaseTrainer):
             for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
-            self.report_batch(i_epoch, i_batch, True, batch_data)
+            self.report_batch(i_epoch, i_batch, True, batch_data, batch_loss)
 
         i_batch += 1
 
@@ -477,7 +477,7 @@ class Trainer(BaseTrainer):
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
-                self.report_batch(i_epoch, i_batch, False, batch_data)
+                self.report_batch(i_epoch, i_batch, False, batch_data, batch_loss)
 
             i_batch += 1
 
@@ -534,7 +534,7 @@ class Trainer(BaseTrainer):
         """
         raise NotImplementedError
 
-    def report_batch(self, i_epoch, i_batch, train, batch_data):
+    def report_batch(self, i_epoch, i_batch, train, batch_data, batch_loss):
         pass
 
 
