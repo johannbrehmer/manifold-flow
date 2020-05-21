@@ -80,7 +80,9 @@ class ActNorm(transforms.Transform):
             raise TypeError("Number of features must be a positive integer.")
         super().__init__()
 
-        self.initialized = False
+        self.initialized = False  # TODO: this should be a buffer, but I don't want to ruin the already saved models by changing it now
+        # self.register_buffer("initialized", torch.ones(1, dtype=torch.bool))
+
         self.log_scale = nn.Parameter(torch.zeros(features))
         self.shift = nn.Parameter(torch.zeros(features))
 
@@ -142,4 +144,4 @@ class ActNorm(transforms.Transform):
             self.log_scale.data = -torch.log(std)
             self.shift.data = -mu
 
-        self.initialized = True
+        self.initialized = True  # TODO: see above

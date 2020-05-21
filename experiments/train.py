@@ -19,6 +19,7 @@ from datasets import load_simulator, load_training_dataset, SIMULATORS
 from utils import create_filename, create_modelname, nat_to_bit_per_dim
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
+from manifold_flow.transforms.normalization import ActNorm
 
 logger = logging.getLogger(__name__)
 
@@ -491,6 +492,15 @@ def train_model(args, dataset, model, simulator):
     return learning_curves
 
 
+def fix_act_norm_issue(model):
+    if isinstance(model, ActNorm):
+        pass
+        # model.initialized=True
+
+    for _, submodel in model._modules.items():
+        fix_act_norm_issue(submodel)
+
+
 if __name__ == "__main__":
     # Logger
     args = parse_args()
@@ -522,6 +532,8 @@ if __name__ == "__main__":
     # Maybe load pretrained model
     if args.resume is not None:
         model.load_state_dict(torch.load(resume_filename, map_location=torch.device("cpu")))
+        fix_act_norm_issue(model)
+
     elif args.load is not None:
         args_ = copy.deepcopy(args)
         args_.modelname = args.load
@@ -529,6 +541,7 @@ if __name__ == "__main__":
             args_.modelname += "_run{}".format(args_.i)
         logger.info("Loading model %s", args_.modelname)
         model.load_state_dict(torch.load(create_filename("model", None, args_), map_location=torch.device("cpu")))
+        fix_act_norm_issue(model)
 
     # Train and save
     learning_curves = train_model(args, dataset, model, simulator)
