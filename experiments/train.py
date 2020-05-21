@@ -493,8 +493,8 @@ def train_model(args, dataset, model, simulator):
 
 
 def fix_act_norm_issue(model):
-    logger.debug("Fixing initialization state of actnorm layers")
     if isinstance(model, ActNorm):
+        logger.debug("Fixing initialization state of actnorm layer")
         model.initialized=True
 
     for _, submodel in model._modules.items():
