@@ -40,25 +40,17 @@ def create_model(args, simulator):
     elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and not simulator.is_image():
         model = create_vector_mf(args, simulator)
 
-    # M-flow or PIE for image data, with structured (image) latent space
-    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and simulator.is_image() and args.structuredlatents:
-        model = create_image_mf_structured(args, c, h, simulator, w)
-
-    # M-flow or PIE for image data, with scalar latent space
-    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and simulator.is_image() and not args.structuredlatents:
-        model = create_image_mf_unstructured(args, c, h, simulator, w)
+    # M-flow or PIE for image data
+    elif args.algorithm in ["mf", "gamf", "pie"] and not args.specified and simulator.is_image():
+        model = create_image_mf(args, c, h, simulator, w)
 
     # M-flow with sep. encoder for vector data
     elif args.algorithm == "emf" and not simulator.is_image():
         model = create_vector_emf(args, simulator)
 
-    # M-flow with sep. encoder for image data (unstructured latents)
-    elif args.algorithm == "emf" and simulator.is_image() and not args.structuredlatents:
-        model = create_image_emf_unstructured(args, c, h, simulator, w)
-
-    # M-flow with sep. encoder for image data (structured latents)
-    elif args.algorithm == "emf" and simulator.is_image() and args.structuredlatents:
-        raise NotImplementedError
+    # M-flow with sep. encoder for image data
+    elif args.algorithm == "emf" and simulator.is_image():
+        model = create_image_emf(args, c, h, simulator, w)
 
     # # PIE with variable epsilon for vector data
     # elif not simulator.is_image() and args.algorithm == "dough":
@@ -74,7 +66,7 @@ def create_model(args, simulator):
     return model
 
 
-def create_image_mf_unstructured(args, c, h, simulator, w):
+def create_image_mf(args, c, h, simulator, w):
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(
         "Creating manifold flow for image data with %s levels and %s steps per level in the outer transformation, %s layers in the inner transformation, transforms %s / %s, %s context features",
@@ -124,83 +116,6 @@ def create_image_mf_unstructured(args, c, h, simulator, w):
         tail_bound=args.splinerange,
         num_bins=args.splinebins,
         use_batch_norm=args.batchnorm,
-    )
-    model = ManifoldFlow(
-        data_dim=args.datadim,
-        latent_dim=args.modellatentdim,
-        outer_transform=outer_transform,
-        inner_transform=inner_transform,
-        apply_context_to_outer=args.conditionalouter,
-        pie_epsilon=args.pieepsilon,
-        clip_pie=args.pieclip,
-    )
-    return model
-
-
-def create_image_mf_structured(args, c, h, simulator, w):
-    steps_per_level = args.outerlayers // args.levels
-    inner_steps_per_level = args.innerlayers // args.innerlevels
-    h_inner = h // 2 ** args.levels
-    w_inner = w // 2 ** args.levels
-    inner_channels = args.modellatentdim // (h_inner * w_inner)
-    logger.debug("Channels after projection: %s x %s x %s", inner_channels, h_inner, w_inner)
-    assert args.modellatentdim == inner_channels * (h_inner * w_inner)
-    logger.info(
-        "Creating manifold flow for image data with %s levels and %s steps per level in the outer transformation, %s levels and %s steps per level in the inner transformation, %s inner channels, transforms %s / %s, %s context features",
-        args.levels,
-        steps_per_level,
-        args.innerlevels,
-        inner_steps_per_level,
-        inner_channels,
-        args.outertransform,
-        args.innertransform,
-        simulator.parameter_dim(),
-    )
-    spline_params = {
-        "apply_unconditional_transform": False,
-        "min_bin_height": 0.001,
-        "min_bin_width": 0.001,
-        "min_derivative": 0.001,
-        "num_bins": args.splinebins,
-        "tail_bound": args.splinerange,
-    }
-    outer_transform = create_image_transform(
-        c,
-        h,
-        w,
-        levels=args.levels,
-        hidden_channels=100,
-        steps_per_level=steps_per_level,
-        num_res_blocks=2,
-        alpha=0.05,
-        num_bits=8,
-        preprocessing="glow",
-        dropout_prob=args.dropout,
-        multi_scale=True,
-        spline_params=spline_params,
-        postprocessing="none",
-        use_actnorm=args.actnorm,
-        use_batchnorm=args.batchnorm,
-        context_features=simulator.parameter_dim() if args.conditionalouter else None,
-    )
-    inner_transform = create_image_transform(
-        inner_channels,
-        h_inner,
-        w_inner,
-        levels=args.innerlevels,
-        hidden_channels=100,
-        steps_per_level=steps_per_level,
-        num_res_blocks=2,
-        alpha=0.05,
-        num_bits=8,
-        preprocessing="unflatten",
-        dropout_prob=args.dropout,
-        multi_scale=True,
-        spline_params=spline_params,
-        postprocessing="permutation",
-        use_actnorm=args.actnorm,
-        use_batchnorm=args.batchnorm,
-        context_features=simulator.parameter_dim(),
     )
     model = ManifoldFlow(
         data_dim=args.datadim,
@@ -370,7 +285,7 @@ def create_vector_emf(args, simulator):
     return model
 
 
-def create_image_emf_unstructured(args, c, h, simulator, w):
+def create_image_emf(args, c, h, simulator, w):
     steps_per_level = (args.outerlayers) // args.levels
     logger.info(
         "Creating manifold flow + encoder for image data with %s levels and %s steps per level in the outer transformation, %s layers in the inner transformation, transforms %s / %s, %s context features",

@@ -355,7 +355,18 @@ class Trainer(BaseTrainer):
         return np.array(losses_train), np.array(losses_val)
 
     def epoch(
-        self, i_epoch, train_loader, val_loader, optimizer, loss_functions, loss_weights, clip_gradient, parameters, forward_kwargs=None, custom_kwargs=None, compute_loss_variance=False,
+        self,
+        i_epoch,
+        train_loader,
+        val_loader,
+        optimizer,
+        loss_functions,
+        loss_weights,
+        clip_gradient,
+        parameters,
+        forward_kwargs=None,
+        custom_kwargs=None,
+        compute_loss_variance=False,
     ):
         n_losses = len(loss_weights)
 

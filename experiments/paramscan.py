@@ -46,8 +46,6 @@ def parse_args():
     parser.add_argument("--encoderhidden", type=int, default=100)
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
-    parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
-    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
     parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
 

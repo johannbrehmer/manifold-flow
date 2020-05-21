@@ -14,6 +14,7 @@ sys.path.append("../")
 
 from training import losses, callbacks
 from training import ForwardTrainer, ConditionalForwardTrainer, SCANDALForwardTrainer, AdversarialTrainer, ConditionalAdversarialTrainer, AlternatingTrainer
+
 # from training import VarDimForwardTrainer, ConditionalVarDimForwardTrainer
 from datasets import load_simulator, load_training_dataset, SIMULATORS
 from utils import create_filename, create_modelname, nat_to_bit_per_dim
@@ -61,8 +62,6 @@ def parse_args():
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
-    parser.add_argument("--structuredlatents", action="store_true", help="Image data: uses convolutional architecture also for inner transformation h")
-    parser.add_argument("--innerlevels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for inner transformation h)")
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
     parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
 
@@ -495,7 +494,7 @@ def train_model(args, dataset, model, simulator):
 def fix_act_norm_issue(model):
     if isinstance(model, ActNorm):
         logger.debug("Fixing initialization state of actnorm layer")
-        model.initialized=True
+        model.initialized = True
 
     for _, submodel in model._modules.items():
         fix_act_norm_issue(submodel)
