@@ -106,13 +106,13 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
         return fig, ax
 
 
-def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True):
+def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by height """
 
     # Geometry
     left = large_margin if lb_space else small_margin
     right = small_margin
-    top = small_margin
+    top = large_margin if t_space else small_margin
     bottom = large_margin if lb_space else small_margin
 
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
@@ -138,12 +138,12 @@ def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03,
     return fig, gs
 
 
-def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True):
+def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by width """
 
     left = large_margin if lb_space else small_margin
     right = small_margin
-    top = small_margin
+    top = large_margin if t_space else small_margin
     bottom = large_margin if lb_space else small_margin
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     height = width / (left + nx*panel_size + (nx - 1)*sep + right)
