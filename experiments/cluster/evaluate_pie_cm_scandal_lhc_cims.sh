@@ -20,4 +20,4 @@ chain=$((task / 3))
 true=$((task % 3))
 echo "SLURM_ARRAY_TASK_ID = ${SLURM_ARRAY_TASK_ID}, true = ${true}, chain = ${chain}, run = ${run}"
 
-python -u evaluate.py -c configs/evaluate_flow_lhc_june.config --algorithm pie --modelname scandal_conditionalmanifold_june -i $run --trueparam $true --chain $chain
+python -u evaluate.py -c configs/evaluate_flow_lhc_june.config --algorithm pie --conditionalouter --modelname scandal_conditionalmanifold_june -i $run --trueparam $true --chain $chain

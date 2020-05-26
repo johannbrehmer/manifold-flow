@@ -2,6 +2,7 @@ import os
 import logging
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +103,11 @@ def nat_to_bit_per_dim(dim):
 def sum_except_batch(x, num_batch_dims=1):
     reduce_dims = list(range(num_batch_dims, x.ndimension()))
     return torch.sum(x, dim=reduce_dims)
+
+
+def array_to_image_folder(data, folder):
+    for i, x in enumerate(data):
+        x = np.clip(np.transpose(x, [1, 2, 0]) / 256.0, 0.0, 1.0)
+        if i == 0:
+            logger.debug("x: %s", x)
+        plt.imsave(f"{folder}/{i}.jpg", x)

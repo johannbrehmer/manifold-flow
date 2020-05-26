@@ -9,13 +9,13 @@ import torch
 import configargparse
 import copy
 import tempfile
-from matplotlib import pyplot as plt
+import os
 
 sys.path.append("../")
 
 from evaluation import mcmc, sq_maximum_mean_discrepancy
 from datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError
-from utils import create_filename, create_modelname, sum_except_batch
+from utils import create_filename, create_modelname, sum_except_batch, array_to_image_folder
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
 
@@ -156,12 +156,12 @@ def evaluate_model_samples(args, simulator, x_gen):
             # The FID script needs an image folder
             with tempfile.TemporaryDirectory() as gen_dir:
                 logger.debug(f"Storing generated images in temporary folder {gen_dir}")
-                for i, x in enumerate(x_gen):
-                    x = np.clip(np.transpose(x, [1, 2, 0]) / 256.0, 0.0, 1.0)
-                    if i == 0:
-                        logger.debug("x: %s", x)
-                    plt.imsave(f"{gen_dir}/{i}.jpg", x)
-                true_dir = create_filename("dataset", None, args) + "/test/"
+                array_to_image_folder(x_gen, gen_dir)
+
+                true_dir = create_filename("dataset", None, args) + "/test"
+                os.makedirs(os.path.dirname(true_dir), exist_ok=True)
+                if not os.path.exists(f"{true_dir}/0.jpg"):
+                    array_to_image_folder(load_test_samples(simulator, args), true_dir)
 
                 logger.debug("Beginning FID calculation with batchsize 50")
                 fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)

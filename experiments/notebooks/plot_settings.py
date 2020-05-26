@@ -106,14 +106,14 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
         return fig, ax
 
 
-def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True, t_space=False):
+def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by height """
 
     # Geometry
-    left = large_margin if lb_space else small_margin
-    right = small_margin
+    left = large_margin if l_space else small_margin
+    right = large_margin if r_space else small_margin
     top = large_margin if t_space else small_margin
-    bottom = large_margin if lb_space else small_margin
+    bottom = large_margin if b_space else small_margin
 
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     width = height*(left + nx*panel_size + (nx-1)*sep + right)
@@ -138,16 +138,16 @@ def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03,
     return fig, gs
 
 
-def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, lb_space=True, t_space=False):
+def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by width """
 
-    left = large_margin if lb_space else small_margin
-    right = small_margin
+    left = large_margin if l_space else small_margin
+    right = large_margin if r_space else small_margin
     top = large_margin if t_space else small_margin
-    bottom = large_margin if lb_space else small_margin
+    bottom = large_margin if b_space else small_margin
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
     height = width / (left + nx*panel_size + (nx - 1)*sep + right)
-    return grid(nx, ny, height, large_margin, small_margin, sep, lb_space=lb_space)
+    return grid(nx, ny, height, large_margin, small_margin, sep, l_space=l_space, r_space=r_space, t_space=t_space, b_space=b_space)
 
 
 def grid2(nx=4, ny=2, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, sep=0.02, cbar_width=0.04):

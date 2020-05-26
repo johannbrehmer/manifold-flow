@@ -46,7 +46,10 @@ class BaseImageLoader(BaseSimulator):
         if numpy:
             # 8-bit preprocessing, but without the dequantization
             assert self.n_bits == 8
-            x = 0.5 + 255.0 * x
+            if np.max(x) <= 1.0:
+                x = 0.5 + 255.0 * x
+            assert 0. <= np.min(x)
+            assert np.max(x) <= 256.
             return x, None
 
         # Transforms
