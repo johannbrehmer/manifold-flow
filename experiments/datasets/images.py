@@ -187,7 +187,7 @@ class IMDBLoader(BaseImageLoader):
         if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
         if limit_samplesize is not None:
-            raise NotImplementedError("IMDB dataset does not allow limiting the samplesize")
+            raise NotImplementedError("IMDb dataset does not allow limiting the samplesize")
         if numpy:
             raise NotImplementedError("IMDb dataset cannot be loaded as numpy array for now")
 
