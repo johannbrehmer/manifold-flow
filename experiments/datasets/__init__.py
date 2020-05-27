@@ -1,6 +1,6 @@
 import logging
 
-from .base import IntractableLikelihoodError, TorchDatasetNotAvailableError
+from .base import IntractableLikelihoodError, DatasetNotAvailableError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
 from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader, IMDBLoader, FFHQStyleGAN64DLoader

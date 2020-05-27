@@ -14,7 +14,7 @@ import os
 sys.path.append("../")
 
 from evaluation import mcmc, sq_maximum_mean_discrepancy
-from datasets import load_simulator, SIMULATORS, IntractableLikelihoodError
+from datasets import load_simulator, SIMULATORS, IntractableLikelihoodError, DatasetNotAvailableError
 from utils import create_filename, create_modelname, sum_except_batch, array_to_image_folder
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
@@ -172,7 +172,7 @@ def evaluate_model_samples(args, simulator, x_gen):
             np.save(create_filename("results", "samples_fid", args), [fid])
 
 
-def evaluate_test_samples(args, simulator, filename, model=None, ood=False, paramscan=False, n_save_reco=100):
+def evaluate_test_samples(args, simulator, filename, model=None, ood=False, n_save_reco=100):
     """ Likelihood evaluation """
 
     logger.info(
@@ -185,14 +185,7 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
 
     # Prepare
     x, _ = simulator.load_dataset(
-        train=False,
-        numpy=True,
-        ood=ood,
-        paramscan=paramscan,
-        dataset_dir=create_filename("dataset", None, args),
-        true_param_id=args.trueparam,
-        joint_score=False,
-        limit_samplesize=args.evaluate,
+        train=False, numpy=True, ood=ood, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False, limit_samplesize=args.evaluate,
     )
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
@@ -372,13 +365,19 @@ if __name__ == "__main__":
         if args.skipood:
             logger.info("Skipping OOD evaluation")
         else:
-            evaluate_test_samples(args, simulator, model=None, filename="true_{}_ood")
+            try:
+                evaluate_test_samples(args, simulator, ood=True, model=None, filename="true_{}_ood")
+            except DatasetNotAvailableError:
+                logger.info("OOD evaluation not available")
     else:
         evaluate_test_samples(args, simulator, model=model, filename="model_{}_test")
         if args.skipood:
             logger.info("Skipping OOD evaluation")
         else:
-            evaluate_test_samples(args, simulator, model=model, ood=True, filename="model_{}_ood")
+            try:
+                evaluate_test_samples(args, simulator, model=model, ood=True, filename="model_{}_ood")
+            except DatasetNotAvailableError:
+                logger.info("OOD evaluation not available")
 
     # Inference on model parameters
     if args.skipmcmc:

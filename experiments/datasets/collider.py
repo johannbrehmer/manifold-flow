@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import norm
 
 from .utils import NumpyDataset
-from .base import BaseSimulator
+from .base import BaseSimulator, DatasetNotAvailableError
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,9 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
-        if ood or paramscan:
-            raise NotImplementedError()
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, run=0):
+        if ood:
+            raise DatasetNotAvailableError()
 
         # Download missing data
         self._download(dataset_dir)

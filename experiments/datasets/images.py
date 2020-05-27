@@ -4,7 +4,7 @@ from torchvision import transforms as tvt
 from scipy.stats import norm
 
 from .utils import Preprocess, RandomHorizontalFlipTensor
-from .base import BaseSimulator
+from .base import BaseSimulator, DatasetNotAvailableError
 from .utils import UnlabelledImageDataset, CSVLabelledImageDataset, LabelledImageDataset
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,9 @@ class BaseImageLoader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
-        if ood or paramscan:
-            raise NotImplementedError()
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, run=0):
+        if ood:
+            raise DatasetNotAvailableError()
         if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
 
