@@ -22,54 +22,52 @@ Please make sure your Python environment satisfies the requirements in the [envi
 
 ## Data sets
 
-Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `generate_data.py`, `train.py`, and `evaluate.py`
+Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `train.py`, and `evaluate.py`
 --- | --- | --- | --- | ---
 Gaussian on an `n`-sphere | `d` | `n` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
 Conditional Gaussian on a `n`-sphere | `d` | `n` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
-Particle physics data (48-D) | 48 | 14 | 2 | `--dataset lhc`
-Particle physics data (40-D, no angular features) | 40 | 14 | 2 | `--dataset lhc40d`
-Particle physics data (2-D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
+Lorenz system | 3 | 2 | 0 `--dataset lorenz`
+Particle physics | 40 | 14 | 2 | `--dataset lhc40d`
+2-D StyleGAN image manifold | 64 x 64 x 3 | 2 | 0 | `--dataset gan2d`
+64-D StyleGAN image manifold | 64 x 64 x 3 | 64 | 1 | `--dataset gan64d`
+CelebA-HQ | 64 x 64 x 3 | ? | 0 | `--dataset celeba`
+ImageNet | 64 x 64 x 3 | ? | 0 | `--dataset imagenet`
 
-The data for the particle physics experiments is available upon request.
 
-
-## Data generation
-
-Necessary for the first three data sets in the table above. See [experiments/generate_data.py -h](experiments/generate_data.py).
+The data from most data sets should automatically download when required. It is not necessary to generate any data yourself anymore. If there is a problem with that, please let us know.
 
 
 ## Training 
 
 See [experiments/train.py -h](experiments/train.py). Note that the algorithms have different internal names from the acronyms in the paper:
 
-Algorithm | Acronym in paper | Arguments to `train.py`
---- | --- | ---
-Ambient flow | AF | `--algorithm flow`
-Flow on manifold | FOM | `--algorithm mf --specified`
-Pseudo-invertible encoder | PIE | `--algorithm pie`
-Manifold-modeling flow, simultaneous training (not recommended) | MFMF-S | `--algorithm mf`
-Manifold-modeling flow, alternating M/D training | MFMF-M/D | `--algorithm mf --alternate`
-Manifold-modeling flow, sequential M/D training | MFMF-M/D | `--algorithm mf --sequential`
-Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow, alternating Optimal Transport training | MFMF-OT/D | `--algorithm gamf --alternate`
-Manifold-modeling flow with sep. encoder, simultaneous training (not recommended) | MFMFE-S | `--algorithm emf`
-Manifold-modeling flow with sep. encoder, alternating M/D training | MFMFE-M/D | `--algorithm emf --alternate`
-Manifold-modeling flow with sep. encoder, sequential M/D training | MFMFE-M/D | `--algorithm emf --sequential`
+Model (algorithm) | Arguments to `train.py`
+--- | ---
+Ambient flow (AF) | `--algorithm flow`
+Flow on manifold (FOM) | `--algorithm mf --specified`
+Pseudo-invertible encoder (PIE) | `--algorithm pie`
+ℳ-flow, simultaneous training (not recommended) | `--algorithm mf`
+ℳ-flow, alternating M/D training  | `--algorithm mf --alternate`
+ℳ-flow, sequential M/D training  | `--algorithm mf --sequential`
+ℳ-flow, Optimal Transport training  | `--algorithm gamf`
+ℳ-flow, alternating Optimal Transport training  | `--algorithm gamf --alternate`
+ℳ_e-flow, simultaneous training (not recommended)  | `--algorithm emf`
+ℳ_e-flow, alternating M/D training  | `--algorithm emf --alternate`
+ℳ_e-flow, sequential M/D training  | `--algorithm emf --sequential`
 
 
 ## Evaluation 
 
 See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [experiments/notebooks](experiments/notebooks). Note that the algorithms have different internal names from the acronyms in the paper:
 
-Algorithm | Acronym in paper | Arguments to `evaluate.py`
---- | --- | ---
-Ambient flow | AF | `--algorithm flow`
-Flow on manifold | FOM | `--algorithm mf --specified`
-Pseudo-invertible encoder | PIE | `--algorithm pie`
-Manifold-modeling flow (except OT training) | MFMF | `--algorithm mf`
-Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow with sep. encoder | MFMFE | `--algorithm emf`
+Model (algorithm) | Arguments to `train.py`
+--- | ---
+Ambient flow (AF) | `--algorithm flow`
+Flow on manifold (FOM) | `--algorithm mf --specified`
+Pseudo-invertible encoder (PIE) | `--algorithm pie`
+ℳ-flow (except when OT-trained) | `--algorithm mf`
+ℳ-flow, OT training  | `--algorithm gamf`
 
 
 ## Acknowledgements
