@@ -3,7 +3,7 @@ import logging
 from .base import IntractableLikelihoodError, TorchDatasetNotAvailableError
 from .spherical_simulator import SphericalGaussianSimulator
 from .conditional_spherical_simulator import ConditionalSphericalGaussianSimulator
-from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader, IMDBLoader
+from .images import ImageNetLoader, CelebALoader, FFHQStyleGAN2DLoader, IMDBLoader, FFHQStyleGAN64DLoader
 from .collider import WBFLoader, WBF2DLoader, WBF40DLoader
 from .polynomial_surface_simulator import PolynomialSurfaceSimulator
 from .lorenz import LorenzSimulator
@@ -12,7 +12,7 @@ from .utils import NumpyDataset
 logger = logging.getLogger(__name__)
 
 
-SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d", "lorenz", "imdb"]
+SIMULATORS = ["power", "spherical_gaussian", "conditional_spherical_gaussian", "lhc", "lhc40d", "lhc2d", "imagenet", "celeba", "gan2d", "gan64d", "lorenz", "imdb"]
 
 
 def load_simulator(args):
@@ -35,6 +35,8 @@ def load_simulator(args):
         simulator = CelebALoader()
     elif args.dataset == "gan2d":
         simulator = FFHQStyleGAN2DLoader()
+    elif args.dataset == "gan64d":
+        simulator = FFHQStyleGAN64DLoader()
     elif args.dataset == "lorenz":
         simulator = LorenzSimulator()
     elif args.dataset == "imdb":

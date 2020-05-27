@@ -106,6 +106,25 @@ class NumpyDataset(Dataset):
         return data
 
 
+class LabelledImageDataset(Dataset):
+    def __init__(self, x, y, transform=None):
+        self.transform = transform
+        self.x = torch.from_numpy(x)
+        self.y = torch.from_numpy(y)
+
+    def __getitem__(self, index):
+        x = self.x[index, ...]
+        y = self.y[index, ...]
+
+        if self.transform is not None:
+            x = self.transform(x)
+
+        return x, y
+
+    def __len__(self):
+        return self.x.shape[0]
+
+
 class UnlabelledImageDataset(Dataset):
     def __init__(self, array, transform=None):
         self.transform = transform

@@ -1,4 +1,4 @@
-# Manifold-modeling flows
+# Manifold-learning flows
 
 *Johann Brehmer and Kyle Cranmer 2019-2020*
 
@@ -8,26 +8,26 @@
 
 ![MFMF illustration figure](experiments/figures/manifold_density_illustration_combined.png)
 
-In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-modeling flows (MFMFs), a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of manifold-modeling flows as well as some other fow-based generative models, as well as the code for our experiments with them.
+In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-learning flows or ℳ-flows, a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of ℳ-flows, as well as the code for our experiments with them.
 
 **If you do not need the commit history and want to save space, use the `public` branch.**
 
 **Note that this repository is still under development and we're breaking and mending things constantly!**
 
 
-## Getting started
+### Getting started
 
-Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the MFMF-OT algorithm, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
+Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the OT training, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
 
 
-## Data sets
+### Data sets
 
 Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `train.py`, and `evaluate.py`
 --- | --- | --- | --- | ---
 Gaussian on an `n`-sphere | `d` | `n` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
 Conditional Gaussian on a `n`-sphere | `d` | `n` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
-Lorenz system | 3 | 2 | 0 `--dataset lorenz`
+Lorenz system | 3 | 2 | 0 | `--dataset lorenz`
 Particle physics | 40 | 14 | 2 | `--dataset lhc40d`
 2-D StyleGAN image manifold | 64 x 64 x 3 | 2 | 0 | `--dataset gan2d`
 64-D StyleGAN image manifold | 64 x 64 x 3 | 64 | 1 | `--dataset gan64d`
@@ -38,9 +38,11 @@ ImageNet | 64 x 64 x 3 | ? | 0 | `--dataset imagenet`
 The data from most data sets should automatically download when required. It is not necessary to generate any data yourself anymore. If there is a problem with that, please let us know.
 
 
-## Training 
+### Training 
 
-See [experiments/train.py -h](experiments/train.py). Note that the algorithms have different internal names from the acronyms in the paper:
+See [experiments/train.py -h](experiments/train.py). The configurations for the models in the paper can be found in [experiments/configs](experiments/configs).
+
+Note that the algorithms have different internal names from the acronyms in the paper:
 
 Model (algorithm) | Arguments to `train.py`
 --- | ---
@@ -57,7 +59,7 @@ Pseudo-invertible encoder (PIE) | `--algorithm pie`
 ℳ_e-flow, sequential M/D training  | `--algorithm emf --sequential`
 
 
-## Evaluation 
+### Evaluation 
 
 See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [experiments/notebooks](experiments/notebooks). Note that the algorithms have different internal names from the acronyms in the paper:
 
@@ -70,6 +72,6 @@ Pseudo-invertible encoder (PIE) | `--algorithm pie`
 ℳ-flow, OT training  | `--algorithm gamf`
 
 
-## Acknowledgements
+### Acknowledgements
 
 The code is largely based on the excellent [Neural Spline Flow code base](https://github.com/bayesiains/nsf) by C. Durkan, A. Bekasov, I. Murray, and G. Papamakarios, see [1906.04032](https://arxiv.org/abs/1906.04032) for their paper.

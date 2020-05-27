@@ -4,13 +4,15 @@ from torchvision import transforms as tvt
 
 from .utils import Preprocess, RandomHorizontalFlipTensor
 from .base import BaseSimulator
-from .utils import UnlabelledImageDataset, CSVLabelledImageDataset
+from .utils import UnlabelledImageDataset, CSVLabelledImageDataset, LabelledImageDataset
 
 logger = logging.getLogger(__name__)
 
 
 class BaseImageLoader(BaseSimulator):
     def __init__(self, resolution, n_bits=8, random_horizontal_flips=True, gdrive_file_ids=None):
+        super().__init__()
+
         self.gdrive_file_ids = gdrive_file_ids
         self.resolution = resolution
         self.n_bits = n_bits
@@ -112,6 +114,45 @@ class FFHQStyleGAN64DLoader(BaseImageLoader):
     def parameter_dim(self):
         return 1
 
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
+        if ood or paramscan:
+            raise NotImplementedError()
+        if joint_score:
+            raise NotImplementedError("SCANDAL training not implemented for this dataset")
+
+        # Download missing data
+        self._download(dataset_dir)
+
+        # Load data as numpy array
+        x = np.load("{}/x_{}.npy".format(dataset_dir, "train" if train else "test"))
+        params = np.load("{}/params_{}.npy".format(dataset_dir, "train" if train else "test"))
+
+        # Optionally limit sample size
+        if limit_samplesize is not None:
+            logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
+            x = x[:limit_samplesize]
+            params = params[:limit_samplesize]
+
+        if numpy:
+            # 8-bit preprocessing, but without the dequantization
+            assert self.n_bits == 8
+            if np.max(x) <= 1.0:
+                x = 0.5 + 255.0 * x
+            assert 0.0 <= np.min(x)
+            assert np.max(x) <= 256.0
+            return x, None
+
+        # Transforms
+        if train and self.random_horizontal_flips:
+            transform = tvt.Compose([RandomHorizontalFlipTensor(), Preprocess(self.n_bits)])
+        else:
+            transform = Preprocess(self.n_bits)
+
+        # Dataset
+        dataset = LabelledImageDataset(x, params, transform=transform)
+
+        return dataset
+
 
 class IMDBLoader(BaseImageLoader):
     _AGES = np.linspace(18, 80, 63)
@@ -189,7 +230,9 @@ class IMDBLoader(BaseImageLoader):
     def parameter_dim(self):
         return 1
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
+        if ood or paramscan:
+            raise NotImplementedError()
         if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
         if limit_samplesize is not None:
