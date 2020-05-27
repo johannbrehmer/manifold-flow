@@ -1,11 +1,10 @@
-import os
 import logging
 import numpy as np
 from torchvision import transforms as tvt
 
 from .utils import Preprocess, RandomHorizontalFlipTensor
 from .base import BaseSimulator
-from .utils import download_file_from_google_drive, UnlabelledImageDataset, CSVLabelledImageDataset
+from .utils import UnlabelledImageDataset, CSVLabelledImageDataset
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +28,16 @@ class BaseImageLoader(BaseSimulator):
     def parameter_dim(self):
         return None
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
+        if ood or paramscan:
+            raise NotImplementedError()
         if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
 
+        # Download missing data
+        self._download(dataset_dir)
+
         # Load data as numpy array
-        if self.gdrive_file_ids is not None:
-            self._download(dataset_dir)
         x = np.load("{}/{}.npy".format(dataset_dir, "train" if train else "test"))
 
         # Optionally limit sample size
@@ -72,16 +74,6 @@ class BaseImageLoader(BaseSimulator):
     def distance_from_manifold(self, x):
         raise NotImplementedError
 
-    def _download(self, dataset_dir):
-        os.makedirs(dataset_dir, exist_ok=True)
-
-        for tag in ["train", "test"]:
-            filename = "{}/{}.npy".format(dataset_dir, tag)
-            if not os.path.isfile(filename):
-                assert self.gdrive_file_ids is not None
-                logger.info("Downloading {}.npy".format(tag))
-                download_file_from_google_drive(self.gdrive_file_ids[tag], filename)
-
 
 class ImageNetLoader(BaseImageLoader):
     def __init__(self):
@@ -100,11 +92,24 @@ class CelebALoader(BaseImageLoader):
 class FFHQStyleGAN2DLoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64, n_bits=8, random_horizontal_flips=False
+            resolution=64, n_bits=8, random_horizontal_flips=False, gdrive_file_ids={"grid": "12QvzFg9ln9bXvdP1nUGPWqHVqGCBFodR", "train": "1Plel_nOIYUu3E-KKDJ9-yVWPp5HcaGFo", "test":"17NOhkhctMkPWvLOzR5L0WOYxAFlUebjd"}
         )  # For the 2D demo we don't want random flips, as they would essentially create a second disjoint manifold
 
     def latent_dim(self):
         return 2
+
+
+class FFHQStyleGAN64DLoader(BaseImageLoader):
+    def __init__(self):
+        super().__init__(
+            resolution=64, n_bits=8, random_horizontal_flips=False
+        )
+
+    def latent_dim(self):
+        return 64
+
+    def parameter_dim(self):
+        return 1
 
 
 class IMDBLoader(BaseImageLoader):

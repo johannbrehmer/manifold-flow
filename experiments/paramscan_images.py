@@ -14,7 +14,7 @@ import pickle
 sys.path.append("../")
 
 import train, evaluate
-from datasets import load_simulator, load_training_dataset, SIMULATORS, load_test_samples
+from datasets import load_simulator, SIMULATORS
 from training import ForwardTrainer, ConditionalForwardTrainer, losses
 from utils import create_filename, create_modelname
 from architectures import create_model, ALGORITHMS
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
         # Load data
         simulator = load_simulator(margs)
-        dataset = load_training_dataset(simulator, margs)
+        dataset = simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, margs), limit_samplesize=margs.samplesize)
 
         # Create model
         model = create_model(margs, simulator)
@@ -196,7 +196,7 @@ if __name__ == "__main__":
             model.eval()
             torch.cuda.empty_cache()
             np.random.seed(123)
-            dataloader = trainer.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 20, 4)[1]
+            dataloader = trainer.make_dataloader(simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, margs), limit_samplesize=margs.samplesize), args.validationsplit, 20, 4)[1]
             reco_errors = []
             x_plot, x_reco_plot = None, None
             for x, params in dataloader:

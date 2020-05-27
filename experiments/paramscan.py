@@ -14,7 +14,7 @@ import pickle
 sys.path.append("../")
 
 import train, evaluate
-from datasets import load_simulator, load_training_dataset, SIMULATORS, load_test_samples
+from datasets import load_simulator, SIMULATORS
 from training import ForwardTrainer, ConditionalForwardTrainer, losses
 from utils import create_filename, create_modelname
 from architectures import create_model, ALGORITHMS
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
         # Load data
         simulator = load_simulator(margs)
-        dataset = load_training_dataset(simulator, margs)
+        dataset = simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=margs.samplesize)
 
         # Create model
         model = create_model(margs, simulator)
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         logger.info("Evaluating reco error")
         model.eval()
         np.random.seed(123)
-        x, params = next(iter(trainer1.make_dataloader(load_training_dataset(simulator, args), args.validationsplit, 1000, 0)[1]))
+        x, params = next(iter(trainer1.make_dataloader(simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize), args.validationsplit, 1000, 0)[1]))
         x = x.to(device=trainer1.device, dtype=trainer1.dtype)
         params = None if simulator.parameter_dim() is None else params.to(device=trainer1.device, dtype=trainer1.dtype)
         x_reco, _, _ = model(x, context=params, mode="projection")

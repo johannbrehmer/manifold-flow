@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import logging
 
-sys.path.append("../")
+sys.path.append("../../../")
 
 from experiments.datasets import load_simulator
 from experiments.utils import create_filename

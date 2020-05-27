@@ -31,7 +31,13 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
+        if ood or paramscan:
+            raise NotImplementedError()
+
+        # Download missing data
+        self._download(dataset_dir)
+
         # Load numpy arrays
         x = np.load("{}/x_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         params = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
@@ -582,8 +588,19 @@ class WBF40DLoader(BaseLHCLoader):
                 0.47202092213106334,
             ]
         )
-
         self.CLOSURE_LABELS = ["pt"] * 6 + ["eta"] * 6 + ["on-shell"] * 4 + ["decay"] * 8 + ["delta"] * 2
+
+        self.gdrive_file_ids = {
+            "x_train": "1VuG3HTtJHzzQi5KcltMUmxdoADAf34BO",
+            "x_test": "1J6lcVmyFYbRPx9R2GHfoQKKDtNbaD2sD",
+            "x_test1": "1aRtfaBrOP_XfYCwUaNHPlbDOmGjdbQn3",
+            "x_test2":  "1X7SRFjIW2sv8gagyfyFs_iUmPG8mbrIe",
+            "t_xz_train": "190_Hdu2DLB4k8hKTnxrmmj5YgKt_whMA",
+            "theta_train": "1VZljWA63wMOXKAWvGMdMRdDE_TLmAMyV",
+            "theta_test": "1O83YYSAbnkz2tESSKEhSXykspDLHHc6E",
+            "theta_test1": "100GEgVnIX7bEocTR_0Hyu-8xRDKDLjym",
+            "theta_test2": "1vFJYdVzG22ARPuUw7hn-KBF05PRiFDst",
+        }
 
     def default_parameters(self, true_param_id=0):
         if true_param_id == 1:

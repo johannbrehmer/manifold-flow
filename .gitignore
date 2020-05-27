@@ -117,5 +117,5 @@ log/
 other/
 experiments/data/
 experiments/figures/training/
-experiments/datasets/collider_data_generation/data/
-experiments/datasets/collider_data_generation/models/
+experiments/datasets/dataset_preparation/collider/data/
+experiments/datasets/dataset_preparation/collider/models/

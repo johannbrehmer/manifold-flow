@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 class ConditionalSphericalGaussianSimulator(BaseSimulator):
     def __init__(self, latent_dim=8, data_dim=9, min_width=0.1 * np.pi, max_width=0.4 * np.pi, epsilon=0.01):
+        super().__init__()
+
         self._latent_dim = latent_dim
         self._data_dim = data_dim
         self._minphase = 0.5 * np.pi

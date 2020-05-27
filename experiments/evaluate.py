@@ -14,7 +14,7 @@ import os
 sys.path.append("../")
 
 from evaluation import mcmc, sq_maximum_mean_discrepancy
-from datasets import load_simulator, load_test_samples, SIMULATORS, IntractableLikelihoodError
+from datasets import load_simulator, SIMULATORS, IntractableLikelihoodError
 from utils import create_filename, create_modelname, sum_except_batch, array_to_image_folder
 from architectures import create_model
 from architectures.create_model import ALGORITHMS
@@ -106,7 +106,7 @@ def sample_from_model(args, model, simulator, batchsize=200):
         if simulator.parameter_dim() is None:
             x_gen = model.sample(n=n).detach().numpy()
 
-        elif args.trueparam is None:  # Sample fromm prior
+        elif args.trueparam is None:  # Sample from prior
             params = simulator.sample_from_prior(n)
             params = torch.tensor(params, dtype=torch.float)
             x_gen = model.sample(n=n, context=params).detach().numpy()
@@ -150,24 +150,24 @@ def evaluate_model_samples(args, simulator, x_gen):
     if simulator.is_image():
         if calculate_fid_given_paths is None:
             logger.warning("Cannot compute FID score, did not find FID implementation")
+            return
 
-        else:
-            logger.info("Calculating FID score of generated samples")
-            # The FID script needs an image folder
-            with tempfile.TemporaryDirectory() as gen_dir:
-                logger.debug(f"Storing generated images in temporary folder {gen_dir}")
-                array_to_image_folder(x_gen, gen_dir)
+        logger.info("Calculating FID score of generated samples")
+        # The FID script needs an image folder
+        with tempfile.TemporaryDirectory() as gen_dir:
+            logger.debug(f"Storing generated images in temporary folder {gen_dir}")
+            array_to_image_folder(x_gen, gen_dir)
 
-                true_dir = create_filename("dataset", None, args) + "/test"
-                os.makedirs(os.path.dirname(true_dir), exist_ok=True)
-                if not os.path.exists(f"{true_dir}/0.jpg"):
-                    array_to_image_folder(load_test_samples(simulator, args), true_dir)
+            true_dir = create_filename("dataset", None, args) + "/test"
+            os.makedirs(os.path.dirname(true_dir), exist_ok=True)
+            if not os.path.exists(f"{true_dir}/0.jpg"):
+                array_to_image_folder(simulator.load_dataset(train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam)[0], true_dir)
 
-                logger.debug("Beginning FID calculation with batchsize 50")
-                fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)
-                logger.info(f"FID = {fid}")
+            logger.debug("Beginning FID calculation with batchsize 50")
+            fid = calculate_fid_given_paths([gen_dir, true_dir], 50, "", 2048)
+            logger.info(f"FID = {fid}")
 
-                np.save(create_filename("results", "samples_fid", args), [fid])
+            np.save(create_filename("results", "samples_fid", args), [fid])
 
 
 def evaluate_test_samples(args, simulator, filename, model=None, ood=False, paramscan=False, n_save_reco=100):
@@ -182,7 +182,7 @@ def evaluate_test_samples(args, simulator, filename, model=None, ood=False, para
     )
 
     # Prepare
-    x = load_test_samples(simulator, args, ood=ood, paramscan=paramscan, limit_samplesize=args.evaluate)
+    x, _ = simulator.load_dataset(train=False, numpy=True, ood=ood, paramscan=paramscan, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False, limit_samplesize=args.evaluate)
     parameter_grid = [None] if simulator.parameter_dim() is None else simulator.eval_parameter_grid(resolution=args.gridresolution)
 
     log_probs = []
@@ -262,7 +262,7 @@ def run_mcmc(args, simulator, model=None):
 
     # Data
     true_parameters = simulator.default_parameters(true_param_id=args.trueparam)
-    x_obs = load_test_samples(simulator, args)[: args.observedsamples]
+    x_obs, _ = simulator.load_dataset(train=False, numpy=True, dataset_dir=create_filename("dataset", None, args), true_param_id=args.trueparam, joint_score=False, limit_samplesize=args.observedsamples)
     x_obs_ = torch.tensor(x_obs, dtype=torch.float)
 
     if model is None:

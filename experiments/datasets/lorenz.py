@@ -11,6 +11,10 @@ class LorenzSimulator(BaseSimulator):
     """ Lorenz system, following the conventions on https://en.wikipedia.org/wiki/Lorenz_system """
 
     def __init__(self, sigma=10.0, beta=8.0 / 3.0, rho=28.0, x0s=None, tmax=1000.0, steps=1000000, warmup=50.0, seed=711, random_trajectories=100):
+        super().__init__()
+
+        self.gdrive_file_ids = {"x_train": "1nAQQnoTnh8OSbgdXBYu9QiV9vWOAZpIe", "test": "1DpeJJY_ciX6al5sNUdu76h0ewHt-Ebpy"}
+
         assert sigma > 0.0
         assert beta > 0.0
         assert rho > 0.0
