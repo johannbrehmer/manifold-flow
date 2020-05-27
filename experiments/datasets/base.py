@@ -97,7 +97,7 @@ class BaseSimulator:
         raise NotImplementedError
 
     def _download(self, dataset_dir):
-        if self.gdrive_file_ids:
+        if self.gdrive_file_ids is None:
             return
 
         os.makedirs(dataset_dir, exist_ok=True)
