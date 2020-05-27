@@ -111,7 +111,12 @@ class FFHQStyleGAN64DLoader(BaseImageLoader):
             resolution=64,
             n_bits=8,
             random_horizontal_flips=False,
-            gdrive_file_ids={"x_train": "", "x_test": "", "params_train": "1MmIAfT2uvAC7fuC92KxNRQJUAUxsnXZr", "params_test": "1Usly6ZGkrONhGGwMdqQHnorvvGynH1WQ",},
+            gdrive_file_ids={
+                "x_train": "1DayM2MLczvmck9Nfdv_c5oYOD6GbRkGj",
+                "x_test": "1C_bGvPqqSbyLbAKIcuVjyqFToOAh76jQ",
+                "params_train": "1MmIAfT2uvAC7fuC92KxNRQJUAUxsnXZr",
+                "params_test": "1Usly6ZGkrONhGGwMdqQHnorvvGynH1WQ",
+            },
         )
 
     def latent_dim(self):
