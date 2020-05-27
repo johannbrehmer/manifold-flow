@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 from torchvision import transforms as tvt
+from scipy.stats import norm
 
 from .utils import Preprocess, RandomHorizontalFlipTensor
 from .base import BaseSimulator
@@ -106,7 +107,12 @@ class FFHQStyleGAN2DLoader(BaseImageLoader):
 
 class FFHQStyleGAN64DLoader(BaseImageLoader):
     def __init__(self):
-        super().__init__(resolution=64, n_bits=8, random_horizontal_flips=False)
+        super().__init__(
+            resolution=64,
+            n_bits=8,
+            random_horizontal_flips=False,
+            gdrive_file_ids={"x_train": "", "x_test": "", "params_train": "1MmIAfT2uvAC7fuC92KxNRQJUAUxsnXZr", "params_test": "1Usly6ZGkrONhGGwMdqQHnorvvGynH1WQ",},
+        )
 
     def latent_dim(self):
         return 64
@@ -152,6 +158,13 @@ class FFHQStyleGAN64DLoader(BaseImageLoader):
         dataset = LabelledImageDataset(x, params, transform=transform)
 
         return dataset
+
+    def sample_from_prior(self, n):
+        return norm.rvs(lsize=(n, self.parameter_dim()))
+
+    def evaluate_log_prior(self, parameters):
+        parameters = parameters.reshape((-1, self.parameter_dim()))
+        return np.sum(norm.logpdf(parameters), axis=1)
 
 
 class IMDBLoader(BaseImageLoader):
