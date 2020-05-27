@@ -55,8 +55,8 @@ class BaseSimulator:
 
         if limit_samplesize is not None:
             logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
-            x = x[: limit_samplesize]
-            params = params[: limit_samplesize]
+            x = x[:limit_samplesize]
+            params = params[:limit_samplesize]
 
         if numpy:
             return x, params

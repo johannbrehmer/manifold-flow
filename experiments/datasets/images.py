@@ -50,8 +50,8 @@ class BaseImageLoader(BaseSimulator):
             assert self.n_bits == 8
             if np.max(x) <= 1.0:
                 x = 0.5 + 255.0 * x
-            assert 0. <= np.min(x)
-            assert np.max(x) <= 256.
+            assert 0.0 <= np.min(x)
+            assert np.max(x) <= 256.0
             return x, None
 
         # Transforms
@@ -92,7 +92,10 @@ class CelebALoader(BaseImageLoader):
 class FFHQStyleGAN2DLoader(BaseImageLoader):
     def __init__(self):
         super().__init__(
-            resolution=64, n_bits=8, random_horizontal_flips=False, gdrive_file_ids={"grid": "12QvzFg9ln9bXvdP1nUGPWqHVqGCBFodR", "train": "1Plel_nOIYUu3E-KKDJ9-yVWPp5HcaGFo", "test":"17NOhkhctMkPWvLOzR5L0WOYxAFlUebjd"}
+            resolution=64,
+            n_bits=8,
+            random_horizontal_flips=False,
+            gdrive_file_ids={"grid": "12QvzFg9ln9bXvdP1nUGPWqHVqGCBFodR", "train": "1Plel_nOIYUu3E-KKDJ9-yVWPp5HcaGFo", "test": "17NOhkhctMkPWvLOzR5L0WOYxAFlUebjd"},
         )  # For the 2D demo we don't want random flips, as they would essentially create a second disjoint manifold
 
     def latent_dim(self):
@@ -101,9 +104,7 @@ class FFHQStyleGAN2DLoader(BaseImageLoader):
 
 class FFHQStyleGAN64DLoader(BaseImageLoader):
     def __init__(self):
-        super().__init__(
-            resolution=64, n_bits=8, random_horizontal_flips=False
-        )
+        super().__init__(resolution=64, n_bits=8, random_horizontal_flips=False)
 
     def latent_dim(self):
         return 64

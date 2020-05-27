@@ -21,7 +21,6 @@ class SphericalGaussianSimulator(BaseSimulator):
         assert data_dim > latent_dim
         assert epsilon > 0.0
 
-
     def is_image(self):
         return False
 

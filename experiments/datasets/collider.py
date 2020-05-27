@@ -594,7 +594,7 @@ class WBF40DLoader(BaseLHCLoader):
             "x_train": "1VuG3HTtJHzzQi5KcltMUmxdoADAf34BO",
             "x_test": "1J6lcVmyFYbRPx9R2GHfoQKKDtNbaD2sD",
             "x_test1": "1aRtfaBrOP_XfYCwUaNHPlbDOmGjdbQn3",
-            "x_test2":  "1X7SRFjIW2sv8gagyfyFs_iUmPG8mbrIe",
+            "x_test2": "1X7SRFjIW2sv8gagyfyFs_iUmPG8mbrIe",
             "t_xz_train": "190_Hdu2DLB4k8hKTnxrmmj5YgKt_whMA",
             "theta_train": "1VZljWA63wMOXKAWvGMdMRdDE_TLmAMyV",
             "theta_test": "1O83YYSAbnkz2tESSKEhSXykspDLHHc6E",

@@ -52,14 +52,6 @@ def create_model(args, simulator):
     elif args.algorithm == "emf" and simulator.is_image():
         model = create_image_emf(args, c, h, simulator, w)
 
-    # # PIE with variable epsilon for vector data
-    # elif not simulator.is_image() and args.algorithm == "dough":
-    #     model = create_scalar_dough(args, simulator)
-
-    # # PIE with variable epsilon for image data
-    # elif simulator.is_image() and args.algorithm == "dough":
-    #     raise NotImplementedError
-
     else:
         raise ValueError(f"Don't know how to construct model for algorithm {args.algorithm} and image flag {simulator.is_image()}")
 

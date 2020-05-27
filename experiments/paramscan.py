@@ -197,7 +197,13 @@ if __name__ == "__main__":
         logger.info("Evaluating reco error")
         model.eval()
         np.random.seed(123)
-        x, params = next(iter(trainer1.make_dataloader(simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize), args.validationsplit, 1000, 0)[1]))
+        x, params = next(
+            iter(
+                trainer1.make_dataloader(
+                    simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, args), limit_samplesize=args.samplesize), args.validationsplit, 1000, 0
+                )[1]
+            )
+        )
         x = x.to(device=trainer1.device, dtype=trainer1.dtype)
         params = None if simulator.parameter_dim() is None else params.to(device=trainer1.device, dtype=trainer1.dtype)
         x_reco, _, _ = model(x, context=params, mode="projection")

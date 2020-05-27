@@ -196,7 +196,9 @@ if __name__ == "__main__":
             model.eval()
             torch.cuda.empty_cache()
             np.random.seed(123)
-            dataloader = trainer.make_dataloader(simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, margs), limit_samplesize=margs.samplesize), args.validationsplit, 20, 4)[1]
+            dataloader = trainer.make_dataloader(
+                simulator.load_dataset(train=True, dataset_dir=create_filename("dataset", None, margs), limit_samplesize=margs.samplesize), args.validationsplit, 20, 4
+            )[1]
             reco_errors = []
             x_plot, x_reco_plot = None, None
             for x, params in dataloader:
