@@ -14,7 +14,7 @@ def save_model_after_every_epoch(filename):
             return
 
         torch.save(model.state_dict(), filename.format("last"))
-        if (i_epoch + 1) % 10 == 0:
+        if (i_epoch + 1) % 50 == 0:
             torch.save(model.state_dict(), filename.format(i_epoch + 1))
 
     return callback
