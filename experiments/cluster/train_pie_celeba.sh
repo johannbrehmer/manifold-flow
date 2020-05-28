@@ -16,4 +16,4 @@ cd /scratch/jb6504/manifold-flow/experiments
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_pie_celeba_april.config -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/train_pie_celeba_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
