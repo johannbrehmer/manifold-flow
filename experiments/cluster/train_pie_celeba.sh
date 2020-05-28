@@ -8,7 +8,7 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 
-# module load cuda/10.1.105
+module load cuda/10.1.105
 source activate ml2
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
