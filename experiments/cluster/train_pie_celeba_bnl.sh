@@ -1,17 +1,21 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-p-c
-#SBATCH --output=log_train_pie_celeba_%a.log
+#SBATCH -p usatlas
+#SBATCH -t 1-00:00:00
+#SBATCH --qos=usatlas
+#SBATCH --account=tier3
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32GB
-#SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
+#SBATCH --mem=32GB
+#SBATCH --job-name=t-pie-c
+#SBATCH --output=log_train_pie_celeba_%a.log
 
-# module load cuda/10.1.105
-source activate ml2
+source ~/.bashrc
+module load cuda/10.1
+conda activate ml
 export OMP_NUM_THREADS=1
-cd /scratch/jb6504/manifold-flow/experiments
+cd /sdcc/u/brehmer/manifold-flow/experiments
 
 nvcc --version
 nvidia-smi
