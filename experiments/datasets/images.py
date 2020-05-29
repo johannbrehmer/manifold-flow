@@ -113,9 +113,9 @@ class FFHQStyleGAN64DLoader(BaseImageLoader):
             random_horizontal_flips=False,
             gdrive_file_ids={
                 "x_train": "1DayM2MLczvmck9Nfdv_c5oYOD6GbRkGj",
-                "x_test": "1C_bGvPqqSbyLbAKIcuVjyqFToOAh76jQ",
+                "x_test": "1gJuOOm9x5sNytuKmYqZ83-ieicfJsXj5",
                 "params_train": "1MmIAfT2uvAC7fuC92KxNRQJUAUxsnXZr",
-                "params_test": "1Usly6ZGkrONhGGwMdqQHnorvvGynH1WQ",
+                "params_test": "1day5UUZBRxAfvQsmKxir8KL1RAYbsIY9",
             },
         )
 

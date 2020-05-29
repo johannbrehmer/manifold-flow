@@ -179,7 +179,7 @@ class BaseTrainer(object):
         loss.backward()
         if clip_gradient is not None:
             clip_grad_norm_(parameters, clip_gradient)
-            # grad_norm = clip_grad_norm_(parameters_, clip_gradient)
+            # grad_norm = clip_grad_norm_(parameters, clip_gradient)
             # logger.debug("  Gradient norm (clipping at %s): %s", clip_gradient, grad_norm)
         optimizer.step()
 
