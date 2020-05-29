@@ -127,7 +127,7 @@ class FFHQStyleGAN64DLoader(BaseImageLoader):
 
     def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, paramscan=False, run=0):
         if ood or paramscan:
-            raise NotImplementedError()
+            raise DatasetNotAvailableError()
         if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
 
