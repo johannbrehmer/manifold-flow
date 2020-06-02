@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-source activate ml
+conda activate ml
 dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
-
-python -u evaluate.py -c cluster/configs/evaluate_lhc_may.config --dataset lhc2d --modellatentdim 2 --modelname may --algorithm flow --dir $dir
+python -u train.py -c configs/train_mfmf_gan2d_april.config --modelname debug --algorithm mf --debug --batchsize 100 --samplesize 1000 --epochs 10 --dir $dir

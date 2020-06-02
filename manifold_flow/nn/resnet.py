@@ -43,9 +43,7 @@ class ResidualBlock(nn.Module):
 class ResidualNet(nn.Module):
     """A general-purpose residual network. Works only with 1-dim inputs."""
 
-    def __init__(
-        self, in_features, out_features, hidden_features, context_features=None, num_blocks=2, activation=F.relu, dropout_probability=0.0, use_batch_norm=False
-    ):
+    def __init__(self, in_features, out_features, hidden_features, context_features=None, num_blocks=2, activation=F.relu, dropout_probability=0.0, use_batch_norm=False):
         super().__init__()
         self.hidden_features = hidden_features
         self.context_features = context_features
@@ -56,11 +54,7 @@ class ResidualNet(nn.Module):
         self.blocks = nn.ModuleList(
             [
                 ResidualBlock(
-                    features=hidden_features,
-                    context_features=context_features,
-                    activation=activation,
-                    dropout_probability=dropout_probability,
-                    use_batch_norm=use_batch_norm,
+                    features=hidden_features, context_features=context_features, activation=activation, dropout_probability=dropout_probability, use_batch_norm=use_batch_norm,
                 )
                 for _ in range(num_blocks)
             ]
@@ -112,7 +106,7 @@ class ConvResidualBlock(nn.Module):
 
 class ConvResidualNet(nn.Module):
     def __init__(
-        self, in_channels, out_channels, hidden_channels, context_channels=None, num_blocks=2, activation=F.relu, dropout_probability=0.0, use_batch_norm=False
+        self, in_channels, out_channels, hidden_channels, context_channels=None, num_blocks=2, activation=F.relu, dropout_probability=0.0, use_batch_norm=False,
     ):
         super().__init__()
         self.context_channels = context_channels
@@ -124,11 +118,7 @@ class ConvResidualNet(nn.Module):
         self.blocks = nn.ModuleList(
             [
                 ConvResidualBlock(
-                    channels=hidden_channels,
-                    context_channels=context_channels,
-                    activation=activation,
-                    dropout_probability=dropout_probability,
-                    use_batch_norm=use_batch_norm,
+                    channels=hidden_channels, context_channels=context_channels, activation=activation, dropout_probability=dropout_probability, use_batch_norm=use_batch_norm,
                 )
                 for _ in range(num_blocks)
             ]
@@ -136,6 +126,12 @@ class ConvResidualNet(nn.Module):
         self.final_layer = nn.Conv2d(hidden_channels, out_channels, kernel_size=1, padding=0)
 
     def forward(self, inputs, context=None):
+        # Blow up vector context to image dimensions
+        if context is not None and len(context.size()) < len(inputs.size()):
+            assert len(context.size()) == 2
+            assert len(inputs.size()) == 4
+            context = context.unsqueeze(1).unsqueeze(2).expand(-1, -1, inputs.size(2), inputs.size(3))
+
         if context is None:
             temps = self.initial_layer(inputs)
         else:
@@ -151,13 +147,7 @@ def main():
     inputs = torch.rand(batch_size, channels, height, width)
     context = torch.rand(batch_size, channels // 2, height, width)
     net = ConvResidualNet(
-        in_channels=channels,
-        out_channels=2 * channels,
-        hidden_channels=32,
-        context_channels=channels // 2,
-        num_blocks=2,
-        dropout_probability=0.1,
-        use_batch_norm=True,
+        in_channels=channels, out_channels=2 * channels, hidden_channels=32, context_channels=channels // 2, num_blocks=2, dropout_probability=0.1, use_batch_norm=True,
     )
     print(various.get_num_parameters(net))
     outputs = net(inputs, context)

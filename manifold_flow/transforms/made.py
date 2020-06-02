@@ -55,9 +55,7 @@ class MaskedFeedforwardBlock(nn.Module):
     the number of input features.
     """
 
-    def __init__(
-        self, in_degrees, autoregressive_features, context_features=None, random_mask=False, activation=F.relu, dropout_probability=0.0, use_batch_norm=False
-    ):
+    def __init__(self, in_degrees, autoregressive_features, context_features=None, random_mask=False, activation=F.relu, dropout_probability=0.0, use_batch_norm=False):
         super().__init__()
         features = len(in_degrees)
 
@@ -71,9 +69,7 @@ class MaskedFeedforwardBlock(nn.Module):
             raise NotImplementedError()
 
         # Masked linear.
-        self.linear = MaskedLinear(
-            in_degrees=in_degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=random_mask, is_output=False
-        )
+        self.linear = MaskedLinear(in_degrees=in_degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=random_mask, is_output=False)
         self.degrees = self.linear.degrees
 
         # Activation and dropout.
@@ -122,12 +118,8 @@ class MaskedResidualBlock(nn.Module):
             self.batch_norm_layers = nn.ModuleList([nn.BatchNorm1d(features, eps=1e-3) for _ in range(2)])
 
         # Masked linear.
-        linear_0 = MaskedLinear(
-            in_degrees=in_degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=False, is_output=False
-        )
-        linear_1 = MaskedLinear(
-            in_degrees=linear_0.degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=False, is_output=False
-        )
+        linear_0 = MaskedLinear(in_degrees=in_degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=False, is_output=False)
+        linear_1 = MaskedLinear(in_degrees=linear_0.degrees, out_features=features, autoregressive_features=autoregressive_features, random_mask=False, is_output=False)
         self.linear_layers = nn.ModuleList([linear_0, linear_1])
         self.degrees = linear_1.degrees
         if torch.all(self.degrees >= in_degrees).item() != 1:

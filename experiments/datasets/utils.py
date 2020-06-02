@@ -2,6 +2,8 @@ import os
 import numpy as np
 import torch
 import requests
+import pandas as pd
+from matplotlib import pyplot as plt
 
 from torch.utils.data import Dataset
 
@@ -104,6 +106,25 @@ class NumpyDataset(Dataset):
         return data
 
 
+class LabelledImageDataset(Dataset):
+    def __init__(self, x, y, transform=None):
+        self.transform = transform
+        self.x = torch.from_numpy(x)
+        self.y = torch.from_numpy(y)
+
+    def __getitem__(self, index):
+        x = self.x[index, ...]
+        y = self.y[index, ...]
+
+        if self.transform is not None:
+            x = self.transform(x)
+
+        return x, y
+
+    def __len__(self):
+        return self.x.shape[0]
+
+
 class UnlabelledImageDataset(Dataset):
     def __init__(self, array, transform=None):
         self.transform = transform
@@ -119,6 +140,43 @@ class UnlabelledImageDataset(Dataset):
 
     def __len__(self):
         return self.data.shape[0]
+
+
+class CSVLabelledImageDataset(Dataset):
+    """ Based on https://pytorch.org/tutorials/beginner/data_loading_tutorial.html """
+
+    def __init__(self, csv_file, root_dir, label_key, filename_key, image_transform=None, label_transform=None):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.df = pd.read_csv(csv_file)
+        self.root_dir = root_dir
+        self.image_transform = image_transform
+        self.label_transform = label_transform
+        self.label_key = label_key
+        self.filename_key = filename_key
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        img_filename = os.path.join(self.root_dir, self.df[self.filename_key].iloc[idx])
+        image = torch.from_numpy(np.transpose(plt.imread(img_filename), [2, 0, 1]))
+        label = torch.tensor([self.df[self.label_key].iloc[idx]], dtype=np.float)
+
+        if self.image_transform:
+            image = self.image_transform(image)
+        if self.label_transform:
+            label = self.label_transform(label)
+
+        return image, label
 
 
 class Preprocess:

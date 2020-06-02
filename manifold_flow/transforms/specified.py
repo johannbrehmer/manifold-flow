@@ -206,10 +206,7 @@ class SphericalCoordinates(transforms.Transform):
         phis[-1] = torch.where(inputs[:, self.n] < 0.0, 2.0 * np.pi - phis[-1][:, 0], phis[-1][:, 0]).view((-1, 1))
 
         # Rescale
-        phis = [
-            -1.0 + 2.0 * phi / np.pi if i < self.n - 1 else -1.0 + torch.remainder(phi - self.azimuthal_offset, 2.0 * np.pi) / np.pi
-            for i, phi in enumerate(phis)
-        ]
+        phis = [-1.0 + 2.0 * phi / np.pi if i < self.n - 1 else -1.0 + torch.remainder(phi - self.azimuthal_offset, 2.0 * np.pi) / np.pi for i, phi in enumerate(phis)]
 
         # Radial coordinate
         r = torch.sum(inputs[:, : self.n + 1] ** 2, dim=1) ** 0.5

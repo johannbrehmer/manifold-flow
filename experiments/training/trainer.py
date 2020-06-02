@@ -2,13 +2,10 @@ import logging
 import numpy as np
 import torch
 from torch import optim, nn
+from torch.autograd import grad
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils import clip_grad_norm_
-
-# from matplotlib import pyplot as plt
-# from sklearn.manifold import TSNE
-# from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +19,7 @@ class NanException(Exception):
 
 
 class BaseTrainer(object):
-    """ Abstract base trainer. """
+    """ Training functionality shared between normal trainers and alternating trainers. """
 
     def __init__(self, model, run_on_gpu=True, multi_gpu=True, double_precision=False):
         self.model = model
@@ -42,6 +39,7 @@ class BaseTrainer(object):
             torch.set_default_tensor_type("torch.FloatTensor")
 
         self.model = self.model.to(self.device, self.dtype)
+        self.last_batch = None
 
         logger.info(
             "Training on %s with %s precision",
@@ -101,9 +99,7 @@ class BaseTrainer(object):
 
         if loss_val is not None:
             try:
-                val_report = "           val. loss  {:>8.5f} +/- {:>8.5f} ({})".format(
-                    loss_val[0], loss_val[1], contribution_summary(loss_labels, loss_contributions_val)
-                )
+                val_report = "           val. loss  {:>8.5f} +/- {:>8.5f} ({})".format(loss_val[0], loss_val[1], contribution_summary(loss_labels, loss_contributions_val))
             except:
                 val_report = "           val. loss  {:>8.5f} ({})".format(loss_val, contribution_summary(loss_labels, loss_contributions_val))
             logging_fn(val_report)
@@ -127,6 +123,8 @@ class BaseTrainer(object):
 
     @staticmethod
     def make_dataloader(dataset, validation_split, batch_size, n_workers=4):
+        logger.debug("Setting up dataloaders with %s workers", n_workers)
+
         if validation_split is None or validation_split <= 0.0:
             train_loader = DataLoader(
                 dataset,
@@ -145,6 +143,9 @@ class BaseTrainer(object):
             split = int(np.floor(validation_split * n_samples))
             np.random.shuffle(indices)
             train_idx, valid_idx = indices[split:], indices[:split]
+
+            logger.debug("Training partition indices: %s...", train_idx[:10])
+            logger.debug("Validation partition indices: %s...", valid_idx[:10])
 
             train_sampler = SubsetRandomSampler(train_idx)
             val_sampler = SubsetRandomSampler(valid_idx)
@@ -173,13 +174,31 @@ class BaseTrainer(object):
             loss = loss + _w * _l
         return loss
 
-    def optimizer_step(self, optimizer, loss, clip_gradient):
+    def optimizer_step(self, optimizer, loss, clip_gradient, parameters):
         optimizer.zero_grad()
         loss.backward()
         if clip_gradient is not None:
-            grad_norm = clip_grad_norm_(self.model.parameters(), clip_gradient)
+            clip_grad_norm_(parameters, clip_gradient)
+            # grad_norm = clip_grad_norm_(parameters, clip_gradient)
             # logger.debug("  Gradient norm (clipping at %s): %s", clip_gradient, grad_norm)
         optimizer.step()
+
+    @staticmethod
+    def _set_verbosity(epochs, verbose):
+        # Verbosity
+        if verbose == "all":  # Print output after every epoch
+            n_epochs_verbose = 1
+        elif verbose == "many":  # Print output after 2%, 4%, ..., 100% progress
+            n_epochs_verbose = max(int(round(epochs / 50, 0)), 1)
+        elif verbose == "some":  # Print output after 10%, 20%, ..., 100% progress
+            n_epochs_verbose = max(int(round(epochs / 20, 0)), 1)
+        elif verbose == "few":  # Print output after 20%, 40%, ..., 100% progress
+            n_epochs_verbose = max(int(round(epochs / 5, 0)), 1)
+        elif verbose == "none":  # Never print output
+            n_epochs_verbose = epochs + 2
+        else:
+            raise ValueError("Unknown value %s for keyword verbose", verbose)
+        return n_epochs_verbose
 
 
 class Trainer(BaseTrainer):
@@ -203,15 +222,26 @@ class Trainer(BaseTrainer):
         early_stopping=True,
         early_stopping_patience=None,
         clip_gradient=1.0,
-        verbose="some",
+        verbose="all",
         parameters=None,
         callbacks=None,
         forward_kwargs=None,
         custom_kwargs=None,
         compute_loss_variance=False,
+        seed=None,
+        initial_epoch=None,
     ):
+        if initial_epoch is not None and initial_epoch >= epochs:
+            logging.info("Initial epoch is larger than epochs, nothing to do in this training phase!")
+        elif initial_epoch is not None and initial_epoch <= 0:
+            initial_epoch = None
+
         if loss_labels is None:
             loss_labels = [fn.__name__ for fn in loss_functions]
+
+        if seed is not None:
+            np.random.seed(seed)
+            torch.manual_seed(seed)
 
         logger.debug("Initialising training data")
         train_loader, val_loader = self.make_dataloader(dataset, validation_split, batch_size)
@@ -219,13 +249,13 @@ class Trainer(BaseTrainer):
         logger.debug("Setting up optimizer")
         optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
         if parameters is None:
-            parameters = self.model.parameters()
+            parameters = list(self.model.parameters())
         opt = optimizer(parameters, lr=initial_lr, **optimizer_kwargs)
 
         logger.debug("Setting up LR scheduler")
         if epochs < 2:
             scheduler = None
-            logger.debug("Deactivating scheduler for only %s epoch", epochs)
+            logger.info("Deactivating scheduler for only %s epoch", epochs)
         scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
         sched = None
         epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
@@ -247,32 +277,31 @@ class Trainer(BaseTrainer):
         n_losses = len(loss_labels)
         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights
 
-        # Verbosity
-        if verbose == "all":  # Print output after every epoch
-            n_epochs_verbose = 1
-        elif verbose == "many":  # Print output after 2%, 4%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 50, 0)), 1)
-        elif verbose == "some":  # Print output after 10%, 20%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 20, 0)), 1)
-        elif verbose == "few":  # Print output after 20%, 40%, ..., 100% progress
-            n_epochs_verbose = max(int(round(epochs / 5, 0)), 1)
-        elif verbose == "none":  # Never print output
-            n_epochs_verbose = epochs + 2
-        else:
-            raise ValueError("Unknown value %s for keyword verbose", verbose)
-        logger.debug("Will print training progress every %s epochs", n_epochs_verbose)
+        n_epochs_verbose = self._set_verbosity(epochs, verbose)
 
         logger.debug("Beginning main training loop")
         losses_train, losses_val = [], []
 
+        # Resuming training
+        if initial_epoch is None:
+            initial_epoch = 0
+        else:
+            logger.info("Resuming with epoch %s", initial_epoch + 1)
+            for _ in range(initial_epoch):
+                sched.step()  # Hacky, but last_epoch doesn't work when not saving the optimizer state
+
+        # Initial callbacks
+        if callbacks is not None:
+            for callback in callbacks:
+                callback(-1, self.model, 0.0, 0.0, last_batch=self.last_batch)
+
         # Loop over epochs
-        # for i_epoch in tqdm(range(epochs)):
-        for i_epoch in range(epochs):
+        for i_epoch in range(initial_epoch, epochs):
             logger.debug("Training epoch %s / %s", i_epoch + 1, epochs)
 
             # LR schedule
             if sched is not None:
-                logger.debug("Learning rate: %s", sched.get_lr()[0])
+                logger.debug("Learning rate: %s", sched.get_last_lr())
 
             try:
                 loss_train, loss_val, loss_contributions_train, loss_contributions_val = self.epoch(
@@ -283,6 +312,7 @@ class Trainer(BaseTrainer):
                     loss_functions,
                     loss_weights,
                     clip_gradient,
+                    parameters,
                     forward_kwargs=forward_kwargs,
                     custom_kwargs=custom_kwargs,
                     compute_loss_variance=compute_loss_variance,
@@ -291,7 +321,7 @@ class Trainer(BaseTrainer):
                 losses_val.append(loss_val)
             except NanException:
                 logger.info("Ending training during epoch %s because NaNs appeared", i_epoch + 1)
-                break
+                raise
 
             if early_stopping:
                 try:
@@ -306,11 +336,11 @@ class Trainer(BaseTrainer):
             # Callbacks
             if callbacks is not None:
                 for callback in callbacks:
-                    callback(i_epoch, self.model, loss_train, loss_val)
+                    callback(i_epoch, self.model, loss_train, loss_val, last_batch=self.last_batch)
 
             # LR scheduler
             if sched is not None:
-                sched.step(i_epoch)
+                sched.step()
                 if restart_scheduler is not None and (i_epoch + 1) % restart_scheduler == 0:
                     try:
                         sched = scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs)
@@ -332,7 +362,8 @@ class Trainer(BaseTrainer):
         optimizer,
         loss_functions,
         loss_weights,
-        clip_gradient=1.0,
+        clip_gradient,
+        parameters,
         forward_kwargs=None,
         custom_kwargs=None,
         compute_loss_variance=False,
@@ -347,7 +378,7 @@ class Trainer(BaseTrainer):
             if i_batch == 0 and i_epoch == 0:
                 self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
-                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, parameters, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
             if compute_loss_variance:
                 loss_train.append(batch_loss)
@@ -356,7 +387,7 @@ class Trainer(BaseTrainer):
             for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
-            self.report_batch(i_epoch, i_batch, True, batch_data)
+            self.report_batch(i_epoch, i_batch, True, batch_data, batch_loss)
 
         loss_contributions_train /= len(train_loader)
         if compute_loss_variance:
@@ -370,9 +401,7 @@ class Trainer(BaseTrainer):
             loss_val = [] if compute_loss_variance else 0.0
 
             for i_batch, batch_data in enumerate(val_loader):
-                batch_loss, batch_loss_contributions = self.batch_val(
-                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                )
+                batch_loss, batch_loss_contributions = self.batch_val(batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
                 if compute_loss_variance:
                     loss_val.append(batch_loss)
                 else:
@@ -380,7 +409,7 @@ class Trainer(BaseTrainer):
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
-                self.report_batch(i_epoch, i_batch, False, batch_data)
+                self.report_batch(i_epoch, i_batch, False, batch_data, batch_loss)
 
             loss_contributions_val /= len(val_loader)
             if compute_loss_variance:
@@ -433,7 +462,7 @@ class Trainer(BaseTrainer):
             for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                 loss_contributions_train[i] += batch_loss_contribution
 
-            self.report_batch(i_epoch, i_batch, True, batch_data)
+            self.report_batch(i_epoch, i_batch, True, batch_data, batch_loss)
 
         i_batch += 1
 
@@ -451,9 +480,7 @@ class Trainer(BaseTrainer):
             i_batch = i_batch_start_val
 
             for batch_data in val_loader:
-                batch_loss, batch_loss_contributions = self.batch_val(
-                    batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
-                )
+                batch_loss, batch_loss_contributions = self.batch_val(batch_data, loss_functions, loss_weights, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
                 if compute_loss_variance:
                     loss_val.append(batch_loss)
                 else:
@@ -461,7 +488,7 @@ class Trainer(BaseTrainer):
                 for i, batch_loss_contribution in enumerate(batch_loss_contributions[:n_losses]):
                     loss_contributions_val[i] += batch_loss_contribution
 
-                self.report_batch(i_epoch, i_batch, False, batch_data)
+                self.report_batch(i_epoch, i_batch, False, batch_data, batch_loss)
 
             i_batch += 1
 
@@ -480,11 +507,11 @@ class Trainer(BaseTrainer):
     def first_batch(self, batch_data):
         pass
 
-    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient=1.0, forward_kwargs=None, custom_kwargs=None):
+    def batch_train(self, batch_data, loss_functions, loss_weights, optimizer, clip_gradient, parameters, forward_kwargs=None, custom_kwargs=None):
         loss_contributions = self.forward_pass(batch_data, loss_functions, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs)
         loss = self.sum_losses(loss_contributions, loss_weights)
 
-        self.optimizer_step(optimizer, loss, clip_gradient)
+        self.optimizer_step(optimizer, loss, clip_gradient, parameters)
 
         loss = loss.item()
         loss_contributions = [contrib.item() for contrib in loss_contributions]
@@ -518,11 +545,11 @@ class Trainer(BaseTrainer):
         """
         raise NotImplementedError
 
-    def report_batch(self, i_epoch, i_batch, train, batch_data):
+    def report_batch(self, i_epoch, i_batch, train, batch_data, batch_loss):
         pass
 
 
-class ManifoldFlowTrainer(Trainer):
+class ForwardTrainer(Trainer):
     """ Trainer for likelihood-based flow training when the model is not conditional. """
 
     def first_batch(self, batch_data):
@@ -537,34 +564,49 @@ class ManifoldFlowTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         self._check_for_nans("Training data", x)
 
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
         x = x.to(self.device, self.dtype)
+
         if self.multi_gpu:
-            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
+            results = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
-            x_reco, log_prob, _ = self.model(x, **forward_kwargs)
+            results = self.model(x, **forward_kwargs)
+        if len(results) == 4:
+            x_reco, log_prob, u, hidden = results
+        else:
+            x_reco, log_prob, u = results
+            hidden = None
+
         self._check_for_nans("Reconstructed data", x_reco, fix_until=5)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+        if x.size(0) >= 15:
+            self.last_batch = {
+                "x": x.detach().cpu().numpy(),
+                "x_reco": x_reco.detach().cpu().numpy(),
+                "log_prob": None if log_prob is None else log_prob.detach().cpu().numpy(),
+                "u": u.detach().cpu().numpy(),
+            }
 
-        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        losses = [loss_fn(x_reco, x, log_prob, hidden=hidden) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
 
         return losses
 
 
-class ConditionalManifoldFlowTrainer(Trainer):
+class ConditionalForwardTrainer(Trainer):
     """ Trainer for likelihood-based flow training for conditional models. """
 
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
 
         if len(x.size()) < 2:
             x = x.view(x.size(0), -1)
@@ -576,196 +618,74 @@ class ConditionalManifoldFlowTrainer(Trainer):
         self._check_for_nans("Training data", x, params)
 
         if self.multi_gpu:
-            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+            forward_kwargs["context"] = params
+            results = nn.parallel.data_parallel(self.model, x, module_kwargs=forward_kwargs)
         else:
-            x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
+            results = self.model(x, context=params, **forward_kwargs)
+        if len(results) == 4:
+            x_reco, log_prob, u, hidden = results
+        else:
+            x_reco, log_prob, u = results
+            hidden = None
+
         self._check_for_nans("Reconstructed data", x_reco)
         if log_prob is not None:
             self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+        if x.size(0) >= 15:
+            self.last_batch = {
+                "x": x.detach().cpu().numpy(),
+                "params": params.detach().cpu().numpy(),
+                "x_reco": x_reco.detach().cpu().numpy(),
+                "log_prob": None if log_prob is None else log_prob.detach().cpu().numpy(),
+                "u": u.detach().cpu().numpy(),
+            }
 
-        losses = [loss_fn(x_reco, x, log_prob) for loss_fn in loss_functions]
+        losses = [loss_fn(x_reco, x, log_prob, hidden=hidden) for loss_fn in loss_functions]
         self._check_for_nans("Loss", *losses)
 
         return losses
 
 
-class VariableDimensionManifoldFlowTrainer(ManifoldFlowTrainer):
-    """ Trainer for likelihood-based flow training for PIE with variable epsilons and non-conditional models. """
-
-    def train(
-        self,
-        dataset,
-        loss_functions,
-        loss_weights=None,
-        loss_labels=None,
-        epochs=50,
-        batch_size=100,
-        optimizer=optim.Adam,
-        optimizer_kwargs=None,
-        initial_lr=1.0e-3,
-        scheduler=optim.lr_scheduler.CosineAnnealingLR,
-        scheduler_kwargs=None,
-        restart_scheduler=None,
-        validation_split=0.25,
-        early_stopping=True,
-        early_stopping_patience=None,
-        clip_gradient=1.0,
-        verbose="some",
-        parameters=None,
-        callbacks=None,
-        forward_kwargs=None,
-        custom_kwargs=None,
-        compute_loss_variance=False,
-        l1=0.0,
-        l2=0.0,
-    ):
-        # Prepare inputs
-        if custom_kwargs is None:
-            custom_kwargs = dict()
-        if l1 is not None:
-            custom_kwargs["l1"] = l1
-        if l2 is not None:
-            custom_kwargs["l2"] = l2
-
-        n_losses = len(loss_functions) + 1
-        if loss_labels is None:
-            loss_labels = [fn.__name__ for fn in loss_functions]
-        loss_labels.append("Regularizer")
-        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
-
-        return super().train(
-            dataset,
-            loss_functions,
-            loss_weights,
-            loss_labels,
-            epochs,
-            batch_size,
-            optimizer,
-            optimizer_kwargs,
-            initial_lr,
-            scheduler,
-            scheduler_kwargs,
-            restart_scheduler,
-            validation_split,
-            early_stopping,
-            early_stopping_patience,
-            clip_gradient,
-            verbose,
-            parameters,
-            callbacks,
-            forward_kwargs,
-            custom_kwargs,
-            compute_loss_variance=compute_loss_variance,
-        )
+class SCANDALForwardTrainer(Trainer):
+    """ Trainer for likelihood-based flow training for conditional models with SCANDAL-like loss. """
 
     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
-        losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
+        if forward_kwargs is None:
+            forward_kwargs = {}
 
-        if custom_kwargs is not None:
-            l1 = custom_kwargs.get("l1", 0.0)
-            l2 = custom_kwargs.get("l2", 0.0)
-            reg = self.model.latent_regularizer(l1, l2)
-            losses.append(reg)
+        x, params, t_xz = batch_data
+
+        if len(x.size()) < 2:
+            x = x.view(x.size(0), -1)
+        if len(params.size()) < 2:
+            params = params.view(params.size(0), -1)
+
+        x = x.to(self.device, self.dtype)
+        params = params.to(self.device, self.dtype)
+        t_xz = t_xz.to(self.device, self.dtype)
+        self._check_for_nans("Training data", x, params, t_xz)
+
+        if not params.requires_grad:
+            params.requires_grad = True
+
+        if self.multi_gpu:
+            x_reco, log_prob, _ = nn.parallel.data_parallel(self.model, x, module_kwargs={"context": params})
+        else:
+            x_reco, log_prob, _ = self.model(x, context=params, **forward_kwargs)
+
+        (t,) = grad(log_prob, params, grad_outputs=torch.ones_like(log_prob.data), only_inputs=True, create_graph=True)
+
+        self._check_for_nans("Reconstructed data", x_reco)
+        if log_prob is not None:
+            self._check_for_nans("Log likelihood", log_prob, fix_until=5)
+
+        losses = [loss_fn(x_reco, x, log_prob, t, t_xz) for loss_fn in loss_functions]
+        self._check_for_nans("Loss", *losses)
 
         return losses
 
-    def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
-        logging_fn = logger.info if verbose else logger.debug
-        super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
 
-        logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
-        logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
-
-
-class ConditionalVariableDimensionManifoldFlowTrainer(ConditionalManifoldFlowTrainer):
-    """ Trainer for likelihood-based flow training for PIE with variable epsilons and conditional models. """
-
-    def train(
-        self,
-        dataset,
-        loss_functions,
-        loss_weights=None,
-        loss_labels=None,
-        epochs=50,
-        batch_size=100,
-        optimizer=optim.Adam,
-        optimizer_kwargs=None,
-        initial_lr=1.0e-3,
-        scheduler=optim.lr_scheduler.CosineAnnealingLR,
-        scheduler_kwargs=None,
-        restart_scheduler=None,
-        validation_split=0.25,
-        early_stopping=True,
-        early_stopping_patience=None,
-        clip_gradient=1.0,
-        verbose="some",
-        parameters=None,
-        callbacks=None,
-        forward_kwargs=None,
-        custom_kwargs=None,
-        compute_loss_variance=False,
-        l1=0.0,
-        l2=0.0,
-    ):
-        # Prepare inputs
-        if custom_kwargs is None:
-            custom_kwargs = dict()
-        if l1 is not None:
-            custom_kwargs["l1"] = l1
-        if l2 is not None:
-            custom_kwargs["l2"] = l2
-
-        n_losses = len(loss_functions) + 1
-        if loss_labels is None:
-            loss_labels = [fn.__name__ for fn in loss_functions]
-        loss_labels.append("Regularizer")
-        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
-
-        return super().train(
-            dataset,
-            loss_functions,
-            loss_weights,
-            loss_labels,
-            epochs,
-            batch_size,
-            optimizer,
-            optimizer_kwargs,
-            initial_lr,
-            scheduler,
-            scheduler_kwargs,
-            restart_scheduler,
-            validation_split,
-            early_stopping,
-            early_stopping_patience,
-            clip_gradient,
-            verbose,
-            parameters,
-            callbacks,
-            forward_kwargs,
-            custom_kwargs,
-            compute_loss_variance=compute_loss_variance,
-        )
-
-    def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
-        losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
-
-        if custom_kwargs is not None:
-            l1 = custom_kwargs.get("l1", 0.0)
-            l2 = custom_kwargs.get("l2", 0.0)
-            reg = self.model.latent_regularizer(l1, l2)
-            losses.append(reg)
-
-        return losses
-
-    def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
-        logging_fn = logger.info if verbose else logger.debug
-        super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
-
-        logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
-        logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
-
-
-class GenerativeTrainer(Trainer):
+class AdversarialTrainer(Trainer):
     """ Trainer for adversarial (OT) flow training when the model is not conditional. """
 
     # TODO: multi-GPU support
@@ -773,8 +693,9 @@ class GenerativeTrainer(Trainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, y = batch_data
+        x = batch_data[0]
         batch_size = x.size(0)
+
         if len(x.size()) < 2:
             x = x.view(batch_size, -1)
         x = x.to(self.device, self.dtype)
@@ -789,7 +710,7 @@ class GenerativeTrainer(Trainer):
         return losses
 
 
-class ConditionalGenerativeTrainer(GenerativeTrainer):
+class ConditionalAdversarialTrainer(AdversarialTrainer):
     """ Trainer for adversarial (OT) flow training and conditional models. """
 
     # TODO: multi-GPU support
@@ -797,7 +718,8 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
         if forward_kwargs is None:
             forward_kwargs = {}
 
-        x, params = batch_data
+        x = batch_data[0]
+        params = batch_data[1]
         batch_size = x.size(0)
 
         if len(x.size()) < 2:
@@ -816,3 +738,179 @@ class ConditionalGenerativeTrainer(GenerativeTrainer):
         self._check_for_nans("Loss", *losses)
 
         return losses
+
+
+# class VarDimForwardTrainer(ForwardTrainer):
+#     """ Trainer for likelihood-based flow training for PIE with variable epsilons and non-conditional models. """
+#
+#     def train(
+#         self,
+#         dataset,
+#         loss_functions,
+#         loss_weights=None,
+#         loss_labels=None,
+#         epochs=50,
+#         batch_size=100,
+#         optimizer=optim.Adam,
+#         optimizer_kwargs=None,
+#         initial_lr=1.0e-3,
+#         scheduler=optim.lr_scheduler.CosineAnnealingLR,
+#         scheduler_kwargs=None,
+#         restart_scheduler=None,
+#         validation_split=0.25,
+#         early_stopping=True,
+#         early_stopping_patience=None,
+#         clip_gradient=1.0,
+#         verbose="some",
+#         parameters=None,
+#         callbacks=None,
+#         forward_kwargs=None,
+#         custom_kwargs=None,
+#         compute_loss_variance=False,
+#         l1=0.0,
+#         l2=0.0,
+#     ):
+#         # Prepare inputs
+#         if custom_kwargs is None:
+#             custom_kwargs = dict()
+#         if l1 is not None:
+#             custom_kwargs["l1"] = l1
+#         if l2 is not None:
+#             custom_kwargs["l2"] = l2
+#
+#         n_losses = len(loss_functions) + 1
+#         if loss_labels is None:
+#             loss_labels = [fn.__name__ for fn in loss_functions]
+#         loss_labels.append("Regularizer")
+#         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
+#
+#         return super().train(
+#             dataset,
+#             loss_functions,
+#             loss_weights,
+#             loss_labels,
+#             epochs,
+#             batch_size,
+#             optimizer,
+#             optimizer_kwargs,
+#             initial_lr,
+#             scheduler,
+#             scheduler_kwargs,
+#             restart_scheduler,
+#             validation_split,
+#             early_stopping,
+#             early_stopping_patience,
+#             clip_gradient,
+#             verbose,
+#             parameters,
+#             callbacks,
+#             forward_kwargs,
+#             custom_kwargs,
+#             compute_loss_variance=compute_loss_variance,
+#         )
+#
+#     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
+#         losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
+#
+#         if custom_kwargs is not None:
+#             l1 = custom_kwargs.get("l1", 0.0)
+#             l2 = custom_kwargs.get("l2", 0.0)
+#             reg = self.model.latent_regularizer(l1, l2)
+#             losses.append(reg)
+#
+#         return losses
+#
+#     def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
+#         logging_fn = logger.info if verbose else logger.debug
+#         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
+#
+#         logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
+#         logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))
+#
+#
+# class ConditionalVarDimForwardTrainer(ConditionalForwardTrainer):
+#     """ Trainer for likelihood-based flow training for PIE with variable epsilons and conditional models. """
+#
+#     def train(
+#         self,
+#         dataset,
+#         loss_functions,
+#         loss_weights=None,
+#         loss_labels=None,
+#         epochs=50,
+#         batch_size=100,
+#         optimizer=optim.Adam,
+#         optimizer_kwargs=None,
+#         initial_lr=1.0e-3,
+#         scheduler=optim.lr_scheduler.CosineAnnealingLR,
+#         scheduler_kwargs=None,
+#         restart_scheduler=None,
+#         validation_split=0.25,
+#         early_stopping=True,
+#         early_stopping_patience=None,
+#         clip_gradient=1.0,
+#         verbose="some",
+#         parameters=None,
+#         callbacks=None,
+#         forward_kwargs=None,
+#         custom_kwargs=None,
+#         compute_loss_variance=False,
+#         l1=0.0,
+#         l2=0.0,
+#     ):
+#         # Prepare inputs
+#         if custom_kwargs is None:
+#             custom_kwargs = dict()
+#         if l1 is not None:
+#             custom_kwargs["l1"] = l1
+#         if l2 is not None:
+#             custom_kwargs["l2"] = l2
+#
+#         n_losses = len(loss_functions) + 1
+#         if loss_labels is None:
+#             loss_labels = [fn.__name__ for fn in loss_functions]
+#         loss_labels.append("Regularizer")
+#         loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights + [1.0]
+#
+#         return super().train(
+#             dataset,
+#             loss_functions,
+#             loss_weights,
+#             loss_labels,
+#             epochs,
+#             batch_size,
+#             optimizer,
+#             optimizer_kwargs,
+#             initial_lr,
+#             scheduler,
+#             scheduler_kwargs,
+#             restart_scheduler,
+#             validation_split,
+#             early_stopping,
+#             early_stopping_patience,
+#             clip_gradient,
+#             verbose,
+#             parameters,
+#             callbacks,
+#             forward_kwargs,
+#             custom_kwargs,
+#             compute_loss_variance=compute_loss_variance,
+#         )
+#
+#     def forward_pass(self, batch_data, loss_functions, forward_kwargs=None, custom_kwargs=None):
+#         losses = super().forward_pass(batch_data, loss_functions, forward_kwargs)
+#
+#         if custom_kwargs is not None:
+#             l1 = custom_kwargs.get("l1", 0.0)
+#             l2 = custom_kwargs.get("l2", 0.0)
+#             reg = self.model.latent_regularizer(l1, l2)
+#             losses.append(reg)
+#
+#         return losses
+#
+#     def report_epoch(self, i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose=False):
+#         logging_fn = logger.info if verbose else logger.debug
+#         super().report_epoch(i_epoch, loss_labels, loss_train, loss_val, loss_contributions_train, loss_contributions_val, verbose)
+#
+#         logging_fn("           latent dim {:>8d}".format(self.model.calculate_latent_dim()))
+#         logger.debug("           stds        {}".format(self.model.latent_stds().detach().numpy()))

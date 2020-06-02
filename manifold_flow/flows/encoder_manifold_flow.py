@@ -1,5 +1,6 @@
 import torch
 import logging
+from torch import nn
 
 from manifold_flow.transforms import ProjectionSplit
 from manifold_flow.utils.various import product
@@ -12,10 +13,8 @@ logger = logging.getLogger(__name__)
 class EncoderManifoldFlow(BaseFlow):
     """ Manifold-based flow with separate encoder (for MFMFE) """
 
-    def __init__(self, data_dim, latent_dim, encoder, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
+    def __init__(self, data_dim, latent_dim, encoder, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True, clip_pie=False):
         super(EncoderManifoldFlow, self).__init__()
-
-        assert latent_dim < data_dim
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
@@ -23,9 +22,11 @@ class EncoderManifoldFlow(BaseFlow):
         self.total_latent_dim = product(latent_dim)
         self.apply_context_to_outer = apply_context_to_outer
 
+        assert self.total_latent_dim < self.total_data_dim
+
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal(
-            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.0 * pie_epsilon
+            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=None if not clip_pie else clip_pie * pie_epsilon
         )
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
@@ -38,7 +39,7 @@ class EncoderManifoldFlow(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, mode="mf", context=None):
+    def forward(self, x, mode="mf", context=None, return_hidden=False):
         """
         Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
 
@@ -60,6 +61,8 @@ class EncoderManifoldFlow(BaseFlow):
         # Log prob
         log_prob = self._log_prob(mode, u, log_det_inner, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
+        if return_hidden:
+            return x_reco, log_prob, u, h_manifold
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):
@@ -93,7 +96,6 @@ class EncoderManifoldFlow(BaseFlow):
         return x
 
     def _encode(self, x, context=None):
-        # Encode
         h_manifold = self.encoder(x, context=context if self.apply_context_to_outer else None)
         u, log_det_inner = self.inner_transform(h_manifold, full_jacobian=False, context=context)
 
@@ -137,3 +139,13 @@ class EncoderManifoldFlow(BaseFlow):
             log_prob = None
 
         return log_prob
+
+    def _report_model_parameters(self):
+        """ Reports the model size """
+        super()._report_model_parameters()
+        encoder_params = sum(p.numel() for p in self.encoder.parameters())
+        inner_params = sum(p.numel() for p in self.inner_transform.parameters())
+        outer_params = sum(p.numel() for p in self.outer_transform.parameters())
+        logger.info("  Encoder:         %.1f M parameters", encoder_params / 1.0e06)
+        logger.info("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
+        logger.info("  Inner transform: %.1f M parameters", inner_params / 1.0e06)

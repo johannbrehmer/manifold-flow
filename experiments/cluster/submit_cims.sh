@@ -1,21 +1,28 @@
 #!/bin/bash
 
-sbatch --array 0-59 evaluate_flow_lhc2d_cims.sh
-# sbatch --array 60-119 evaluate_flow_lhc2d_cims.sh
+################################################################################
+# LHC eval jobs
+################################################################################
 
-sbatch --array 0-59 evaluate_flow_lhc40d_cims.sh
-# sbatch --array 60-119 evaluate_flow_lhc40d_cims.sh
 
-sbatch --array 0-59 evaluate_pie_lhc40d_cims.sh
-# sbatch --array 60-119 evaluate_pie_lhc40d_cims.sh
+sbatch --array 0-119 evaluate_mf_lhc_cims.sh
+sbatch --array 0-119 evaluate_mf_scandal_lhc_cims.sh
+sbatch --array 0-119 evaluate_emf_lhc_cims.sh
+sbatch --array 0-119 evaluate_emf_scandal_lhc_cims.sh
+sbatch --array 0-119 evaluate_flow_lhc_cims.sh
+sbatch --array 0-119 evaluate_flow_scandal_lhc_cims.sh
+sbatch --array 0-119 evaluate_pie_lhc_cims.sh
+sbatch --array 0-119 evaluate_pie_scandal_lhc_cims.sh
+sbatch --array 0-119 evaluate_pie_cm_lhc_cims.sh
+sbatch --array 0-119 evaluate_pie_cm_scandal_lhc_cims.sh
 
-sbatch --array 0-35 evaluate_mfs_lhc40d_cims.sh
-# sbatch --array 36-47 evaluate_mfs_lhc40d_cims.sh
-sbatch --array 48-71 evaluate_mfs_lhc40d_cims.sh
-# sbatch --array 72-119 evaluate_mfs_lhc40d_cims.sh
 
-# sbatch --array 0-119 evaluate_mfa_lhc40d_cims.sh
 
-# sbatch --array 0-119 evaluate_emfs_lhc40d_cims.sh
+################################################################################
+# GAN2D train jobs
+################################################################################
 
-# sbatch --array 0-119 evaluate_emfa_lhc40d_cims.sh
+#sbatch --array 0-9 train_mf_gan2d_cims.sh
+#sbatch --array 0-9 train_emf_gan2d_cims.sh
+#sbatch --array 0-9 train_pie_gan2d_cims.sh
+#sbatch --array 0-9 train_flow_gan2d_cims.sh

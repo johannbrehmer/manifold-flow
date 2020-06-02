@@ -12,20 +12,20 @@ logger = logging.getLogger(__name__)
 class ManifoldFlow(BaseFlow):
     """ Manifold-based flow (base class for FOM, MFMF, PIE, and others) """
 
-    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True):
+    def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True, clip_pie=False):
         super(ManifoldFlow, self).__init__()
-
-        assert latent_dim < data_dim
 
         self.data_dim = data_dim
         self.latent_dim = latent_dim
+        self.apply_context_to_outer = apply_context_to_outer
         self.total_data_dim = product(data_dim)
         self.total_latent_dim = product(latent_dim)
-        self.apply_context_to_outer = apply_context_to_outer
+
+        assert self.total_latent_dim < self.total_data_dim
 
         self.manifold_latent_distribution = distributions.StandardNormal((self.total_latent_dim,))
         self.orthogonal_latent_distribution = distributions.RescaledNormal(
-            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=5.0 * pie_epsilon
+            (self.total_data_dim - self.total_latent_dim,), std=pie_epsilon, clip=None if not clip_pie else clip_pie * pie_epsilon
         )
         self.projection = ProjectionSplit(self.total_data_dim, self.total_latent_dim)
 
@@ -37,7 +37,7 @@ class ManifoldFlow(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, mode="mf", context=None):
+    def forward(self, x, mode="mf", context=None, return_hidden=False):
         """
         Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
 
@@ -56,24 +56,11 @@ class ManifoldFlow(BaseFlow):
         # Decode
         x_reco, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer, h_manifold_reco = self._decode(u, mode=mode, context=context)
 
-        # Rarely the inverse log det transformation has NaNs
-        if torch.isnan(inv_log_det_inner).any():
-            _, _, _, _, inv_log_det_inner_fix = self._encode(x_reco, context)
-
-            logger.warning("Fixing NaN in inverse inner determinant")
-            logger.debug("  x       = %s", x[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_orth  = %s", h_orthogonal[torch.isnan(inv_log_det_inner)])
-            logger.debug("  h_man   = %s", h_manifold[torch.isnan(inv_log_det_inner)])
-            logger.debug("  u       = %s", u[torch.isnan(inv_log_det_inner)])
-            logger.debug("  x'      = %s", x_reco[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet  = %s", inv_log_det_inner[torch.isnan(inv_log_det_inner)])
-            logger.debug("  logdet' = %s", -inv_log_det_inner_fix[torch.isnan(inv_log_det_inner)])
-
-            inv_log_det_inner = -inv_log_det_inner_fix
-
         # Log prob
         log_prob = self._log_prob(mode, u, h_orthogonal, log_det_inner, log_det_outer, inv_log_det_inner, inv_log_det_outer, inv_jacobian_outer)
 
+        if return_hidden:
+            return x_reco, log_prob, u, torch.cat((h_manifold, h_orthogonal), -1)
         return x_reco, log_prob, u
 
     def encode(self, x, context=None):
@@ -168,3 +155,11 @@ class ManifoldFlow(BaseFlow):
             log_prob = None
 
         return log_prob
+
+    def _report_model_parameters(self):
+        """ Reports the model size """
+        super()._report_model_parameters()
+        inner_params = sum(p.numel() for p in self.inner_transform.parameters())
+        outer_params = sum(p.numel() for p in self.outer_transform.parameters())
+        logger.info("  Outer transform: %.1f M parameters", outer_params / 1.0e06)
+        logger.info("  Inner transform: %.1f M parameters", inner_params / 1.0e06)

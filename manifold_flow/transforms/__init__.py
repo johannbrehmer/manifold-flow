@@ -33,6 +33,7 @@ from .orthogonal import HouseholderSequence
 from .permutations import Permutation
 from .permutations import RandomPermutation
 from .permutations import ReversePermutation
+from .permutations import MaskBasedPermutation
 
 from .coupling import (
     AffineCouplingTransform,
@@ -51,3 +52,4 @@ from .conv import OneByOneConvolution
 from .elementwise import ElementwisePiecewiseRationalQuadraticTransform, ConditionalAffineScalarTransform
 from .projections import Projection, ProjectionSplit
 from .specified import SphericalCoordinates
+from .partial import PartialTransform

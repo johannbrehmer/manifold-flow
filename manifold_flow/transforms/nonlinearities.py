@@ -14,13 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class Tanh(transforms.Transform):
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         outputs = torch.tanh(inputs)
         logabsdet = torch.log(1 - outputs ** 2)
         logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         if torch.min(inputs) <= -1 or torch.max(inputs) >= 1:
             raise transforms.InputOutsideDomain()
         outputs = 0.5 * torch.log((1 + inputs) / (1 - inputs))
@@ -46,7 +52,10 @@ class LogTanh(transforms.Transform):
         self.alpha = (1 - np.tanh(np.tanh(cut_point))) / cut_point
         self.beta = np.exp((np.tanh(cut_point) - self.alpha * np.log(cut_point)) / self.alpha)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         mask_right = inputs > self.cut_point
         mask_left = inputs < -self.cut_point
         mask_middle = ~(mask_right | mask_left)
@@ -64,7 +73,9 @@ class LogTanh(transforms.Transform):
 
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
 
         mask_right = inputs > self.inv_cut_point
         mask_left = inputs < -self.inv_cut_point
@@ -92,14 +103,20 @@ class LeakyReLU(transforms.Transform):
         self.negative_slope = negative_slope
         self.log_negative_slope = torch.log(torch.as_tensor(self.negative_slope))
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         outputs = F.leaky_relu(inputs, negative_slope=self.negative_slope)
         mask = (inputs < 0).type(torch.Tensor)
         logabsdet = self.log_negative_slope * mask
         logabsdet = various.sum_except_batch(logabsdet, num_batch_dims=1)
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         outputs = F.leaky_relu(inputs, negative_slope=(1 / self.negative_slope))
         mask = (inputs < 0).type(torch.Tensor)
         logabsdet = -self.log_negative_slope * mask
@@ -113,13 +130,19 @@ class Sigmoid(transforms.Transform):
         self.eps = eps
         self.temperature = torch.Tensor([temperature])
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         inputs = self.temperature * inputs
         outputs = torch.sigmoid(inputs)
         logabsdet = various.sum_except_batch(torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs))
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         if torch.min(inputs) < 0 or torch.max(inputs) > 1:
             raise transforms.InputOutsideDomain()
 
@@ -139,12 +162,18 @@ class CauchyCDF(transforms.Transform):
     def __init__(self, location=None, scale=None, features=None):
         super().__init__()
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         outputs = (1 / np.pi) * torch.atan(inputs) + 0.5
         logabsdet = various.sum_except_batch(-np.log(np.pi) - torch.log(1 + inputs ** 2))
         return outputs, logabsdet
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         if torch.min(inputs) < 0 or torch.max(inputs) > 1:
             raise transforms.InputOutsideDomain()
 
@@ -190,22 +219,22 @@ class PiecewiseLinearCDF(transforms.Transform):
 
         return outputs, various.sum_except_batch(logabsdet)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=False)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=True)
 
 
 class PiecewiseQuadraticCDF(transforms.Transform):
     def __init__(
-        self,
-        shape,
-        num_bins=10,
-        tails=None,
-        tail_bound=1.0,
-        min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH,
-        min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT,
+        self, shape, num_bins=10, tails=None, tail_bound=1.0, min_bin_width=splines.quadratic.DEFAULT_MIN_BIN_WIDTH, min_bin_height=splines.quadratic.DEFAULT_MIN_BIN_HEIGHT,
     ):
         super().__init__()
         self.min_bin_width = min_bin_width
@@ -243,22 +272,22 @@ class PiecewiseQuadraticCDF(transforms.Transform):
 
         return outputs, various.sum_except_batch(logabsdet)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=False)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=True)
 
 
 class PiecewiseCubicCDF(transforms.Transform):
     def __init__(
-        self,
-        shape,
-        num_bins=10,
-        tails=None,
-        tail_bound=1.0,
-        min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH,
-        min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT,
+        self, shape, num_bins=10, tails=None, tail_bound=1.0, min_bin_width=splines.cubic.DEFAULT_MIN_BIN_WIDTH, min_bin_height=splines.cubic.DEFAULT_MIN_BIN_HEIGHT,
     ):
         super().__init__()
 
@@ -301,10 +330,16 @@ class PiecewiseCubicCDF(transforms.Transform):
 
         return outputs, various.sum_except_batch(logabsdet)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=False)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=True)
 
 
@@ -371,8 +406,14 @@ class PiecewiseRationalQuadraticCDF(transforms.Transform):
 
         return outputs, various.sum_except_batch(logabsdet)
 
-    def forward(self, inputs, context=None):
+    def forward(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=False)
 
-    def inverse(self, inputs, context=None):
+    def inverse(self, inputs, context=None, full_jacobian=False):
+        if full_jacobian:
+            raise NotImplementedError
+
         return self._spline(inputs, inverse=True)

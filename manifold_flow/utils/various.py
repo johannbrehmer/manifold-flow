@@ -394,6 +394,19 @@ def get_num_parameters(model):
     return num_parameters
 
 
+def create_split_binary_mask(features, n_active):
+    """
+    Creates a binary mask of a given dimension in which the first n_active features are set to 1 and the others to 0.
+
+    :param features: Dimension of mask.
+    :param n_active: Number of active (True) entries in the mask.
+    :return: Binary mask split at n_active of type torch.Tensor.
+    """
+    mask = torch.zeros(features).byte()
+    mask[:n_active] += 1
+    return mask
+
+
 def create_alternating_binary_mask(features, even=True):
     """
     Creates a binary mask of a given dimension which alternates its masking.
@@ -434,6 +447,25 @@ def create_random_binary_mask(features):
     num_samples = features // 2 if features % 2 == 0 else features // 2 + 1
     indices = torch.multinomial(input=weights, num_samples=num_samples, replacement=False)
     mask[indices] += 1
+    return mask
+
+
+def create_mlt_channel_mask(features, channels_per_level=(1, 2, 4, 8), resolution=64):
+    mask = torch.zeros(features).byte()
+
+    pos = 0
+    total_size = features
+    res = resolution
+
+    for channels in channels_per_level:
+        total_size = total_size // 2
+        res = res // 2
+        active = channels * res * res
+        mask[pos : pos + active] += 1
+        pos += total_size
+
+    assert pos <= features
+
     return mask
 
 

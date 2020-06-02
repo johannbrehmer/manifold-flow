@@ -2,6 +2,7 @@ import torch
 
 from torch import nn
 from torch.nn import functional as F
+import logging
 
 
 class GatedConv2d(nn.Module):
@@ -104,12 +105,8 @@ class ResidualBlock(nn.Module):
             self.shortcut_layer = nn.Conv2d(in_channels=in_channels, out_channels=2 * in_channels, kernel_size=3, stride=2, padding=1)
             self.residual_2_layer = nn.Conv2d(in_channels=in_channels, out_channels=2 * in_channels, kernel_size=3, stride=2, padding=1)
         elif resample == "up":
-            self.shortcut_layer = nn.ConvTranspose2d(
-                in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1
-            )
-            self.residual_2_layer = nn.ConvTranspose2d(
-                in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1
-            )
+            self.shortcut_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1)
+            self.residual_2_layer = nn.ConvTranspose2d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=0 if first else 1)
 
     def forward(self, inputs):
 
@@ -180,6 +177,34 @@ class ConvDecoder(nn.Module):
             temps = residual_block(temps)
         temps = self.activation(temps)
         outputs = self.final_layer(temps)
+        return outputs
+
+
+class ModifiedConvEncoder(nn.Module):
+    def __init__(self, h, w, channels_in, out_features, levels=4, channels_multiplier=1, activation=F.relu):
+        super().__init__()
+        self.channels_in = channels_in
+        self.out_features = out_features
+        self.channels_multiplier = channels_multiplier
+        self.activation = activation
+
+        self.initial_layer = nn.Conv2d(channels_in, channels_in * channels_multiplier, kernel_size=1)
+        blocks = []
+        for i in range(levels):
+            blocks.append(ResidualBlock(in_channels=channels_in * channels_multiplier * 2 ** i))
+            blocks.append(ResidualBlock(in_channels=channels_in * channels_multiplier * 2 ** i, resample="down"))
+        self.residual_blocks = nn.ModuleList(blocks)
+
+        self.flat_dim = (h // 2 ** levels) * (w // 2 ** levels) * channels_in * channels_multiplier * 2 ** levels
+        self.final_layer = nn.Linear(in_features=self.flat_dim, out_features=out_features)
+
+    def forward(self, inputs, context=None):
+        assert context is None
+        temps = self.initial_layer(inputs)
+        for residual_block in self.residual_blocks:
+            temps = residual_block(temps)
+        temps = self.activation(temps)
+        outputs = self.final_layer(temps.reshape(-1, self.flat_dim))
         return outputs
 
 

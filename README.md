@@ -1,4 +1,4 @@
-# Manifold-modeling flows
+# Manifold-learning flows
 
 *Johann Brehmer and Kyle Cranmer 2019-2020*
 
@@ -8,70 +8,68 @@
 
 ![MFMF illustration figure](experiments/figures/manifold_density_illustration_combined.png)
 
-In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-modeling flows (MFMFs), a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of manifold-modeling flows as well as some other fow-based generative models, as well as the code for our experiments with them.
+In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-learning flows or ℳ-flows, a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of ℳ-flows, as well as the code for our experiments with them.
 
-**If you do not need the commit history and want to save space, use the `public` branch.**
-
-**Note that this repository is still under development and we're breaking and mending things constantly!**
+**If you do not need the commit history and want to save space, please use the `public-v2` branch.**
 
 
-## Getting started
+### Getting started
 
-Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the MFMF-OT algorithm, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
+Please make sure your Python environment satisfies the requirements in the [environment.yml](environment.yml). To use the OT training, please also follow the [installation instructions for geomloss](https://www.kernel-operations.io/geomloss/api/install.html).
 
 
-## Data sets
+### Data sets
 
-Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `generate_data.py`, `train.py`, and `evaluate.py`
+Data set | Data dimension | Manifold dimension | Model parameters | Arguments to `train.py`, and `evaluate.py`
 --- | --- | --- | --- | ---
 Gaussian on an `n`-sphere | `d` | `n` | - |  `--dataset spherical_gaussian --truelatentdim n --datadim d --epsilon eps`
 Conditional Gaussian on a `n`-sphere | `d` | `n` | 2 | `--dataset conditional_spherical_gaussian --truelatentdim n --datadim d`
 Mixture model on a polynomial manifold | 3 | 2 | 1 | `--dataset power`
-Particle physics data (48-D) | 48 | 14 | 2 | `--dataset lhc`
-Particle physics data (40-D, no angular features) | 40 | 14 | 2 | `--dataset lhc40d`
-Particle physics data (2-D summary stats) | 2 | 2 | 2 | `--dataset lhc2d`
-
-The data for the particle physics experiments is available upon request.
-
-
-## Data generation
-
-Necessary for the first three data sets in the table above. See [experiments/generate_data.py -h](experiments/generate_data.py).
+Lorenz system | 3 | 2 | 0 | `--dataset lorenz`
+Particle physics | 40 | 14 | 2 | `--dataset lhc40d`
+2-D StyleGAN image manifold | 64 x 64 x 3 | 2 | 0 | `--dataset gan2d`
+64-D StyleGAN image manifold | 64 x 64 x 3 | 64 | 1 | `--dataset gan64d`
+CelebA-HQ | 64 x 64 x 3 | ? | 0 | `--dataset celeba`
+ImageNet | 64 x 64 x 3 | ? | 0 | `--dataset imagenet`
 
 
-## Training 
-
-See [experiments/train.py -h](experiments/train.py). Note that the algorithms have different internal names from the acronyms in the paper:
-
-Algorithm | Acronym in paper | Arguments to `train.py`
---- | --- | ---
-Ambient flow | AF | `--algorithm flow`
-Flow on manifold | FOM | `--algorithm mf --specified`
-Pseudo-invertible encoder | PIE | `--algorithm pie`
-Manifold-modeling flow, simultaneous training (not recommended) | MFMF-S | `--algorithm mf`
-Manifold-modeling flow, alternating M/D training | MFMF-M/D | `--algorithm mf --alternate`
-Manifold-modeling flow, sequential M/D training | MFMF-M/D | `--algorithm mf --sequential`
-Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow, alternating Optimal Transport training | MFMF-OT/D | `--algorithm gamf --alternate`
-Manifold-modeling flow with sep. encoder, simultaneous training (not recommended) | MFMFE-S | `--algorithm emf`
-Manifold-modeling flow with sep. encoder, alternating M/D training | MFMFE-M/D | `--algorithm emf --alternate`
-Manifold-modeling flow with sep. encoder, sequential M/D training | MFMFE-M/D | `--algorithm emf --sequential`
+The data from most data sets should automatically download when required. It is not necessary to generate any data yourself anymore. If there is a problem with that, please let us know.
 
 
-## Evaluation 
+### Training 
+
+See [experiments/train.py -h](experiments/train.py). The configurations for the models in the paper can be found in [experiments/configs](experiments/configs).
+
+Note that the algorithms have different internal names from the acronyms in the paper:
+
+Model (algorithm) | Arguments to `train.py`
+--- | ---
+Ambient flow (AF) | `--algorithm flow`
+Flow on manifold (FOM) | `--algorithm mf --specified`
+Pseudo-invertible encoder (PIE) | `--algorithm pie`
+ℳ-flow, simultaneous training (not recommended) | `--algorithm mf`
+ℳ-flow, alternating M/D training  | `--algorithm mf --alternate`
+ℳ-flow, sequential M/D training  | `--algorithm mf --sequential`
+ℳ-flow, Optimal Transport training  | `--algorithm gamf`
+ℳ-flow, alternating Optimal Transport training  | `--algorithm gamf --alternate`
+ℳ_e-flow, simultaneous training (not recommended)  | `--algorithm emf`
+ℳ_e-flow, alternating M/D training  | `--algorithm emf --alternate`
+ℳ_e-flow, sequential M/D training  | `--algorithm emf --sequential`
+
+
+### Evaluation 
 
 See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [experiments/notebooks](experiments/notebooks). Note that the algorithms have different internal names from the acronyms in the paper:
 
-Algorithm | Acronym in paper | Arguments to `evaluate.py`
---- | --- | ---
-Ambient flow | AF | `--algorithm flow`
-Flow on manifold | FOM | `--algorithm mf --specified`
-Pseudo-invertible encoder | PIE | `--algorithm pie`
-Manifold-modeling flow (except OT training) | MFMF | `--algorithm mf`
-Manifold-modeling flow, Optimal Transport training | MFMF-OT | `--algorithm gamf`
-Manifold-modeling flow with sep. encoder | MFMFE | `--algorithm emf`
+Model (algorithm) | Arguments to `train.py`
+--- | ---
+Ambient flow (AF) | `--algorithm flow`
+Flow on manifold (FOM) | `--algorithm mf --specified`
+Pseudo-invertible encoder (PIE) | `--algorithm pie`
+ℳ-flow (except when OT-trained) | `--algorithm mf`
+ℳ-flow, OT training  | `--algorithm gamf`
 
 
-## Acknowledgements
+### Acknowledgements
 
 The code is largely based on the excellent [Neural Spline Flow code base](https://github.com/bayesiains/nsf) by C. Durkan, A. Bekasov, I. Murray, and G. Papamakarios, see [1906.04032](https://arxiv.org/abs/1906.04032) for their paper.

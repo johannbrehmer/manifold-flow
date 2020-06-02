@@ -1,59 +1,60 @@
 from torch import nn
+from torch.nn import functional as F
 import logging
+import torch
+import numpy as np
 
 from manifold_flow import nn as nn_, transforms
-from manifold_flow.nn import Conv2dSameSize
 from manifold_flow.utils import various
 
 logger = logging.getLogger(__name__)
 
 
-class ConvNet(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels):
+class PreprocessingEncoder(nn.Module):
+    def __init__(self, encoder, preprocessor):
         super().__init__()
-        self.hidden_channels = hidden_channels
-        self.net = nn.Sequential(
-            Conv2dSameSize(in_channels, hidden_channels, kernel_size=3),
-            nn.ReLU(),
-            Conv2dSameSize(hidden_channels, hidden_channels, kernel_size=1),
-            nn.ReLU(),
-            Conv2dSameSize(hidden_channels, out_channels, kernel_size=3),
-        )
+        self.encoder = encoder
+        self.preprocessor = preprocessor
 
     def forward(self, inputs, context=None):
-        return self.net.forward(inputs)
+        temp = self.preprocessor(inputs)[0]
+        outputs = self.encoder(temp, context=context)
+        return outputs
+
+
+def create_image_encoder(
+    c, h, w, latent_dim, context_features=None, preprocessing="glow", alpha=0.05, num_bits=8,
+):
+    assert context_features is None
+    preprocessing_transform = _create_preprocessing(alpha, c, h, num_bits, preprocessing, w)
+    encoder = nn_.ModifiedConvEncoder(h, w, channels_in=c, channels_multiplier=1, levels=4, out_features=latent_dim, activation=F.relu,)
+    encoder = PreprocessingEncoder(encoder, preprocessing_transform)
+
+    return encoder
 
 
 def _create_image_transform_step(
     num_channels,
     hidden_channels=96,
+    context_channels=None,
     actnorm=True,
     coupling_layer_type="rational_quadratic_spline",
     spline_params=None,
-    use_resnet=True,
     num_res_blocks=3,
     resnet_batchnorm=True,
     dropout_prob=0.0,
 ):
-    if use_resnet:
-
-        def create_convnet(in_channels, out_channels):
-            net = nn_.ConvResidualNet(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                hidden_channels=hidden_channels,
-                num_blocks=num_res_blocks,
-                use_batch_norm=resnet_batchnorm,
-                dropout_probability=dropout_prob,
-            )
-            return net
-
-    else:
-        if dropout_prob != 0.0:
-            raise ValueError()
-
-        def create_convnet(in_channels, out_channels):
-            return ConvNet(in_channels, hidden_channels, out_channels)
+    def create_convnet(in_channels, out_channels):
+        net = nn_.ConvResidualNet(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            hidden_channels=hidden_channels,
+            context_channels=context_channels,
+            num_blocks=num_res_blocks,
+            use_batch_norm=resnet_batchnorm,
+            dropout_probability=dropout_prob,
+        )
+        return net
 
     if spline_params is None:
         spline_params = {
@@ -61,7 +62,7 @@ def _create_image_transform_step(
             "min_bin_height": 0.001,
             "min_bin_width": 0.001,
             "min_derivative": 0.001,
-            "num_bins": 4,
+            "num_bins": 8,
             "tail_bound": 3.0,
         }
 
@@ -131,19 +132,29 @@ def create_image_transform(
     num_bits=8,
     preprocessing="glow",
     multi_scale=True,
-    use_resnet=True,
     dropout_prob=0.0,
     num_res_blocks=3,
     coupling_layer_type="rational_quadratic_spline",
-    use_batchnorm=False,
+    use_batchnorm=True,
     use_actnorm=True,
     spline_params=None,
+    postprocessing="permutation",
+    postprocessing_layers=2,
+    postprocessing_channel_factor=2,
+    context_features=None,
 ):
+    assert h == w
+    res = h
     dim = c * h * w
+
     if not isinstance(hidden_channels, list):
         hidden_channels = [hidden_channels] * levels
 
+    preprocess_transform = _create_preprocessing(alpha, c, h, num_bits, preprocessing, w)
+
+    # Main part
     if multi_scale:
+        logger.debug("Input: c, h, w = %s, %s, %s", c, h, w)
         mct = transforms.MultiscaleCompositeTransform(num_transforms=levels)
         for level, level_hidden_channels in zip(range(levels), hidden_channels):
             logger.debug("Level %s", level)
@@ -161,10 +172,10 @@ def create_image_transform(
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
                         spline_params=spline_params,
-                        use_resnet=use_resnet,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
+                        context_channels=context_features,
                     )
                     for _ in range(steps_per_level)
                 ]
@@ -192,10 +203,10 @@ def create_image_transform(
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
                         spline_params=spline_params,
-                        use_resnet=use_resnet,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
+                        context_channels=context_features,
                     )
                     for _ in range(steps_per_level)
                 ]
@@ -206,11 +217,71 @@ def create_image_transform(
         all_transforms.append(transforms.ReshapeTransform(input_shape=(c, h, w), output_shape=(c * h * w,)))
         mct = transforms.CompositeTransform(all_transforms)
 
-    # Inputs to the model in [0, 2 ** num_bits]
+    # Final transformation
+    final_transform = _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features)
 
+    return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
+
+
+def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features):
+    # TODO: take context_features into account here
+
+    if postprocessing == "linear":
+        final_transform = transforms.LULinear(dim, identity_init=True)
+        logger.debug("LULinear(%s)", dim)
+
+    elif postprocessing == "partial_linear":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 8], dtype=np.int), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = postprocessing_channel_factor * 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transform = transforms.LULinear(partial_dim, identity_init=True)
+        final_transform = transforms.PartialTransform(mask, partial_transform)
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+
+    elif postprocessing == "partial_mlp":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 8], dtype=np.int), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = postprocessing_channel_factor * 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transforms = [transforms.LULinear(partial_dim, identity_init=True)]
+        logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        for _ in range(postprocessing_layers - 1):
+            partial_transforms.append(transforms.LogTanh(cut_point=1))
+            logger.debug("PartialTransform (LogTanh) (%s)", partial_dim)
+            partial_transforms.append(transforms.LULinear(partial_dim, identity_init=True))
+            logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
+        partial_transform = transforms.CompositeTransform(partial_transforms)
+
+        final_transform = transforms.CompositeTransform([transforms.PartialTransform(mask, partial_transform), transforms.MaskBasedPermutation(mask)])
+        logging.debug("MaskBasedPermutation (%s)", mask)
+
+    elif postprocessing == "permutation":
+        # Random permutation
+        final_transform = transforms.RandomPermutation(dim)
+        logger.debug("RandomPermutation(%s)", dim)
+
+    elif postprocessing == "none":
+        final_transform = transforms.IdentityTransform()
+
+    else:
+        raise NotImplementedError(postprocessing)
+    return final_transform
+
+
+def _create_preprocessing(alpha, c, h, num_bits, preprocessing, w):
+    # Preprocessing
+    # Inputs to the model in [0, 2 ** num_bits]
     if preprocessing == "glow":
         # Map to [-0.5,0.5]
         preprocess_transform = transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits), shift=-0.5)
+        logger.debug("Preprocessing: Glow")
     elif preprocessing == "realnvp":
         preprocess_transform = transforms.CompositeTransform(
             [
@@ -221,20 +292,15 @@ def create_image_transform(
                 transforms.Logit(),
             ]
         )
-
+        logger.debug("Preprocessing: RealNVP")
     elif preprocessing == "realnvp_2alpha":
         preprocess_transform = transforms.CompositeTransform(
-            [
-                transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)),
-                transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)),
-                transforms.Logit(),
-            ]
+            [transforms.AffineScalarTransform(scale=(1.0 / 2 ** num_bits)), transforms.AffineScalarTransform(shift=alpha, scale=(1 - 2.0 * alpha)), transforms.Logit(),]
         )
+        logger.debug("Preprocessing: RealNVP2alpha")
+    elif preprocessing == "unflatten":
+        preprocess_transform = transforms.ReshapeTransform(input_shape=(c * h * w,), output_shape=(c, h, w))
+        logger.debug("Preprocessing: Unflattening from %s to (%s, %s, %s)", c * h * w, c, h, w)
     else:
         raise RuntimeError("Unknown preprocessing type: {}".format(preprocessing))
-
-    # Random permutation
-    permutation = transforms.RandomPermutation(dim)
-    logger.debug("RandomPermutation(%s)", dim)
-
-    return transforms.CompositeTransform([preprocess_transform, mct, permutation])
+    return preprocess_transform

@@ -53,7 +53,8 @@ class RescaledNormal(distributions.Distribution):
         # Note: the context is ignored.
         if inputs.shape[1:] != self._shape:
             raise ValueError("Expected input of shape {}, got {}".format(self._shape, inputs.shape[1:]))
-        inputs = torch.clamp(inputs, -self._clip, self._clip)
+        if self._clip is not None:
+            inputs = torch.clamp(inputs, -self._clip, self._clip)
         neg_energy = -0.5 * various.sum_except_batch(inputs ** 2, num_batch_dims=1) / self.std ** 2
         return neg_energy - self._log_z
 

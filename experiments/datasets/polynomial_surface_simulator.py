@@ -12,18 +12,12 @@ logger = logging.getLogger(__name__)
 
 class PolynomialSurfaceSimulator(BaseSimulator):
     def __init__(
-        self,
-        draw_constants=False,
-        max_power=5,
-        power_decay=3.0,
-        base_coeff_std=1.0,
-        exp_suppression=0.1,
-        weight=0.4,
-        const_width=2.0,
-        min_width=0.2,
-        max_width=1.0,
-        filename=None,
+        self, draw_constants=False, max_power=5, power_decay=3.0, base_coeff_std=1.0, exp_suppression=0.1, weight=0.4, const_width=2.0, min_width=0.2, max_width=1.0, filename=None,
     ):
+        super().__init__()
+
+        # TODO add gdrive links
+
         assert 0.0 < min_width < max_width
         assert power_decay > 0.0
         assert isinstance(max_power, int)

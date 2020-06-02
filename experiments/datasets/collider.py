@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import norm
 
 from .utils import NumpyDataset
-from .base import BaseSimulator
+from .base import BaseSimulator, DatasetNotAvailableError
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +31,28 @@ class BaseLHCLoader(BaseSimulator):
     def parameter_dim(self):
         return self._parameter_dim
 
-    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0):
+    def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, run=0):
+        if ood:
+            raise DatasetNotAvailableError()
+
+        # Download missing data
+        self._download(dataset_dir)
+
         # Load numpy arrays
         x = np.load("{}/x_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
         params = np.load("{}/theta_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+        if joint_score:
+            scores = np.load("{}/t_xz_{}{}.npy".format(dataset_dir, "train" if train else "test", true_param_id if not train and true_param_id > 0 else ""))
+        else:
+            scores = None
 
         # OPtionally limit sample size
         if limit_samplesize is not None:
             logger.info("Only using %s of %s available samples", limit_samplesize, x.shape[0])
             x = x[:limit_samplesize]
             params = params[:limit_samplesize]
+            if joint_score:
+                scores = scores[:limit_samplesize]
 
         # Debug output
         logger.debug("lhc features before preprocessing:")
@@ -58,9 +70,14 @@ class BaseLHCLoader(BaseSimulator):
         for i in range(params.shape[1]):
             logger.debug("  %s: range %s ... %s, mean %s, std %s", i, np.min(params[:, i]), np.max(params[:, i]), np.mean(params[:, i]), np.std(params[:, i]))
 
-        if numpy:
+        if numpy and joint_score:
+            return x, params, scores
+        elif numpy:
             return x, params
-        return NumpyDataset(x, params)
+        elif joint_score:
+            return NumpyDataset(x, params, scores)
+        else:
+            return NumpyDataset(x, params)
 
     def sample(self, n, parameters=None):
         raise NotImplementedError
@@ -72,9 +89,7 @@ class BaseLHCLoader(BaseSimulator):
         raise NotImplementedError
 
     def sample_from_prior(self, n):
-        return np.random.normal(
-            loc=np.zeros((n, self._parameter_dim)), scale=self._prior_scale * np.ones((n, self._parameter_dim)), size=(n, self._parameter_dim)
-        )
+        return np.random.normal(loc=np.zeros((n, self._parameter_dim)), scale=self._prior_scale * np.ones((n, self._parameter_dim)), size=(n, self._parameter_dim))
 
     def evaluate_log_prior(self, parameters):
         parameters = parameters.reshape((-1, self.parameter_dim()))
@@ -83,9 +98,7 @@ class BaseLHCLoader(BaseSimulator):
     @staticmethod
     def _calculate_collider_latent_dim(n_final, n_additional_constraints):
         latent_dim = 4 * n_final  # We don't assume an on-shell condition for the final states (e.g. for jets)
-        latent_dim -= (
-            n_additional_constraints
-        )  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
+        latent_dim -= n_additional_constraints  # Additional constraints, for instance from intermediate narrow resonances, and from final-state on-shell conditions
         # # or if you want to impose energy-momentum conservation
         return latent_dim
 
@@ -334,11 +347,7 @@ class WBFLoader(BaseLHCLoader):
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.minimum(
-            np.abs(x_raw[:, id_phi] - phi_expected),
-            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        )
+        return np.minimum(np.abs(x_raw[:, id_phi] - phi_expected), np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected), np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),)
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
         costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5
@@ -579,8 +588,19 @@ class WBF40DLoader(BaseLHCLoader):
                 0.47202092213106334,
             ]
         )
-
         self.CLOSURE_LABELS = ["pt"] * 6 + ["eta"] * 6 + ["on-shell"] * 4 + ["decay"] * 8 + ["delta"] * 2
+
+        self.gdrive_file_ids = {
+            "x_train": "1VuG3HTtJHzzQi5KcltMUmxdoADAf34BO",
+            "x_test": "1J6lcVmyFYbRPx9R2GHfoQKKDtNbaD2sD",
+            "x_test1": "1aRtfaBrOP_XfYCwUaNHPlbDOmGjdbQn3",
+            "x_test2": "1X7SRFjIW2sv8gagyfyFs_iUmPG8mbrIe",
+            "t_xz_train": "190_Hdu2DLB4k8hKTnxrmmj5YgKt_whMA",
+            "theta_train": "1VZljWA63wMOXKAWvGMdMRdDE_TLmAMyV",
+            "theta_test": "1O83YYSAbnkz2tESSKEhSXykspDLHHc6E",
+            "theta_test1": "100GEgVnIX7bEocTR_0Hyu-8xRDKDLjym",
+            "theta_test2": "1vFJYdVzG22ARPuUw7hn-KBF05PRiFDst",
+        }
 
     def default_parameters(self, true_param_id=0):
         if true_param_id == 1:
@@ -610,11 +630,7 @@ class WBF40DLoader(BaseLHCLoader):
 
     def _phi_discrepancy(self, x_raw, id_phi, id_px, id_py):
         phi_expected = np.arctan2(x_raw[:, id_py], x_raw[:, id_px])
-        return np.minimum(
-            np.abs(x_raw[:, id_phi] - phi_expected),
-            np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-            np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),
-        )
+        return np.minimum(np.abs(x_raw[:, id_phi] - phi_expected), np.abs(2.0 * np.pi + x_raw[:, id_phi] - phi_expected), np.abs(-2.0 * np.pi + x_raw[:, id_phi] - phi_expected),)
 
     def _eta_discrepancy(self, x_raw, id_eta, id_e, id_px, id_py, id_pz):
         costheta = x_raw[:, id_pz] / (x_raw[:, id_px] ** 2 + x_raw[:, id_py] ** 2 + x_raw[:, id_pz] ** 2) ** 0.5

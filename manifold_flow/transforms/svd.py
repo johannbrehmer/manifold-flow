@@ -29,7 +29,7 @@ class SVDLinear(Linear):
         init.uniform_(self.log_diagonal, -stdv, stdv)
         init.constant_(self.bias, 0.0)
 
-    def forward_no_cache(self, inputs):
+    def forward_no_cache(self, inputs, full_jacobian=False):
         """Cost:
             output = O(KDN)
             logabsdet = O(D)
@@ -38,6 +38,8 @@ class SVDLinear(Linear):
             D = num of features
             N = num of inputs
         """
+        if full_jacobian:
+            raise NotImplementedError
         outputs, _ = self.orthogonal_2(inputs)  # Ignore logabsdet as we know it's zero.
         outputs *= torch.exp(self.log_diagonal)
         outputs, _ = self.orthogonal_1(outputs)  # Ignore logabsdet as we know it's zero.
@@ -47,7 +49,7 @@ class SVDLinear(Linear):
 
         return outputs, logabsdet
 
-    def inverse_no_cache(self, inputs):
+    def inverse_no_cache(self, inputs, full_jacobian=False):
         """Cost:
             output = O(KDN)
             logabsdet = O(D)
@@ -56,6 +58,8 @@ class SVDLinear(Linear):
             D = num of features
             N = num of inputs
         """
+        if full_jacobian:
+            raise NotImplementedError
         outputs = inputs - self.bias
         outputs, _ = self.orthogonal_1.inverse(outputs)  # Ignore logabsdet since we know it's zero.
         outputs *= torch.exp(-self.log_diagonal)
