@@ -10,7 +10,7 @@
 
 In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-learning flows or ℳ-flows, a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of ℳ-flows, as well as the code for our experiments with them.
 
-**If you do not need the commit history and want to save space, please use the `public-v2` branch.**
+**If you do not need the commit history and want to save space, please use the `public` branch.**
 
 
 ### Getting started
