@@ -46,8 +46,8 @@ def setup():
     matplotlib.rcParams.update({'ytick.labelsize': FONTSIZE})  # fontsize of the tick labels
     matplotlib.rcParams.update({'legend.fontsize': FONTSIZE})  # legend fontsize
     matplotlib.rcParams.update({'figure.titlesize': FONTSIZE})  # fontsize of the figure title
-    matplotlib.rcParams.update({'figure.dpi': 600})
-    matplotlib.rcParams.update({'savefig.dpi': 600})
+    matplotlib.rcParams.update({'figure.dpi': 300})
+    matplotlib.rcParams.update({'savefig.dpi': 300})
 
 
 def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04, make3d=False):
