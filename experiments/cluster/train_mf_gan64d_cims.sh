@@ -11,9 +11,9 @@
 
 module load cuda-10.2
 conda activate ml
-export PATH="/home/brehmer/miniconda3/envs/ml/bin/:$PATH"
+export PATH="/home/ANONYMOUS/miniconda3/envs/ml/bin/:$PATH"
 export OMP_NUM_THREADS=1
-dir=/data/brehmer/manifold-flow
+dir=/data/ANONYMOUS/manifold-flow
 cd $dir/experiments
 
 nvcc --version

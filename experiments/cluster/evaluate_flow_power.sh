@@ -10,6 +10,6 @@
 
 source activate ml
 export OMP_NUM_THREADS=1
-cd /scratch/jb6504/manifold-flow/experiments
+cd /scratch/ANONYMOUS/manifold-flow/experiments
 
 python -u evaluate.py --modelname march --dataset power --algorithm flow --splinebins 10 --splinerange 6.  --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID}

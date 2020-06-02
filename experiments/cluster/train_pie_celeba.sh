@@ -11,9 +11,9 @@
 module load cuda/10.1.105
 source activate ml2
 export OMP_NUM_THREADS=1
-cd /scratch/jb6504/manifold-flow/experiments
+cd /scratch/ANONYMOUS/manifold-flow/experiments
 
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_pie_celeba_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u train.py -c configs/train_pie_celeba_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/ANONYMOUS/manifold-flow

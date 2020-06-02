@@ -15,9 +15,9 @@ source ~/.bashrc
 module load cuda/10.1
 conda activate ml
 export OMP_NUM_THREADS=1
-cd /sdcc/u/brehmer/manifold-flow/experiments
+cd /sdcc/u/ANONYMOUS/manifold-flow/experiments
 
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_flow_gan64d_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /sdcc/u/brehmer/manifold-flow
+python -u train.py -c configs/train_flow_gan64d_april.config -i ${SLURM_ARRAY_TASK_ID} --dir /sdcc/u/ANONYMOUS/manifold-flow

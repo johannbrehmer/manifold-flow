@@ -10,6 +10,6 @@
 
 source activate ml
 export OMP_NUM_THREADS=1
-cd /scratch/jb6504/manifold-flow/experiments
+cd /scratch/ANONYMOUS/manifold-flow/experiments
 
-python -u generate_data.py --dataset power --ood 10000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/jb6504/manifold-flow
+python -u generate_data.py --dataset power --ood 10000 -i ${SLURM_ARRAY_TASK_ID} --dir /scratch/ANONYMOUS/manifold-flow

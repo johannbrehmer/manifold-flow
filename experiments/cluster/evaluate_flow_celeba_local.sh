@@ -1,7 +1,7 @@
 #!/bin/bash
 
 conda activate ml
-dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
+dir=/Users/ANONYMOUS/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
 for i in 0 1

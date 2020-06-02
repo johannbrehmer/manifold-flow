@@ -15,7 +15,7 @@ source ~/.bashrc
 module load cuda/10.1
 conda activate ml
 export OMP_NUM_THREADS=1
-cd /sdcc/u/brehmer/manifold-flow/experiments
+cd /sdcc/u/ANONYMOUS/manifold-flow/experiments
 
 nvcc --version
 nvidia-smi

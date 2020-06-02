@@ -10,7 +10,7 @@
 
 source activate ml
 export OMP_NUM_THREADS=1
-cd /scratch/jb6504/manifold-flow/experiments
+cd /scratch/ANONYMOUS/manifold-flow/experiments
 
 run=$((SLURM_ARRAY_TASK_ID / 2))
 task=$((SLURM_ARRAY_TASK_ID % 2))
