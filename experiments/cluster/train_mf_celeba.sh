@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-p-c
-#SBATCH --output=log_train_pie_celeba_%a.log
+#SBATCH --job-name=t-mf-c
+#SBATCH --output=log_train_mf_celeba_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
@@ -16,4 +16,4 @@ cd /scratch/jb6504/manifold-flow/experiments
 nvcc --version
 nvidia-smi
 
-python -u train.py -c configs/train_pie_celeba_may.config -i ${SLURM_ARRAY_TASK_ID}
+python -u train.py -c configs/train_mf_celeba_may.config -i ${SLURM_ARRAY_TASK_ID}
