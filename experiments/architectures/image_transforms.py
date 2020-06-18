@@ -259,7 +259,7 @@ def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_chan
 
     elif postprocessing == "partial_nsf":
         if multi_scale:
-            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([0, 1, 4, 16], dtype=np.int), resolution=res)
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 16], dtype=np.int), resolution=res)
             partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
         else:
             partial_dim = postprocessing_channel_factor * 1024
