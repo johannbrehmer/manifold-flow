@@ -6,6 +6,6 @@ cd $dir/experiments
 
 for i in 0 1 2
 do
-    python evaluate.py -c configs/evaluate_pie_celeba_april.config -i $i
-    python evaluate.py -c configs/evaluate_pie_celeba_april.config -i $i --modellatentdim 128
+    # python evaluate.py -c configs/evaluate_pie_celeba_april.config -i $i
+    python evaluate.py -c configs/evaluate_pie_celeba_may.config -i $i
 done
