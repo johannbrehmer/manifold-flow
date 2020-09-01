@@ -6,6 +6,7 @@ import numpy as np
 
 from manifold_flow import nn as nn_, transforms
 from manifold_flow.utils import various
+from .vector_transforms import create_vector_transform
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,11 @@ def _create_image_transform_step(
     context_channels=None,
     actnorm=True,
     coupling_layer_type="rational_quadratic_spline",
-    spline_params=None,
     num_res_blocks=3,
     resnet_batchnorm=True,
     dropout_prob=0.0,
+    num_bins=8,
+    tail_bound=3.0,
 ):
     def create_convnet(in_channels, out_channels):
         net = nn_.ConvResidualNet(
@@ -56,16 +58,6 @@ def _create_image_transform_step(
         )
         return net
 
-    if spline_params is None:
-        spline_params = {
-            "apply_unconditional_transform": False,
-            "min_bin_height": 0.001,
-            "min_bin_width": 0.001,
-            "min_derivative": 0.001,
-            "num_bins": 8,
-            "tail_bound": 3.0,
-        }
-
     mask = various.create_mid_split_binary_mask(num_channels)
 
     if coupling_layer_type == "cubic_spline":
@@ -73,34 +65,34 @@ def _create_image_transform_step(
             mask=mask,
             transform_net_create_fn=create_convnet,
             tails="linear",
-            tail_bound=spline_params["tail_bound"],
-            num_bins=spline_params["num_bins"],
-            apply_unconditional_transform=spline_params["apply_unconditional_transform"],
-            min_bin_width=spline_params["min_bin_width"],
-            min_bin_height=spline_params["min_bin_height"],
+            tail_bound=tail_bound,
+            num_bins=num_bins,
+            apply_unconditional_transform=False,
+            min_bin_width=0.001,
+            min_bin_height=0.001,
         )
     elif coupling_layer_type == "quadratic_spline":
         coupling_layer = transforms.PiecewiseQuadraticCouplingTransform(
             mask=mask,
             transform_net_create_fn=create_convnet,
             tails="linear",
-            tail_bound=spline_params["tail_bound"],
-            num_bins=spline_params["num_bins"],
-            apply_unconditional_transform=spline_params["apply_unconditional_transform"],
-            min_bin_width=spline_params["min_bin_width"],
-            min_bin_height=spline_params["min_bin_height"],
+            tail_bound=tail_bound,
+            num_bins=num_bins,
+            apply_unconditional_transform=False,
+            min_bin_width=0.001,
+            min_bin_height=0.001,
         )
     elif coupling_layer_type == "rational_quadratic_spline":
         coupling_layer = transforms.PiecewiseRationalQuadraticCouplingTransform(
             mask=mask,
             transform_net_create_fn=create_convnet,
             tails="linear",
-            tail_bound=spline_params["tail_bound"],
-            num_bins=spline_params["num_bins"],
-            apply_unconditional_transform=spline_params["apply_unconditional_transform"],
-            min_bin_width=spline_params["min_bin_width"],
-            min_bin_height=spline_params["min_bin_height"],
-            min_derivative=spline_params["min_derivative"],
+            tail_bound=tail_bound,
+            num_bins=num_bins,
+            apply_unconditional_transform=False,
+            min_bin_width=0.001,
+            min_bin_height=0.001,
+            min_derivative=0.001,
         )
     elif coupling_layer_type == "affine":
         coupling_layer = transforms.AffineCouplingTransform(mask=mask, transform_net_create_fn=create_convnet)
@@ -137,11 +129,12 @@ def create_image_transform(
     coupling_layer_type="rational_quadratic_spline",
     use_batchnorm=True,
     use_actnorm=True,
-    spline_params=None,
     postprocessing="permutation",
     postprocessing_layers=2,
     postprocessing_channel_factor=2,
     context_features=None,
+    num_bins=8,
+    tail_bound=3.0,
 ):
     assert h == w
     res = h
@@ -171,7 +164,8 @@ def create_image_transform(
                         level_hidden_channels,
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
-                        spline_params=spline_params,
+                        num_bins=num_bins,
+                        tail_bound=tail_bound,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
@@ -202,7 +196,6 @@ def create_image_transform(
                         level_hidden_channels,
                         actnorm=use_actnorm,
                         coupling_layer_type=coupling_layer_type,
-                        spline_params=spline_params,
                         num_res_blocks=num_res_blocks,
                         resnet_batchnorm=use_batchnorm,
                         dropout_prob=dropout_prob,
@@ -218,12 +211,14 @@ def create_image_transform(
         mct = transforms.CompositeTransform(all_transforms)
 
     # Final transformation
-    final_transform = _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features)
+    final_transform = _create_postprocessing(
+        dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features, num_bins=num_bins, tail_bound=tail_bound
+    )
 
     return transforms.CompositeTransform([preprocess_transform, mct, final_transform])
 
 
-def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features):
+def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_channel_factor, postprocessing_layers, res, context_features, tail_bound, num_bins):
     # TODO: take context_features into account here
 
     if postprocessing == "linear":
@@ -258,6 +253,22 @@ def _create_postprocessing(dim, multi_scale, postprocessing, postprocessing_chan
             partial_transforms.append(transforms.LULinear(partial_dim, identity_init=True))
             logger.debug("PartialTransform (LULinear) (%s)", partial_dim)
         partial_transform = transforms.CompositeTransform(partial_transforms)
+
+        final_transform = transforms.CompositeTransform([transforms.PartialTransform(mask, partial_transform), transforms.MaskBasedPermutation(mask)])
+        logging.debug("MaskBasedPermutation (%s)", mask)
+
+    elif postprocessing == "partial_nsf":
+        if multi_scale:
+            mask = various.create_mlt_channel_mask(dim, channels_per_level=postprocessing_channel_factor * np.array([1, 2, 4, 16], dtype=np.int), resolution=res)
+            partial_dim = torch.sum(mask.to(dtype=torch.int)).item()
+        else:
+            partial_dim = postprocessing_channel_factor * 1024
+            mask = various.create_split_binary_mask(dim, partial_dim)
+
+        partial_transform = create_vector_transform(
+            dim=partial_dim, flow_steps=postprocessing_layers, linear_transform_type="permutation", tail_bound=tail_bound, num_bins=num_bins
+        )
+        logging.debug("RQ-NSF transform on %s features with %s steps", partial_dim, postprocessing_layers)
 
         final_transform = transforms.CompositeTransform([transforms.PartialTransform(mask, partial_transform), transforms.MaskBasedPermutation(mask)])
         logging.debug("MaskBasedPermutation (%s)", mask)

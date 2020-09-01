@@ -10,8 +10,6 @@
 
 In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-learning flows or ℳ-flows, a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of ℳ-flows, as well as the code for our experiments with them.
 
-**If you do not need the commit history and want to save space, please use the `public` branch.**
-
 
 ### Getting started
 
@@ -36,7 +34,7 @@ ImageNet | 64 x 64 x 3 | ? | 0 | `--dataset imagenet`
 The data from most data sets should automatically download when required. It is not necessary to generate any data yourself anymore. If there is a problem with that, please let us know.
 
 
-### Training 
+### Training
 
 See [experiments/train.py -h](experiments/train.py). The configurations for the models in the paper can be found in [experiments/configs](experiments/configs).
 
@@ -57,7 +55,7 @@ Pseudo-invertible encoder (PIE) | `--algorithm pie`
 ℳ_e-flow, sequential M/D training  | `--algorithm emf --sequential`
 
 
-### Evaluation 
+### Evaluation
 
 See [experiments/evaluate.py -h](experiments/evaluate.py) and the notebooks in [experiments/notebooks](experiments/notebooks). Note that the algorithms have different internal names from the acronyms in the paper:
 

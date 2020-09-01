@@ -36,7 +36,7 @@ def parse_args():
     # What what what
     parser.add_argument("--truth", action="store_true", help="Evaluate ground truth rather than learned model")
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
-    parser.add_argument("--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, MFMF), emf (MFMFE), pie (PIE), gamf (MFMF-OT)...")
+    parser.add_argument("--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, M-flow), emf (Me-flow), pie (PIE), gamf (M-flow-OT)...")
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
 
@@ -47,7 +47,7 @@ def parse_args():
 
     # Model details
     parser.add_argument("--modellatentdim", type=int, default=2, help="Model manifold dimensionality")
-    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of MFMF")
+    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of M-flow")
     parser.add_argument("--outertransform", type=str, default="rq-coupling", help="Scalar base trf. for f: {affine | quadratic | rq}-{coupling | autoregressive}")
     parser.add_argument("--innertransform", type=str, default="rq-coupling", help="Scalar base trf. for h: {affine | quadratic | rq}-{coupling | autoregressive}")
     parser.add_argument("--lineartransform", type=str, default="permutation", help="Scalar linear trf: linear | permutation")
@@ -57,15 +57,16 @@ def parse_args():
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
-    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
-    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
-    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation)")
+    parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
-    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
+    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for M-flow and PIE on image data")
+    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for M-flow and PIE on image data")
+    parser.add_argument("--intermediatensf", action="store_true", help="Use NSF rather than linear layers before projecting (for M-flows and PIE on image data)")
 
     # Evaluation settings
     parser.add_argument("--evaluate", type=int, default=1000, help="Number of test samples to be evaluated")

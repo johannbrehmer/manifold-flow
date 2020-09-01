@@ -69,14 +69,6 @@ def create_image_mf(args, c, h, simulator, w):
         args.innertransform,
         simulator.parameter_dim(),
     )
-    spline_params = {
-        "apply_unconditional_transform": False,
-        "min_bin_height": 0.001,
-        "min_bin_width": 0.001,
-        "min_derivative": 0.001,
-        "num_bins": args.splinebins,
-        "tail_bound": args.splinerange,
-    }
     outer_transform = create_image_transform(
         c,
         h,
@@ -90,8 +82,9 @@ def create_image_mf(args, c, h, simulator, w):
         preprocessing="glow",
         dropout_prob=args.dropout,
         multi_scale=True,
-        spline_params=spline_params,
-        postprocessing="partial_mlp",
+        tail_bound=args.splinerange,
+        num_bins=args.splinebins,
+        postprocessing="partial_nsf" if args.intermediatensf else "partial_mlp",
         postprocessing_layers=args.linlayers,
         postprocessing_channel_factor=args.linchannelfactor,
         use_actnorm=args.actnorm,
@@ -288,14 +281,6 @@ def create_image_emf(args, c, h, simulator, w):
         args.innertransform,
         simulator.parameter_dim(),
     )
-    spline_params = {
-        "apply_unconditional_transform": False,
-        "min_bin_height": 0.001,
-        "min_bin_width": 0.001,
-        "min_derivative": 0.001,
-        "num_bins": args.splinebins,
-        "tail_bound": args.splinerange,
-    }
     encoder = create_image_encoder(c, h, w, latent_dim=args.modellatentdim, context_features=simulator.parameter_dim() if args.conditionalouter else None,)
     outer_transform = create_image_transform(
         c,
@@ -310,8 +295,7 @@ def create_image_emf(args, c, h, simulator, w):
         preprocessing="glow",
         dropout_prob=args.dropout,
         multi_scale=True,
-        spline_params=spline_params,
-        postprocessing="partial_mlp",
+        postprocessing="partial_nsf" if args.intermediatensf else "partial_mlp",
         postprocessing_layers=args.linlayers,
         postprocessing_channel_factor=args.linchannelfactor,
         use_actnorm=args.actnorm,
@@ -351,14 +335,6 @@ def create_image_flow(args, c, h, simulator, w):
         args.outertransform,
         simulator.parameter_dim(),
     )
-    spline_params = {
-        "apply_unconditional_transform": False,
-        "min_bin_height": 0.001,
-        "min_bin_width": 0.001,
-        "min_derivative": 0.001,
-        "num_bins": args.splinebins,
-        "tail_bound": args.splinerange,
-    }
     transform = create_image_transform(
         c,
         h,
@@ -372,7 +348,8 @@ def create_image_flow(args, c, h, simulator, w):
         preprocessing="glow",
         dropout_prob=args.dropout,
         multi_scale=True,
-        spline_params=spline_params,
+        num_bins=args.splinebins,
+        tail_bound=args.splinerange,
         use_batchnorm=args.batchnorm,
         use_actnorm=args.actnorm,
         postprocessing="permutation",

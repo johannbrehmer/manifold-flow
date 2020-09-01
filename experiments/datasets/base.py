@@ -37,7 +37,7 @@ class BaseSimulator:
         raise IntractableLikelihoodError
 
     def load_dataset(self, train, dataset_dir, numpy=False, limit_samplesize=None, true_param_id=0, joint_score=False, ood=False, run=0):
-        if joint_score is not None:
+        if joint_score:
             raise NotImplementedError("SCANDAL training not implemented for this dataset")
         if ood and not os.path.exists("{}/x_ood.npy".format(dataset_dir)):
             raise DatasetNotAvailableError

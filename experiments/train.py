@@ -32,7 +32,7 @@ def parse_args():
     # What what what
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
     parser.add_argument(
-        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, MFMF), emf (MFMFE), pie (PIE), gamf (MFMF-OT)...",
+        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, M-flow), emf (Me-flow), pie (PIE), gamf (M-flow-OT)...",
     )
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
@@ -44,7 +44,7 @@ def parse_args():
 
     # Model details
     parser.add_argument("--modellatentdim", type=int, default=2, help="Model manifold dimensionality")
-    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of MFMF")
+    parser.add_argument("--specified", action="store_true", help="Prescribe manifold chart: FOM instead of M-flow")
     parser.add_argument("--outertransform", type=str, default="rq-coupling", help="Scalar base trf. for f: {affine | quadratic | rq}-{coupling | autoregressive}")
     parser.add_argument("--innertransform", type=str, default="rq-coupling", help="Scalar base trf. for h: {affine | quadratic | rq}-{coupling | autoregressive}")
     parser.add_argument("--lineartransform", type=str, default="permutation", help="Scalar linear trf: linear | permutation")
@@ -54,19 +54,20 @@ def parse_args():
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
-    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in MFMFE encoder")
-    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in MFMFE encoder")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
     parser.add_argument("--actnorm", action="store_true", help="Use actnorm in convolutional architecture")
     parser.add_argument("--batchnorm", action="store_true", help="Use batchnorm in ResNets")
-    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for MFMF and PIE on image data")
-    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for MFMF and PIE on image data")
+    parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for M-flow and PIE on image data")
+    parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for M-flow and PIE on image data")
+    parser.add_argument("--intermediatensf", action="store_true", help="Use NSF rather than linear layers before projecting (for M-flows and PIE on image data)")
 
     # Training
-    parser.add_argument("--alternate", action="store_true", help="Use alternating training algorithm (e.g. MFMF-MD instead of MFMF-S)")
-    parser.add_argument("--sequential", action="store_true", help="Use sequential training algorithm")
+    parser.add_argument("--alternate", action="store_true", help="Use alternating M/D training algorithm")
+    parser.add_argument("--sequential", action="store_true", help="Use sequential M/D training algorithm")
     parser.add_argument("--load", type=str, default=None, help="Model name to load rather than training from scratch, run is affixed automatically")
     parser.add_argument("--startepoch", type=int, default=0, help="Sets the first trained epoch for resuming partial training")
     parser.add_argument("--samplesize", type=int, default=None, help="If not None, number of samples used for training")
@@ -76,17 +77,17 @@ def parse_args():
     parser.add_argument("--genbatchsize", type=int, default=1000, help="Batch size for OT training")
     parser.add_argument("--lr", type=float, default=1.0e-3, help="Initial learning rate")
     parser.add_argument("--msefactor", type=float, default=1000.0, help="Reco error multiplier in loss")
-    parser.add_argument("--addnllfactor", type=float, default=0.1, help="Negative log likelihood multiplier in loss for MFMF-S training")
-    parser.add_argument("--nllfactor", type=float, default=1.0, help="Negative log likelihood multiplier in loss (except for MFMF-S training)")
+    parser.add_argument("--addnllfactor", type=float, default=0.1, help="Negative log likelihood multiplier in loss for M-flow-S training")
+    parser.add_argument("--nllfactor", type=float, default=1.0, help="Negative log likelihood multiplier in loss (except for M-flow-S training)")
     parser.add_argument("--sinkhornfactor", type=float, default=10.0, help="Sinkhorn divergence multiplier in loss")
     parser.add_argument("--weightdecay", type=float, default=1.0e-4, help="Weight decay")
     parser.add_argument("--clip", type=float, default=1.0, help="Gradient norm clipping parameter")
-    parser.add_argument("--nopretraining", action="store_true", help="Skip pretraining in MFMF-S training")
-    parser.add_argument("--noposttraining", action="store_true", help="Skip posttraining in MFMF-S training")
+    parser.add_argument("--nopretraining", action="store_true", help="Skip pretraining in M-flow-S training")
+    parser.add_argument("--noposttraining", action="store_true", help="Skip posttraining in M-flow-S training")
     parser.add_argument("--validationsplit", type=float, default=0.25, help="Fraction of train data used for early stopping")
     parser.add_argument("--scandal", type=float, default=None, help="Activates SCANDAL training and sets prefactor of score MSE in loss")
     parser.add_argument("--l1", action="store_true", help="Use smooth L1 loss rather than L2 (MSE) for reco error")
-    parser.add_argument("--uvl2reg", type=float, default=None, help="Add L2 regularization term on the latent variables after the outer flow (MFMF-M/D only)")
+    parser.add_argument("--uvl2reg", type=float, default=None, help="Add L2 regularization term on the latent variables after the outer flow (M-flow-M/D only)")
     parser.add_argument("--seed", type=int, default=1357, help="Random seed (--i is always added to it)")
     parser.add_argument("--resume", type=int, default=None, help="Resume training at a given epoch (overwrites --load and --startepoch)")
 
@@ -95,7 +96,8 @@ def parse_args():
     parser.add_argument("--dir", type=str, default="/scratch/jb6504/scandal-mf", help="Base directory of repo")
     parser.add_argument("--debug", action="store_true", help="Debug mode (more log output, additional callbacks)")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    return args
 
 
 def make_training_kwargs(args, dataset):
@@ -118,7 +120,7 @@ def make_training_kwargs(args, dataset):
 
 
 def train_manifold_flow(args, dataset, model, simulator):
-    """ MFMF-S training """
+    """ M-flow-S training """
 
     assert not args.specified
 
@@ -194,7 +196,7 @@ def train_specified_manifold_flow(args, dataset, model, simulator):
 
 
 def train_manifold_flow_alternating(args, dataset, model, simulator):
-    """ MFMF-A training """
+    """ M-flow-A training """
 
     assert not args.specified
 
@@ -233,7 +235,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
 
 
 def train_manifold_flow_sequential(args, dataset, model, simulator):
-    """ Sequential MFMF-M/D training """
+    """ Sequential M-flow-M/D training """
 
     assert not args.specified
 
@@ -297,7 +299,7 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
-    """ MFMF-OT training """
+    """ M-flow-OT training """
 
     gen_trainer = AdversarialTrainer(model) if simulator.parameter_dim() is None else ConditionalAdversarialTrainer(model)
     common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
@@ -325,7 +327,7 @@ def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
 
 
 def train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator):
-    """ MFMF-OTA training """
+    """ M-flow-OTA training """
 
     assert not args.specified
 
