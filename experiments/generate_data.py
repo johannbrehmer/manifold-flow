@@ -10,7 +10,7 @@ import logging
 sys.path.append("../")
 
 from experiments.datasets import load_simulator
-from experiments.utils.names import create_filename
+from experiments.utils import create_filename
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,6 @@ def parse_args():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-i", type=int, default=0)
     parser.add_argument(
         "--dataset",
         type=str,
@@ -28,7 +27,7 @@ def parse_args():
         choices=["power", "spherical_gaussian", "conditional_spherical_gaussian"],
         help="Dataset: spherical_gaussian, power, and conditional_spherical_gaussian",
     )
-    parser.add_argument("-i", type=int, default=0, help="Run number")
+    parser.add_argument("--i", type=int, default=0, help="Run number")
 
     parser.add_argument("--truelatentdim", type=int, default=2, help="True manifold dimensionality (for datasets where that is variable)")
     parser.add_argument("--datadim", type=int, default=3, help="True data dimensionality (for datasets where that is variable)")
