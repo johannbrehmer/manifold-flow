@@ -7,7 +7,9 @@ from .trainer import BaseTrainer, logger, NanException, EarlyStoppingException
 
 
 class AlternatingTrainer(BaseTrainer):
-    """ Alternating trainer: takes a number of trainers and alternates between them """
+    """ Alternating trainer: takes a number of trainers and alternates between them
+
+     Many apologies for anyone reading this code -- this was an afterthought and not planned for in the original class design """
 
     def __init__(self, model, *trainers, run_on_gpu=True, multi_gpu=True, double_precision=False):
         super().__init__(model, run_on_gpu, multi_gpu, double_precision)
@@ -201,16 +203,19 @@ class AlternatingTrainer(BaseTrainer):
         if parameters is None:
             parameters = [None for _ in self.trainers]
         opts = []
-        for parameters_ in parameters:
+
+        for i, parameters_ in enumerate(parameters):
             if parameters_ is None:
-                parameters_ = self.model.parameters()
-            opts.append(optimizer(parameters_, lr=initial_lr, **optimizer_kwargs))
+                parameters[i] = self.model.parameters()
+            opts.append(optimizer(parameters[i], lr=initial_lr, **optimizer_kwargs))
+
         logger.debug("Setting up LR scheduler")
         if epochs < 2:
             scheduler = None
             logger.debug("Deactivating scheduler for only %s epoch", epochs)
         scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
         epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
+
         if scheduler is None:
             scheds = [None for _ in self.trainers]
         else:
@@ -220,6 +225,7 @@ class AlternatingTrainer(BaseTrainer):
                     scheds.append(scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs))
                 except:
                     scheds.append(scheduler(optimizer=opt, **scheduler_kwargs))
+
         return epochs_per_scheduler, opts, parameters, scheds, scheduler, scheduler_kwargs
 
     @staticmethod

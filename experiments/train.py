@@ -212,7 +212,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     phase1_kwargs = {"forward_kwargs": {"mode": "projection"}, "clip_gradient": args.clip}
     phase2_kwargs = {"forward_kwargs": {"mode": "mf-fixed-manifold"}, "clip_gradient": args.clip}
 
-    phase1_parameters = list(model.outer_transform.parameters()) + list(model.encoder.parameters()) if args.algorithm == "emf" else model.outer_transform.parameters()
+    phase1_parameters = list(model.outer_transform.parameters()) + (list(model.encoder.parameters()) if args.algorithm == "emf" else [])
     phase2_parameters = list(model.inner_transform.parameters())
 
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
