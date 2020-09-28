@@ -14,12 +14,7 @@ def create_filename(type_, label, args):
         filename = "{}/experiments/data/samples/{}".format(args.dir, args.dataset)
 
     elif type_ == "sample":  # Dynamically sampled from simulator
-        if args.dataset in ["spherical_gaussian", "conditional_spherical_gaussian"]:
-            filename = "{}/experiments/data/samples/{}/{}_{}_{}_{:.3f}_{}{}.npy".format(
-                args.dir, args.dataset, args.dataset, args.truelatentdim, args.datadim, args.epsilon, label, run_label
-            )
-        else:
-            filename = "{}/experiments/data/samples/{}/{}{}.npy".format(args.dir, args.dataset, label, run_label)
+        filename = "{}/experiments/data/samples/{}/{}{}.npy".format(args.dir, args.dataset, label, run_label)
 
     elif type_ == "model":
         filename = "{}/experiments/data/models/{}.pt".format(args.dir, args.modelname)
