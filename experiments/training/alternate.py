@@ -63,49 +63,18 @@ class AlternatingTrainer(BaseTrainer):
         logger.debug("Initialising training data")
         train_loaders, val_loaders = self.make_dataloaders(dataset, validation_split, batch_sizes, subsets)
 
-        logger.debug("Setting up optimizer")
-        optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
-        if parameters is None:
-            parameters = [None for _ in self.trainers]
+        epochs_per_scheduler, opts, parameters, scheds, scheduler, scheduler_kwargs = self._setup_opt_sched(epochs, initial_lr, optimizer, optimizer_kwargs, parameters,
+                                                                                                            restart_scheduler, scheduler, scheduler_kwargs)
 
-        opts = []
-        for parameters_ in parameters:
-            if parameters_ is None:
-                parameters_ = self.model.parameters()
-            opts.append(optimizer(parameters_, lr=initial_lr, **optimizer_kwargs))
-
-        logger.debug("Setting up LR scheduler")
-        if epochs < 2:
-            scheduler = None
-            logger.debug("Deactivating scheduler for only %s epoch", epochs)
-        scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
-        epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
-        if scheduler is None:
-            scheds = [None for _ in self.trainers]
-        else:
-            scheds = []
-            for opt in opts:
-                try:
-                    scheds.append(scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs))
-                except:
-                    scheds.append(scheduler(optimizer=opt, **scheduler_kwargs))
-
-        early_stopping = early_stopping and (validation_split is not None) and (epochs > 1)
-        best_loss, best_model, best_epoch = None, None, None
-        if early_stopping and early_stopping_patience is None:
-            logger.debug("Using early stopping with infinite patience")
-        elif early_stopping:
-            logger.debug("Using early stopping with patience %s", early_stopping_patience)
-        else:
-            logger.debug("No early stopping")
-
-        n_losses = len(loss_labels)
-        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights
+        best_epoch, best_loss, best_model, early_stopping = self._setup_early_stopping(early_stopping, early_stopping_patience, epochs, validation_split)
 
         n_epochs_verbose = self._set_verbosity(epochs, verbose)
 
-        logger.debug("Beginning main training loop")
+        n_losses = len(loss_labels)
+        loss_weights = [1.0] * n_losses if loss_weights is None else loss_weights
         losses_train, losses_val = [], []
+
+        logger.debug("Beginning main training loop")
 
         # Loop over epochs
         for i_epoch in range(epochs):
@@ -115,13 +84,9 @@ class AlternatingTrainer(BaseTrainer):
             if scheds[0] is not None:
                 logger.debug("Learning rate: %s", scheds[0].get_lr()[0])
 
-            loss_train = 0.0
-            loss_val = 0.0
-            loss_contributions_train = np.zeros(n_losses)
-            loss_contributions_val = np.zeros(n_losses)
-
-            batch_counters_train = [0] * len(trainer_order)
-            batch_counters_val = [0] * len(trainer_order)
+            loss_train, loss_val = 0.0, 0.0
+            loss_contributions_train, loss_contributions_val = np.zeros(n_losses), np.zeros(n_losses)
+            batch_counters_train, batch_counters_val = [0] * len(trainer_order), [0] * len(trainer_order)
 
             try:
 
@@ -139,6 +104,9 @@ class AlternatingTrainer(BaseTrainer):
                         loss_filter = np.argwhere(loss_function_trainers == i_trainer).flatten()
                         batch_counter_train = batch_counters_train[i_trainer]
                         batch_counter_val = batch_counters_val[i_trainer]
+                        trainer_parameters = parameters[i_trainer]
+
+                        assert len(loss_filter), "Didn't find losses matching trainer {}: input {} -> filter {}".format(i_trainer, loss_function_trainers, loss_filter)
 
                         # Number of batches for this subset
                         logger.debug(
@@ -147,12 +115,13 @@ class AlternatingTrainer(BaseTrainer):
 
                         # Train
                         loss_train_trainer, loss_val_trainer, loss_contributions_train_trainer, loss_contributions_val_trainer = trainer.partial_epoch(
-                            i_epoch,
-                            train_loader,
-                            val_loader,
-                            opt,
-                            [loss_functions[i] for i in loss_filter],
-                            [loss_weights[i] for i in loss_filter],
+                            i_epoch=i_epoch,
+                            train_loader=train_loader,
+                            val_loader=val_loader,
+                            optimizer=opt,
+                            loss_functions=[loss_functions[i] for i in loss_filter],
+                            loss_weights=[loss_weights[i] for i in loss_filter],
+                            parameters=trainer_parameters,
                             i_batch_start_train=batch_counter_train,
                             i_batch_start_val=batch_counter_val,
                             **trainer_kwargs_
@@ -214,6 +183,44 @@ class AlternatingTrainer(BaseTrainer):
         logger.debug("Training finished")
 
         return np.array(losses_train), np.array(losses_val)
+
+    def _setup_early_stopping(self, early_stopping, early_stopping_patience, epochs, validation_split):
+        early_stopping = early_stopping and (validation_split is not None) and (epochs > 1)
+        best_loss, best_model, best_epoch = None, None, None
+        if early_stopping and early_stopping_patience is None:
+            logger.debug("Using early stopping with infinite patience")
+        elif early_stopping:
+            logger.debug("Using early stopping with patience %s", early_stopping_patience)
+        else:
+            logger.debug("No early stopping")
+        return best_epoch, best_loss, best_model, early_stopping
+
+    def _setup_opt_sched(self, epochs, initial_lr, optimizer, optimizer_kwargs, parameters, restart_scheduler, scheduler, scheduler_kwargs):
+        logger.debug("Setting up optimizer")
+        optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
+        if parameters is None:
+            parameters = [None for _ in self.trainers]
+        opts = []
+        for parameters_ in parameters:
+            if parameters_ is None:
+                parameters_ = self.model.parameters()
+            opts.append(optimizer(parameters_, lr=initial_lr, **optimizer_kwargs))
+        logger.debug("Setting up LR scheduler")
+        if epochs < 2:
+            scheduler = None
+            logger.debug("Deactivating scheduler for only %s epoch", epochs)
+        scheduler_kwargs = {} if scheduler_kwargs is None else scheduler_kwargs
+        epochs_per_scheduler = restart_scheduler if restart_scheduler is not None else epochs
+        if scheduler is None:
+            scheds = [None for _ in self.trainers]
+        else:
+            scheds = []
+            for opt in opts:
+                try:
+                    scheds.append(scheduler(optimizer=opt, T_max=epochs_per_scheduler, **scheduler_kwargs))
+                except:
+                    scheds.append(scheduler(optimizer=opt, **scheduler_kwargs))
+        return epochs_per_scheduler, opts, parameters, scheds, scheduler, scheduler_kwargs
 
     @staticmethod
     def make_dataloaders(dataset, validation_split, batch_sizes, subsets):

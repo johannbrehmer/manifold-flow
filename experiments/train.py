@@ -218,7 +218,7 @@ def train_manifold_flow_alternating(args, dataset, model, simulator):
     logger.info("Starting training MF, alternating between reconstruction error and log likelihood")
     learning_curves_ = metatrainer.train(
         loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse, losses.nll] + scandal_loss,
-        loss_function_trainers=[0, 1] + [1] if args.scandal is not None else [],
+        loss_function_trainers=[0, 1] + ([1] if args.scandal is not None else []),
         loss_labels=["L1" if args.l1 else "MSE", "NLL"] + scandal_label,
         loss_weights=[args.msefactor, args.nllfactor * nat_to_bit_per_dim(args.modellatentdim)] + scandal_weight,
         epochs=args.epochs // 2,

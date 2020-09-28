@@ -431,7 +431,8 @@ class Trainer(BaseTrainer):
         optimizer,
         loss_functions,
         loss_weights,
-        clip_gradient=1.0,
+        clip_gradient,
+        parameters,
         i_batch_start_train=0,
         i_batch_start_val=0,
         forward_kwargs=None,
@@ -442,6 +443,7 @@ class Trainer(BaseTrainer):
             raise NotImplementedError
 
         n_losses = len(loss_weights)
+        assert len(loss_functions) == n_losses, "{} loss functions, but {} weights".format(len(loss_functions), n_losses)
 
         self.model.train()
         loss_contributions_train = np.zeros(n_losses)
@@ -453,7 +455,7 @@ class Trainer(BaseTrainer):
             if i_batch == 0 and i_epoch == 0:
                 self.first_batch(batch_data)
             batch_loss, batch_loss_contributions = self.batch_train(
-                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
+                batch_data, loss_functions, loss_weights, optimizer, clip_gradient, parameters, forward_kwargs=forward_kwargs, custom_kwargs=custom_kwargs
             )
             if compute_loss_variance:
                 loss_train.append(batch_loss)
