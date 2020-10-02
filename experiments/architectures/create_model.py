@@ -1,15 +1,15 @@
 import logging
 
 from .image_transforms import create_image_transform, create_image_encoder
-from .vector_transforms import create_vector_encoder, create_vector_transform
+from .vector_transforms import create_vector_encoder, create_vector_transform, create_vector_decoder
 from manifold_flow import transforms
-from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionManifoldFlow, ManifoldFlow
+from manifold_flow.flows import Flow, EncoderManifoldFlow, VariableDimensionManifoldFlow, ManifoldFlow, ProbabilisticAutoEncoder
 
 
 logger = logging.getLogger(__name__)
 
 
-ALGORITHMS = ["flow", "pie", "mf", "gamf", "hybrid", "emf"]  # , "dough"
+ALGORITHMS = ["flow", "pie", "mf", "gamf", "hybrid", "emf", "pae"]  # , "dough"
 
 
 def create_model(args, simulator):
@@ -51,6 +51,10 @@ def create_model(args, simulator):
     # M-flow with sep. encoder for image data
     elif args.algorithm == "emf" and simulator.is_image():
         model = create_image_emf(args, c, h, simulator, w)
+
+    # PAE for vector data
+    elif args.algorithm == "pae" and not simulator.is_image():
+        model = create_vector_pae(args, simulator)
 
     else:
         raise ValueError(f"Don't know how to construct model for algorithm {args.algorithm} and image flag {simulator.is_image()}")
@@ -266,6 +270,51 @@ def create_vector_emf(args, simulator):
         apply_context_to_outer=args.conditionalouter,
         pie_epsilon=args.pieepsilon,
         clip_pie=args.pieclip,
+    )
+    return model
+
+
+def create_vector_pae(args, simulator):
+    logger.info(
+        "Creating PAE for vector data with %s latent dimensions, encoder with %s blocks, decoder with %s blocks, %s inner layers, transform %s, %s context features",
+        args.modellatentdim,
+        args.encoderblocks,
+        args.decoderblocks,
+        args.innerlayers,
+        args.innertransform,
+        simulator.parameter_dim(),
+    )
+    encoder = create_vector_encoder(
+        args.datadim,
+        args.modellatentdim,
+        args.encoderhidden,
+        args.encoderblocks,
+        dropout_probability=args.dropout,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
+        use_batch_norm=args.batchnorm,
+    )
+    decoder = create_vector_decoder(
+        args.datadim,
+        args.modellatentdim,
+        args.decoderhidden,
+        args.decoderblocks,
+        dropout_probability=args.dropout,
+        context_features=simulator.parameter_dim() if args.conditionalouter else None,
+        use_batch_norm=args.batchnorm,
+    )
+    inner_transform = create_vector_transform(
+        args.modellatentdim,
+        args.innerlayers,
+        linear_transform_type=args.lineartransform,
+        base_transform_type=args.innertransform,
+        context_features=simulator.parameter_dim(),
+        dropout_probability=args.dropout,
+        tail_bound=args.splinerange,
+        num_bins=args.splinebins,
+        use_batch_norm=args.batchnorm,
+    )
+    model = ProbabilisticAutoEncoder(
+        data_dim=args.datadim, latent_dim=args.modellatentdim, encoder=encoder, decoder=decoder, inner_transform=inner_transform, apply_context_to_outer=args.conditionalouter,
     )
     return model
 

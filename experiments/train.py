@@ -32,7 +32,7 @@ def parse_args():
     # What what what
     parser.add_argument("--modelname", type=str, default=None, help="Model name. Algorithm, latent dimension, dataset, and run are prefixed automatically.")
     parser.add_argument(
-        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, M-flow), emf (Me-flow), pie (PIE), gamf (M-flow-OT)...",
+        "--algorithm", type=str, default="flow", choices=ALGORITHMS, help="Model: flow (AF), mf (FOM, M-flow), emf (Me-flow), pie (PIE), gamf (M-flow-OT), pae (PAE)...",
     )
     parser.add_argument("--dataset", type=str, default="spherical_gaussian", choices=SIMULATORS, help="Dataset: spherical_gaussian, power, lhc, lhc40d, lhc2d, and some others")
     parser.add_argument("-i", type=int, default=0, help="Run number")
@@ -54,8 +54,8 @@ def parse_args():
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
-    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow encoder")
-    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow encoder")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow / PAE encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow / PAE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
@@ -64,6 +64,8 @@ def parse_args():
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for M-flow and PIE on image data")
     parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for M-flow and PIE on image data")
     parser.add_argument("--intermediatensf", action="store_true", help="Use NSF rather than linear layers before projecting (for M-flows and PIE on image data)")
+    parser.add_argument("--decoderblocks", type=int, default=5, help="Number of blocks in PAE encoder")
+    parser.add_argument("--decoderhidden", type=int, default=100, help="Number of hidden units in PAE encoder")
 
     # Training
     parser.add_argument("--alternate", action="store_true", help="Use alternating M/D training algorithm")
@@ -298,6 +300,70 @@ def train_manifold_flow_sequential(args, dataset, model, simulator):
     return learning_curves
 
 
+def train_pae_sequential(args, dataset, model, simulator):
+    """ Sequential PAE training """
+
+    assert not args.specified
+
+    if simulator.parameter_dim() is None:
+        trainer1 = ForwardTrainer(model)
+        trainer2 = ForwardTrainer(model)
+    else:
+        trainer1 = ConditionalForwardTrainer(model)
+        if args.scandal is None:
+            trainer2 = ConditionalForwardTrainer(model)
+        else:
+            trainer2 = SCANDALForwardTrainer(model)
+
+    common_kwargs, scandal_loss, scandal_label, scandal_weight = make_training_kwargs(args, dataset)
+
+    callbacks1 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "A", args)), callbacks.print_mf_latent_statistics(), callbacks.print_mf_weight_statistics()]
+    callbacks2 = [callbacks.save_model_after_every_epoch(create_filename("checkpoint", "B", args)), callbacks.print_mf_latent_statistics(), callbacks.print_mf_weight_statistics()]
+    if simulator.is_image():
+        callbacks1.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", "sample_epoch_A", args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+            )
+        )
+        callbacks2.append(
+            callbacks.plot_sample_images(
+                create_filename("training_plot", "sample_epoch_B", args), context=None if simulator.parameter_dim() is None else torch.zeros(30, simulator.parameter_dim()),
+            )
+        )
+        callbacks1.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_A", args)))
+        callbacks2.append(callbacks.plot_reco_images(create_filename("training_plot", "reco_epoch_B", args)))
+
+    logger.info("Starting training PAE, phase 1: manifold training")
+    learning_curves = trainer1.train(
+        loss_functions=[losses.smooth_l1_loss if args.l1 else losses.mse] + ([] if args.uvl2reg is None else [losses.hiddenl2reg]),
+        loss_labels=["L1" if args.l1 else "MSE"] + ([] if args.uvl2reg is None else ["L2_lat"]),
+        loss_weights=[args.msefactor] + ([] if args.uvl2reg is None else [args.uvl2reg]),
+        epochs=args.epochs // 2,
+        parameters=list(model.decoder.parameters()) + list(model.encoder.parameters()),
+        callbacks=callbacks1,
+        forward_kwargs={"return_hidden": args.uvl2reg is not None},
+        initial_epoch=args.startepoch,
+        **common_kwargs,
+    )
+    learning_curves = np.vstack(learning_curves).T
+
+    logger.info("Starting training PAE, phase 2: density training")
+    learning_curves_ = trainer2.train(
+        loss_functions=[losses.nll] + scandal_loss,
+        loss_labels=["NLL"] + scandal_label,
+        loss_weights=[args.nllfactor * nat_to_bit_per_dim(args.modellatentdim)] + scandal_weight,
+        epochs=args.epochs - (args.epochs // 2),
+        parameters=list(model.inner_transform.parameters()),
+        callbacks=callbacks2,
+        forward_kwargs={},
+        initial_epoch=args.startepoch - args.epochs // 2,
+        **common_kwargs,
+    )
+    learning_curves = np.vstack((learning_curves, np.vstack(learning_curves_).T))
+
+    return learning_curves
+
+
 def train_generative_adversarial_manifold_flow(args, dataset, model, simulator):
     """ M-flow-OT training """
 
@@ -437,6 +503,9 @@ def train_model(args, dataset, model, simulator):
             learning_curves = train_specified_manifold_flow(args, dataset, model, simulator)
         else:
             learning_curves = train_manifold_flow(args, dataset, model, simulator)
+    elif args.algorithm == "pae":
+        assert args.sequential
+        learning_curves = train_pae_sequential(args, dataset, model, simulator)
     elif args.algorithm == "gamf":
         if args.alternate:
             learning_curves = train_generative_adversarial_manifold_flow_alternating(args, dataset, model, simulator)
@@ -489,7 +558,6 @@ if __name__ == "__main__":
     if args.resume is not None:
         model.load_state_dict(torch.load(resume_filename, map_location=torch.device("cpu")))
         fix_act_norm_issue(model)
-
     elif args.load is not None:
         args_ = copy.deepcopy(args)
         args_.modelname = args.load
