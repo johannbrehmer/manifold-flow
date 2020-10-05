@@ -82,7 +82,7 @@ class ProbabilisticAutoEncoder(BaseFlow):
 
     def _decode(self, u, context=None):
         h, _ = self.inner_transform.inverse(u, full_jacobian=False, context=context)
-        x, inv_log_det_outer = self.decoder(h, full_jacobian=False, context=context if self.apply_context_to_outer else None)
+        x, inv_log_det_outer = self.decoder(h, context=context if self.apply_context_to_outer else None)
 
         return x
 
