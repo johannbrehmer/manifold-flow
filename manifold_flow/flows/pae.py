@@ -95,7 +95,7 @@ class ProbabilisticAutoEncoder(BaseFlow):
 
         encoder_params = sum(p.numel() for p in self.encoder.parameters())
         inner_params = sum(p.numel() for p in self.inner_transform.parameters())
-        decoder_params = sum(p.numel() for p in self.decoder_params.parameters())
+        decoder_params = sum(p.numel() for p in self.decoder.parameters())
 
         logger.info("  Encoder:         %.1f M parameters", encoder_params / 1.0e06)
         logger.info("  Decoder:         %.1f M parameters", decoder_params / 1.0e06)
