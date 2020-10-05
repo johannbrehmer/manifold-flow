@@ -95,12 +95,32 @@ def print_mf_weight_statistics():
     """ Prints debug info about size of weights. """
 
     def callback(i_epoch, model, loss_train, loss_val, subset=None, trainer=None, last_batch=None):
+        models, labels = [], []
         try:
-            models = [model.outer_transform, model.inner_transform]
-            labels = ["outer transform weights:", "inner transform weights:"]
+            models.append(model.outer_transform)
+            labels.append("outer transform weights:")
         except:
-            models = [model.transform]
-            labels = ["transform weights:"]
+            pass
+        try:
+            models.append(model.inner_transform)
+            labels.append("inner transform weights:")
+        except:
+            pass
+        try:
+            models.append(model.transform)
+            labels.append("transform weights:")
+        except:
+            pass
+        try:
+            models.append(model.encoder)
+            labels.append("encoder weights:")
+        except:
+            pass
+        try:
+            models.append(model.decoder)
+            labels.append("decoder weights:")
+        except:
+            pass
 
         subset_str = "          " if subset is None or trainer is None else "  {:>2d} / {:>2d}:".format(subset, trainer)
 
