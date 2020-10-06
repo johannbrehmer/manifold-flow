@@ -44,7 +44,7 @@ class ProbabilisticAutoEncoder(BaseFlow):
         x_reco = self._decode(u, context=context)
 
         # Log prob
-        log_prob = self._log_prob(u, log_det_inner)
+        log_prob = self.manifold_latent_distribution._log_prob(u, context=None) + log_det_inner
 
         if return_hidden:
             return x_reco, log_prob, u, h_manifold
@@ -85,9 +85,6 @@ class ProbabilisticAutoEncoder(BaseFlow):
         x = self.decoder(h, context=context if self.apply_context_to_outer else None)
 
         return x
-
-    def _log_prob(self, mode, u, log_det_inner):
-        return self.manifold_latent_distribution._log_prob(u, context=None) + log_det_inner
 
     def _report_model_parameters(self):
         """ Reports the model size """
