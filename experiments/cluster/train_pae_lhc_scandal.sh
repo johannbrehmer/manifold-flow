@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=t-p-l
-#SBATCH --output=log_train_pae_lhc_%a.log
+#SBATCH --job-name=t-ps-l
+#SBATCH --output=log_train_pae_scandal_lhc_%a.log
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32GB
