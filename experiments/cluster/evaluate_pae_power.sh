@@ -12,4 +12,4 @@ source activate ml
 export OMP_NUM_THREADS=1
 cd /scratch/jb6504/manifold-flow/experiments
 
-python -u evaluate.py -c configs/train_power_march.config --modelname sequential_march --algorithm pae --sequential --gridresolution 101 -i ${SLURM_ARRAY_TASK_ID}
+python -u evaluate.py -c configs/evaluate_power_march.config --modelname sequential_march --algorithm pae -i ${SLURM_ARRAY_TASK_ID}
