@@ -64,8 +64,7 @@ class PolynomialSurfaceSimulator(BaseSimulator):
         noise = 0.1 * np.random.normal(size=(n, 3))
         return x + noise
 
-    def log_density(self, x, parameters=None):
-        tolerance = 1.0e-3
+    def log_density(self, x, parameters=None, tolerance = 1.0e-3):
         z, eps = self._transform_x_to_z(x)
         log_prob_manifold = self._log_density_z(z, parameters=parameters)
         log_prob = np.where(eps.flatten() ** 2 < tolerance ** 2, log_prob_manifold - np.log(2.0 * tolerance), np.zeros_like(log_prob_manifold))
