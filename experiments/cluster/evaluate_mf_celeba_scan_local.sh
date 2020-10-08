@@ -4,7 +4,7 @@ conda activate ml
 dir=/Users/johannbrehmer/work/projects/manifold_flow/manifold-flow
 cd $dir/experiments
 
-for i in 3 4 5 6 7 8 9 10
+for i in 10
 do
     echo ""
     dim=$((2**$i))
