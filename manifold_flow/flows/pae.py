@@ -32,7 +32,7 @@ class ProbabilisticAutoEncoder(BaseFlow):
 
         self._report_model_parameters()
 
-    def forward(self, x, context=None, return_hidden=False):
+    def forward(self, x, context=None, return_hidden=False, **kwargs):
         """
         Transforms data point to latent space, evaluates likelihood, and transforms it back to data space.
         """
