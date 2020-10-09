@@ -58,7 +58,7 @@ class ProbabilisticAutoEncoder(BaseFlow):
         """ Decodes latent variable to data space."""
         return self._decode(u, context=context)
 
-    def log_prob(self, x, context=None):
+    def log_prob(self, x, context=None, **kwargs):
         """ Evaluates log likelihood for given data point."""
         return self.forward(x, context=context)[1]
 
