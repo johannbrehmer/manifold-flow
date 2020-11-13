@@ -50,15 +50,17 @@ def setup():
     matplotlib.rcParams.update({'savefig.dpi': 300})
 
 
-def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04, make3d=False):
+def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, cbar_sep=0.02, cbar_width=0.04, make3d=False, l_space=True, r_space=False, b_space=True, t_space=False):
     """ Single plot, with or without colorbar, size specified by height """
 
     if cbar:
-        width = height * (1. + cbar_sep + cbar_width + large_margin - small_margin)
-        top = small_margin
-        bottom = large_margin
-        left = large_margin
+        top = large_margin if t_space else small_margin
+        bottom = large_margin if b_space else small_margin
+        left = large_margin if l_space else small_margin
         right = large_margin + cbar_width + cbar_sep
+        
+        width = height * (1. + cbar_sep + cbar_width + right + left - top - bottom)
+        
         cleft = 1. - (large_margin + cbar_width) * height / width
         cbottom = bottom
         cwidth = cbar_width * height / width
@@ -83,11 +85,12 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
 
         return fig, (ax, cax)
     else:
-        width = height
-        left = large_margin
-        right = small_margin
-        top = small_margin
-        bottom = large_margin
+        left = large_margin if l_space else small_margin
+        right = large_margin if r_space else small_margin
+        top = large_margin if t_space else small_margin
+        bottom = large_margin if b_space else small_margin
+        
+        width = height * (1. + cbar_sep + cbar_width + right + left - top - bottom)
 
         fig = plt.figure(figsize=(width, height))
         if make3d:
@@ -106,7 +109,20 @@ def figure(cbar=False, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.0
         return fig, ax
 
 
-def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
+def figure_width(width=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, make3d=False, l_space=True, r_space=False, b_space=True, t_space=False):
+    left = large_margin if l_space else small_margin
+    right = large_margin if r_space else small_margin
+    top = large_margin if t_space else small_margin
+    bottom = large_margin if b_space else small_margin
+    
+    panel_size = (1. - top - bottom)
+    
+    height = width / (1. + right + left - top - bottom)
+    
+    return figure(False, height, large_margin, small_margin, 0.02, 0.04, make3d, l_space, r_space, b_space, t_space)
+
+
+def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, aspect_ratio=1.0, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by height """
 
     # Geometry
@@ -116,7 +132,7 @@ def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03,
     bottom = large_margin if b_space else small_margin
 
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
-    width = height*(left + nx*panel_size + (nx-1)*sep + right)
+    width = height*aspect_ratio*(left + nx*panel_size + (nx-1)*sep + right)
 
     # wspace and hspace are complicated beasts
     avg_width_abs = (height*panel_size * nx * ny) / (nx * ny + ny)
@@ -138,7 +154,7 @@ def grid(nx=4, ny=2, height=0.5*TEXTWIDTH, large_margin=0.14, small_margin=0.03,
     return fig, gs
 
 
-def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
+def grid_width(nx=4, ny=2, width=TEXTWIDTH, aspect_ratio=1.0, large_margin=0.14, small_margin=0.03, sep=0.02, l_space=True, r_space=False, b_space=True, t_space=False):
     """ Simple grid, no colorbars, size specified by width """
 
     left = large_margin if l_space else small_margin
@@ -146,8 +162,8 @@ def grid_width(nx=4, ny=2, width=TEXTWIDTH, large_margin=0.14, small_margin=0.03
     top = large_margin if t_space else small_margin
     bottom = large_margin if b_space else small_margin
     panel_size = (1. - top - bottom - (ny - 1)*sep)/ny
-    height = width / (left + nx*panel_size + (nx - 1)*sep + right)
-    return grid(nx, ny, height, large_margin, small_margin, sep, l_space=l_space, r_space=r_space, t_space=t_space, b_space=b_space)
+    height = width / (left + nx*panel_size + (nx - 1)*sep + right) / aspect_ratio
+    return grid(nx, ny, height, aspect_ratio, large_margin, small_margin, sep, l_space=l_space, r_space=r_space, t_space=t_space, b_space=b_space)
 
 
 def grid2(nx=4, ny=2, height=TEXTWIDTH*0.5, large_margin=0.14, small_margin=0.03, sep=0.02, cbar_width=0.04):

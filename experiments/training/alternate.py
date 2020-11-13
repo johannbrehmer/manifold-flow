@@ -65,8 +65,9 @@ class AlternatingTrainer(BaseTrainer):
         logger.debug("Initialising training data")
         train_loaders, val_loaders = self.make_dataloaders(dataset, validation_split, batch_sizes, subsets)
 
-        epochs_per_scheduler, opts, parameters, scheds, scheduler, scheduler_kwargs = self._setup_opt_sched(epochs, initial_lr, optimizer, optimizer_kwargs, parameters,
-                                                                                                            restart_scheduler, scheduler, scheduler_kwargs)
+        epochs_per_scheduler, opts, parameters, scheds, scheduler, scheduler_kwargs = self._setup_opt_sched(
+            epochs, initial_lr, optimizer, optimizer_kwargs, parameters, restart_scheduler, scheduler, scheduler_kwargs
+        )
 
         best_epoch, best_loss, best_model, early_stopping = self._setup_early_stopping(early_stopping, early_stopping_patience, epochs, validation_split)
 

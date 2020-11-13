@@ -3,10 +3,11 @@
 *Johann Brehmer and Kyle Cranmer 2019-2020*
 
 [![arXiv](http://img.shields.io/badge/arXiv-2003.13913-B31B1B.svg)](https://arxiv.org/abs/2003.13913)
+[![NeurIPS](http://img.shields.io/badge/NeurIPS-2020-8B6DA0.svg)](https://papers.nips.cc/paper/2020/hash/051928341be67dcba03f0e04104d9047-Abstract.html)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![MFMF illustration figure](experiments/figures/manifold_density_illustration_combined.png)
+![M-flow illustration figure](experiments/figures/mflows_logo.png)
 
 In the paper [Flows for simultaneous manifold learning and density estimation](https://arxiv.org/abs/2003.13913) we introduce manifold-learning flows or ℳ-flows, a new class of generative models that simultaneously learn the data manifold as well as a tractable probability density on that manifold. This repository contains our implementation of ℳ-flows, as well as the code for our experiments with them.
 

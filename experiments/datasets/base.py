@@ -46,7 +46,9 @@ class BaseSimulator:
         self._download(dataset_dir)
 
         tag = "train" if train else "ood" if ood else "paramscan" if paramscan else "test"
-        param_label = true_param_id if not train and true_param_id > 0 else ""
+        param_label = ""
+        if not train and true_param_id and true_param_id > 0:
+            param_label = true_param_id
         run_label = "_run{}".format(run) if run > 0 else ""
 
         x = np.load("{}/x_{}{}{}.npy".format(dataset_dir, tag, param_label, run_label))

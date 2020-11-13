@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class EncoderManifoldFlow(BaseFlow):
-    """ Manifold-based flow with separate encoder (for MFMFE) """
+    """ Manifold-based flow with separate encoder (M_e-flow) """
 
     def __init__(self, data_dim, latent_dim, encoder, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True, clip_pie=False):
         super(EncoderManifoldFlow, self).__init__()

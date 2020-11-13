@@ -21,6 +21,20 @@ def create_vector_encoder(data_dim, latent_dim, hidden_features=100, num_blocks=
     return encoder
 
 
+def create_vector_decoder(data_dim, latent_dim, hidden_features=100, num_blocks=2, dropout_probability=0.0, use_batch_norm=False, context_features=None):
+    decoder = nn_.ResidualNet(
+        in_features=latent_dim,
+        out_features=data_dim,
+        hidden_features=hidden_features,
+        context_features=context_features,
+        num_blocks=num_blocks,
+        activation=F.relu,
+        dropout_probability=dropout_probability,
+        use_batch_norm=use_batch_norm,
+    )
+    return decoder
+
+
 def _create_vector_linear_transform(linear_transform_type, features):
     if linear_transform_type == "permutation":
         return transforms.RandomPermutation(features=features)

@@ -57,8 +57,8 @@ def parse_args():
     parser.add_argument("--dropout", type=float, default=0.0, help="Use dropout")
     parser.add_argument("--pieepsilon", type=float, default=0.01, help="PIE epsilon term")
     parser.add_argument("--pieclip", type=float, default=None, help="Clip v in p(v), in multiples of epsilon")
-    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow encoder")
-    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow encoder")
+    parser.add_argument("--encoderblocks", type=int, default=5, help="Number of blocks in Me-flow / PAE encoder")
+    parser.add_argument("--encoderhidden", type=int, default=100, help="Number of hidden units in Me-flow / PAE encoder")
     parser.add_argument("--splinerange", default=3.0, type=float, help="Spline boundaries")
     parser.add_argument("--splinebins", default=8, type=int, help="Number of spline bins")
     parser.add_argument("--levels", type=int, default=3, help="Number of levels in multi-scale architectures for image data (for outer transformation f)")
@@ -67,6 +67,8 @@ def parse_args():
     parser.add_argument("--linlayers", type=int, default=2, help="Number of linear layers before the projection for M-flow and PIE on image data")
     parser.add_argument("--linchannelfactor", type=int, default=2, help="Determines number of channels in linear trfs before the projection for M-flow and PIE on image data")
     parser.add_argument("--intermediatensf", action="store_true", help="Use NSF rather than linear layers before projecting (for M-flows and PIE on image data)")
+    parser.add_argument("--decoderblocks", type=int, default=5, help="Number of blocks in PAE encoder")
+    parser.add_argument("--decoderhidden", type=int, default=100, help="Number of hidden units in PAE encoder")
 
     # Evaluation settings
     parser.add_argument("--evaluate", type=int, default=1000, help="Number of test samples to be evaluated")

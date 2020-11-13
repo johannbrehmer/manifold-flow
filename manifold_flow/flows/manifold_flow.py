@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ManifoldFlow(BaseFlow):
-    """ Manifold-based flow (base class for FOM, MFMF, PIE, and others) """
+    """ Manifold-based flow (base class for FOM, M-flow, PIE) """
 
     def __init__(self, data_dim, latent_dim, outer_transform, inner_transform=None, pie_epsilon=1.0e-2, apply_context_to_outer=True, clip_pie=False):
         super(ManifoldFlow, self).__init__()
